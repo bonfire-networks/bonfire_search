@@ -58,7 +58,7 @@ defmodule Bonfire.Search.Indexer do
 
   def index_objects(objects, index_name, init_index_first) when is_list(objects) do
     # IO.inspect(objects)
-    if System.get_env("SEARCH_INDEXING_DISABLED") != "true" do
+    if Application.get_env(:bonfire_search, :disable_indexing) != "true" and Application.get_env(:bonfire_search, :disable_indexing) != true do
       # FIXME - should create the index only once
       if init_index_first, do: init_index(index_name, true)
       @adapter.put(objects, index_name <> "/documents")

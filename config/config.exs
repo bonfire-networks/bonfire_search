@@ -15,13 +15,13 @@ use Mix.Config
 # include all used Bonfire extensions
 import_config "bonfire_search.exs"
 
+# workaround for extension dev
+config :activity_pub, :adapter, DummyAdapter
 
 #### Basic configuration
 
 # You probably won't want to touch these. You might override some in
 # other config files.
-
-
 
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",

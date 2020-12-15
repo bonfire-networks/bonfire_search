@@ -1,0 +1,3 @@
+defmodule DummyAdapter do
+
+end

@@ -14,9 +14,9 @@ services:
     #   - config/dev/secrets.env
     environment:
       - DATABASE_HOST=db
-    # depends_on:
+    depends_on:
     #   - db
-    #   - search
+      - search
     volumes:
       - type: bind
         source: ../

@@ -6,10 +6,8 @@ defmodule Bonfire.Search.Meili do
   def search(%{} = params, index) when is_binary(index) do
     IO.inspect(search_params: params)
 
-    with {:ok, req} <- api(:post, params, index <> "/search") do
-      res = Jason.decode!(req.body)
-      # IO.inspect(res)
-      res
+    with {:ok, %{body: results}} <- api(:post, params, index <> "/search") do
+      results
     else
       e ->
         Logger.error("Could not search Meili")
@@ -32,7 +30,7 @@ defmodule Bonfire.Search.Meili do
   end
 
   def list_facets(index_name \\ "public") do
-    @adapter.get(nil, index_name <> "/settings/attributes-for-faceting")
+    get(nil, index_name <> "/settings/attributes-for-faceting")
   end
 
   def set_facets(index_name, facets) when is_list(facets) do
@@ -94,10 +92,14 @@ defmodule Bonfire.Search.Meili do
     with {:ok, %{status: code} = ret} when code == 200 or code == 201 or code == 202 <-
            Bonfire.Search.HTTP.http_request(http_method, url, headers, object) do
       # IO.inspect(ret)
-      {:ok, ret}
+      {:ok, %{ret | body: Jason.decode!(Map.get(ret, :body))}}
     else
+      {_, %{body: body}} ->
+        Bonfire.Search.HTTP.http_error(fail_silently, http_method, Jason.decode!(body), object)
       {_, message} ->
         Bonfire.Search.HTTP.http_error(fail_silently, http_method, message, object)
+      other ->
+        Bonfire.Search.HTTP.http_error(fail_silently, http_method, other, object)
     end
   end
 end

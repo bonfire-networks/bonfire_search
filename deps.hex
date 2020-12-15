@@ -5,3 +5,5 @@ ok = "~> 2.3.0"
 telemetry_metrics = "~> 0.4"
 telemetry_poller = "~> 0.4"
 # for this extension:
+hackney = "~> 1.16
+tesla = "~> 1.3"

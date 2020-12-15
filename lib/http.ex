@@ -9,6 +9,8 @@ defmodule Bonfire.Search.HTTP do
   end
 
   def http_request(http_method, url, headers, object) do
+    IO.inspect(url)
+
     if(http_method == :get) do
       query_str = URI.encode_query(object)
       get_url = url <> "?" <> query_str
@@ -22,27 +24,25 @@ defmodule Bonfire.Search.HTTP do
   end
 
   def http_error(true, _http_method, _message, _object) do
-    nil
+    :ok
   end
 
   if Mix.env() == :test do
     def http_error(_, http_method, message, _object) do
-      Logger.info("Search - Could not #{http_method} objects")
-      Logger.debug(inspect(message))
+      Logger.info("Search - Could not #{http_method} objects: #{inspect message}")
+      {:error, message}
     end
   end
 
   if Mix.env() == :dev do
     def http_error(_, http_method, message, object) do
-      Logger.error("Search - Could not #{http_method} object:")
-      Logger.debug(inspect(message))
+      Logger.error("Search - Could not #{http_method} object: #{inspect message}")
       Logger.debug(inspect(object))
       {:error, message}
     end
   else
     def http_error(_, http_method, message, _object) do
-      Logger.warn("Search - Could not #{http_method} object:")
-      Logger.debug(inspect(message))
+      Logger.warn("Search - Could not #{http_method} object: #{inspect message}")
       :ok
     end
   end
