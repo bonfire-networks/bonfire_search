@@ -1,7 +1,7 @@
 use Mix.Config
 
 config :bonfire_search,
-  diable_indexing: System.get_env("SEARCH_INDEXING_DISABLED", "false"),
+  disable_indexing: System.get_env("SEARCH_INDEXING_DISABLED", "false"),
   env: Mix.env(),
   web_module: Bonfire.Web,
   adapter: Bonfire.Search.Meili,
