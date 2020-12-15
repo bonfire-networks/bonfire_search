@@ -76,10 +76,10 @@ defmodule Bonfire.Search.Meili do
   end
 
   def api(http_method, object, index_path, fail_silently \\ false) do
-    search_instance = System.get_env("SEARCH_MEILI_INSTANCE", "localhost:7700")
-    api_key = System.get_env("MEILI_MASTER_KEY")
+    search_instance = Application.get_env(:bonfire_search, :instance)
+    api_key = Application.get_env(:bonfire_search, :api_key)
 
-    url = "http://#{search_instance}/indexes/" <> index_path
+    url = "#{search_instance}/indexes/" <> index_path
 
     # if api_key do
     headers = [

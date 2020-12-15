@@ -38,3 +38,9 @@ services:
   #   # env_file:
   #   #   - config/dev/public.env
   #   #   - config/dev/secrets.envs
+  search:
+    image: getmeili/meilisearch:latest
+    ports:
+      - "7702:7700"
+    volumes:
+      - "./data/search/dev:/data.ms"

@@ -6,8 +6,8 @@ defmodule Bonfire.Search.Indexer do
   @public_index "public"
   # TODO: put in config
   @public_facets ["username", "index_type", "index_instance"]
-  # Application.get_env(:bonfire_search, :adapter)
-  @adapter Bonfire.Search.Meili
+
+  @adapter Application.get_env(:bonfire_search, :adapter)
 
   def maybe_index_object(object) do
     indexable_object = maybe_indexable_object(object)

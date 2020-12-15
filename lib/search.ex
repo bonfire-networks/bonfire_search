@@ -3,8 +3,11 @@
 defmodule Bonfire.Search do
   require Logger
 
+  # check if extension is configured
+  Bonfire.Config.has_extension_config?(:bonfire_search)
+
   @public_index "public"
-  @adapter Bonfire.Search.Meili # Application.get_env(:bonfire_search, :adapter)
+  @adapter Application.get_env(:bonfire_search, :adapter)
 
   def search(string, index, calculate_facets, facets) when is_binary(string) and is_map(facets) do
     search(
