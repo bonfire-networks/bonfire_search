@@ -7,7 +7,7 @@ defmodule Bonfire.Search.Indexer do
   # TODO: put in config
   @public_facets ["username", "index_type", "index_instance"]
 
-  @adapter Application.get_env(:bonfire_search, :adapter)
+  @adapter Bonfire.Common.Config.get_ext(:bonfire_search, :adapter)
 
   def maybe_index_object(object) do
     indexable_object = maybe_indexable_object(object)
@@ -58,7 +58,7 @@ defmodule Bonfire.Search.Indexer do
 
   def index_objects(objects, index_name, init_index_first) when is_list(objects) do
     # IO.inspect(objects)
-    if Application.get_env(:bonfire_search, :disable_indexing) != "true" and Application.get_env(:bonfire_search, :disable_indexing) != true do
+    if Bonfire.Common.Config.get_ext(:bonfire_search, :disable_indexing) != "true" and Bonfire.Common.Config.get_ext(:bonfire_search, :disable_indexing) != true do
       # FIXME - should create the index only once
       if init_index_first, do: init_index(index_name, true)
       @adapter.put(objects, index_name <> "/documents")

@@ -1,6 +1,7 @@
 use Mix.Config
 
 config :bonfire_search,
+  otp_app: :your_app_name,
   disable_indexing: System.get_env("SEARCH_INDEXING_DISABLED", "false"),
   env: Mix.env(),
   web_module: Bonfire.Web,

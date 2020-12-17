@@ -1,13 +1,12 @@
-# SPDX-License-Identifier: AGPL-3.0-only
+# check that this extension is configured
+Bonfire.Common.Config.require_extension_config!(:bonfire_search)
 
+# SPDX-License-Identifier: AGPL-3.0-only
 defmodule Bonfire.Search do
   require Logger
 
-  # check if extension is configured
-  Bonfire.Config.has_extension_config?(:bonfire_search)
-
   @public_index "public"
-  @adapter Application.get_env(:bonfire_search, :adapter)
+  @adapter Bonfire.Common.Config.get_ext(:bonfire_search, :adapter)
 
   def search(string, index, calculate_facets, facets) when is_binary(string) and is_map(facets) do
     search(
