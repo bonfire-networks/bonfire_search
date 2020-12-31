@@ -6,7 +6,7 @@ defmodule Bonfire.Search do
   require Logger
 
   @public_index "public"
-  @adapter Bonfire.Common.Config.get_ext(:bonfire_search, :adapter)
+  @adapter Bonfire.Common.Config.get_ext!(:bonfire_search, :adapter)
 
   def search(string, index, calculate_facets, facets) when is_binary(string) and is_map(facets) do
     search(

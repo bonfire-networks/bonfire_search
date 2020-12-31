@@ -74,8 +74,8 @@ defmodule Bonfire.Search.Meili do
   end
 
   def api(http_method, object, index_path, fail_silently \\ false) do
-    search_instance = Bonfire.Common.Config.get_ext(:bonfire_search, :instance)
-    api_key = Bonfire.Common.Config.get_ext(:bonfire_search, :api_key)
+    search_instance = Bonfire.Common.Config.get_ext!(:bonfire_search, :instance)
+    api_key = Bonfire.Common.Config.get_ext!(:bonfire_search, :api_key)
 
     url = "#{search_instance}/indexes/" <> index_path
 

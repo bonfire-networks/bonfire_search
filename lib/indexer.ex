@@ -7,7 +7,9 @@ defmodule Bonfire.Search.Indexer do
   # TODO: put in config
   @public_facets ["username", "index_type", "index_instance"]
 
-  @adapter Bonfire.Common.Config.get_ext(:bonfire_search, :adapter)
+  @adapter Bonfire.Common.Config.get_ext!(:bonfire_search, :adapter)
+
+  import Bonfire.Common.Utils, only: [maybe_get: 2, maybe_get: 3]
 
   def maybe_index_object(object) do
     indexable_object = maybe_indexable_object(object)
@@ -58,7 +60,8 @@ defmodule Bonfire.Search.Indexer do
 
   def index_objects(objects, index_name, init_index_first) when is_list(objects) do
     # IO.inspect(objects)
-    if Bonfire.Common.Config.get_ext(:bonfire_search, :disable_indexing) != "true" and Bonfire.Common.Config.get_ext(:bonfire_search, :disable_indexing) != true do
+    disabled = Bonfire.Common.Config.get_ext(:bonfire_search, :disable_indexing)
+    if disabled != "true" and disabled != true do
       # FIXME - should create the index only once
       if init_index_first, do: init_index(index_name, true)
       @adapter.put(objects, index_name <> "/documents")
@@ -120,7 +123,7 @@ defmodule Bonfire.Search.Indexer do
   def format_creator(%{id: id} = creator) when not is_nil(id) do
     %{
       "id" => creator.id,
-      "name" => creator.name
+      "name" => maybe_get(creator, :name) || maybe_get(creator, :profile) |> maybe_get(:name),
       # FIXME
       # "username" => CommonsPub.Characters.display_username(creator),
       # "canonical_url" => CommonsPub.ActivityPub.Utils.get_actor_canonical_url(creator)
