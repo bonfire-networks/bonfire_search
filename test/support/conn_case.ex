@@ -30,7 +30,7 @@ defmodule Bonfire.Search.ConnCase do
       alias Bonfire.Search.Web.Router.Helpers, as: Routes
 
       # The default endpoint for testing
-      @endpoint Bonfire.Search.Web.Endpoint
+      @endpoint Bonfire.Common.Config.get!(:endpoint_module)
     end
   end
 
