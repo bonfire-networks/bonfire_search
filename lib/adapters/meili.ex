@@ -66,7 +66,7 @@ defmodule Bonfire.Search.Meili do
   end
 
   def put(object, index_path, fail_silently \\ false) do
-    api(:put, object, index_path, fail_silently)
+    api(:put, object, index_path, fail_silently) |> IO.inspect
   end
 
   def settings(object, index) do

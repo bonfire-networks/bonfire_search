@@ -29,6 +29,12 @@ defmodule Bonfire.Search.Indexer do
     object
   end
 
+  def maybe_indexable_object(%{"id" => id} = object)
+      when not is_nil(id) do
+    # probably already formatted indexable object
+    object
+  end
+
   def maybe_indexable_object(%Pointers.Pointer{} = pointer) do
     pointed_object = Bonfire.Common.Pointers.follow!(pointer)
     maybe_indexable_object(pointed_object)
@@ -41,7 +47,6 @@ defmodule Bonfire.Search.Indexer do
       object
     )
   end
-
 
   def maybe_indexable_object(obj) do
     Logger.warn("Could not index object (not pre-formated for indexing or not a struct)")

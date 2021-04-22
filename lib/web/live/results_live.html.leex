@@ -1,0 +1,41 @@
+<div id="search_results" >
+  <div
+  id="the_search_results"
+  phx-update="replace"
+  data-page="<%= @page %>"
+  class="selected__area">
+    <%= for hit <- @hits do %>
+      <%=
+      case hit do
+      %{activity: activity} ->
+        # TODO
+        live_component(
+          @socket,
+          Bonfire.UI.Social.ActivityLive,
+          activity: Map.merge(activity, %{object: Map.drop(hit, [:activity])}),
+          current_user: @current_user
+        )
+      _ ->
+        live_component(
+          @socket,
+          Bonfire.UI.Social.ActivityLive,
+          activity: %{object: hit},
+          current_user: @current_user,
+        )
+      end
+      %>
+    <% end %>
+  </div>
+
+  <%= if @has_next_page do %>
+  <div class="pagination">
+    <button
+      class="button--outline"
+      phx-click="load-more"
+      phx-target="<%= @pagination_target %>">
+      load more
+    </button>
+  </div>
+  <% end %>
+
+</div>
