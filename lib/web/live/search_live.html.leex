@@ -38,11 +38,29 @@
 
           <%= for {facet, num_matches} <- e(@facets, "index_type", []) do %>
             <li><%= live_patch link_body(facet, num_matches),
-              to: " /search?type="<>facet<>"&s=" <> @search,
-              class: if @selected_type ==facet, do: "active", else: ""
+              to: " /search?facet[index_type]="<>facet<>"&s=" <> @search,
+              class: if @selected_facets[facet], do: "active", else: ""
             %></li>
           <% end %>
-
+          <%= if @selected_facets do %>
+            <li><%= live_patch "All types",
+              to: " /search?s=" <> @search
+            %></li>
+          <% end %>
+        </ul>
+<hr/>
+        <ul>
+        <%= for {tag, num_matches} <- e(@facets, "tag_names", []) do %>
+            <li><%= live_patch "#{num_matches} #{tag}",
+              to: " /search?facet[tag_names]="<>tag<>"&s=" <> @search,
+              class: if @selected_facets[tag], do: "active", else: ""
+            %></li>
+          <% end %>
+          <%= if @selected_facets do %>
+            <li><%= live_patch "All tags",
+              to: " /search?s=" <> @search
+            %></li>
+          <% end %>
         </ul>
 
         <%# <div class="">

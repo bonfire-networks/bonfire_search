@@ -36,7 +36,7 @@
   </div>
 <% end %>
 
-<%= if e(assigns, :show_more_link, nil) && e(assigns, :num_hits, nil) > e(assigns, :search_limit, 20) do %>
+<%= if e(assigns, :show_more_link, nil) && e(assigns, :num_hits, nil) && e(assigns, :num_hits, nil) > e(assigns, :search_limit, 20) do %>
   <%= live_patch "Filter or show more results",
     to: " /search?s=" <> e(assigns, :search, "")
   %>

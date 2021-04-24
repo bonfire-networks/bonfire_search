@@ -26,7 +26,7 @@ defmodule Bonfire.Search.Web.SearchLive do
        page: "search",
        page_title: "Search",
        me: false,
-       selected_type: nil,
+       selected_facets: nil,
        search: "",
        hits: [],
        facets: %{},
@@ -34,15 +34,16 @@ defmodule Bonfire.Search.Web.SearchLive do
      )}
   end
 
-  def handle_params(%{"s" => s, "type" => type} = _params, _url, socket) when s != "" do
+  def handle_params(%{"s" => s, "facet" => facets} = _params, _url, socket) when s != "" do
 
-    Bonfire.Search.LiveHandler.live_search(s, type, socket)
+    Bonfire.Search.LiveHandler.live_search(s, 20, facets, socket)
 
   end
 
+
   def handle_params(%{"s" => s} = _params, _url, socket) when s != "" do
 
-    Bonfire.Search.LiveHandler.live_search(s, nil, socket)
+    Bonfire.Search.LiveHandler.live_search(s, socket)
 
   end
 
@@ -63,12 +64,12 @@ defmodule Bonfire.Search.Web.SearchLive do
     "#{num} #{type_name}"
   end
 
-  def handle_event("search", params, %{assigns: %{selected_type: selected_type}} = socket) when is_binary(selected_type) do
-    IO.inspect(search: params)
+  def handle_event("search", params, %{assigns: %{selected_facets: selected_facets}} = socket) when not is_nil(selected_facets) do
+    IO.inspect(search_with_facet: params)
     # IO.inspect(socket)
 
     {:noreply,
-      socket |> Phoenix.LiveView.push_patch(to: "/search/?type="<>selected_type<>"&s=" <> params["search_field"]["query"])}
+      socket |> Phoenix.LiveView.push_patch(to: "/search?"<>Plug.Conn.Query.encode(facet: selected_facets)<>"&s=" <> params["search_field"]["query"])}
   end
 
   def handle_event("search", params, socket) do
@@ -76,7 +77,7 @@ defmodule Bonfire.Search.Web.SearchLive do
     # IO.inspect(socket)
 
     {:noreply,
-      socket |> Phoenix.LiveView.push_patch(to: "/search/?s=" <> params["search_field"]["query"])}
+      socket |> Phoenix.LiveView.push_patch(to: "/search?s=" <> params["search_field"]["query"])}
   end
 
 end

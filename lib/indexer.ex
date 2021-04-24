@@ -5,7 +5,7 @@ defmodule Bonfire.Search.Indexer do
 
   @public_index "public"
   # TODO: put in config
-  @public_facets ["username", "index_type", "index_instance"]
+  @public_facets ["index_type", "index_instance", "tag_names"]
 
   @adapter Bonfire.Common.Config.get_ext!(:bonfire_search, :adapter)
 
