@@ -11,6 +11,7 @@
         <path fill-rule="evenodd" clip-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" />
       </svg>
     </div>
+    <input type="hidden" name="search_limit" value="<%=e(assigns, :search_limit, "") %>">
     <%= text_input :search_field, :query, type: "search", id: "search_field_full", value: e(assigns, :search, ""), placeholder: e(assigns, :search_placeholder, "Search..."), autofocus: true, "phx-debounce": "300", class: "search-input w-full pl-8 font-normal text-gray-800 placeholder-gray-700 border-none rounded-full bg-blueGray-200" %>
   </div>
 </form>
@@ -33,4 +34,10 @@
   )
     %>
   </div>
+<% end %>
+
+<%= if e(assigns, :show_more_link, nil) && e(assigns, :num_hits, nil) > e(assigns, :search_limit, 20) do %>
+  <%= live_patch "Filter or show more results",
+    to: " /search?s=" <> e(assigns, :search, "")
+  %>
 <% end %>
