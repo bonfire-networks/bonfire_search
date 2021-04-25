@@ -57,11 +57,12 @@ defmodule Bonfire.Search do
   end
 
   def search(string, opts) when is_binary(string) and is_map(opts) do
-    Map.merge(%{
+    %{
       q: string
-    }, opts)
-    |>
-    search(Map.get(opts, :index, public_index()))
+    }
+    |> Map.merge(opts)
+    |> Map.drop([:index])
+    |> search(Map.get(opts, :index, public_index()))
   end
 
   def search(object, index) when is_map(object) and is_binary(index) do
