@@ -4,13 +4,13 @@ defmodule Bonfire.Search.Meili do
   require Logger
 
   def search(%{} = params, index) when is_binary(index) do
-    IO.inspect(search_params: params)
+    # IO.inspect(search_params: params)
 
     with {:ok, %{body: results}} <- api(:post, params, index <> "/search") do
       results
     else
       e ->
-        Logger.error("Could not search Meili")
+        Logger.warn("Could not search Meili")
         Logger.debug(inspect(e))
         nil
     end
@@ -66,7 +66,7 @@ defmodule Bonfire.Search.Meili do
   end
 
   def put(object, index_path, fail_silently \\ false) do
-    api(:put, object, index_path, fail_silently) |> IO.inspect
+    api(:put, object, index_path, fail_silently) #|> IO.inspect
   end
 
   def settings(object, index) do

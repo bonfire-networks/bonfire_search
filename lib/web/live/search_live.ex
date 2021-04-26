@@ -73,7 +73,7 @@ defmodule Bonfire.Search.Web.SearchLive do
   end
 
   def handle_event("search", params, socket) do
-    IO.inspect(search: params)
+    # IO.inspect(search: params)
     # IO.inspect(socket)
 
     {:noreply,
