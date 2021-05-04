@@ -1,12 +1,12 @@
 defmodule Bonfire.Search.LiveHandler do
 
-  alias Bonfire.Common.Utils
+  import Bonfire.Common.Utils
 
   def handle_event("search", params, %{assigns: _assigns} = socket) do
     IO.inspect(search: params)
     # IO.inspect(socket)
 
-    live_search(params["search_field"]["query"], params["search_limit"], nil, socket)
+    live_search(params["s"], params["search_limit"], nil, socket)
   end
 
   def live_search(q, search_limit \\ 20, facet_filters \\ nil, socket)
@@ -39,14 +39,14 @@ defmodule Bonfire.Search.LiveHandler do
       if !facet_filters and Map.has_key?(search, "facetsDistribution") do
         search["facetsDistribution"]
       else
-        Utils.e(socket.assigns, :facets, nil)
+        e(socket.assigns, :facets, nil)
       end
 
     # IO.inspect(hits: hits)
     IO.inspect(facets: facets)
 
     {:noreply,
-     Phoenix.LiveView.assign(socket,
+     cast_self(socket,
        selected_facets: facet_filters,
        hits: hits,
        facets: facets,
@@ -62,7 +62,7 @@ defmodule Bonfire.Search.LiveHandler do
 
   def search_hit_prepare(hit) do
     hit
-    |> Utils.maybe_to_structs()
+    |> maybe_to_structs()
   end
 
   # def handle_event("search", params, %{assigns: _assigns} = socket) do
