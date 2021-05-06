@@ -1,6 +1,5 @@
 defmodule Bonfire.Search.LiveHandler do
-
-  import Bonfire.Common.Utils
+  use Bonfire.Web, :live_handler
 
   def handle_event("search", params, %{assigns: _assigns} = socket) do
     IO.inspect(search: params)
