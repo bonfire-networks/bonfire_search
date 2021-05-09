@@ -1,11 +1,12 @@
 <form
+  class="w-full"
   role="search"
   phx-change="Bonfire.Search:search"
   action="/search"
   method="GET">
   <label>
     <span class="sr-only"><%= e(assigns, :search_placeholder, "Search")%></span>
-    <div class="mt-2 relative rounded-md">
+    <div class="relative rounded-md">
       <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none" aria-hidden="true">
         <!-- Heroicon name: solid/search -->
         <svg class="mr-3 h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
