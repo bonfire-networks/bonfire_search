@@ -12,7 +12,7 @@ You can implement adapters for your prefered search backend. Currently adapters 
 
 ## Development & Deployment Documentation
 
-Refer to the main repo at: https://github.com/bonfire-networks/bonfire-app
+This extension is meant to be used inside of a Bonfire app, so please refer to the main repo at: https://github.com/bonfire-networks/bonfire-app
 
 ## Copyright and License
 
