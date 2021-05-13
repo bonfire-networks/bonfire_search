@@ -6,11 +6,13 @@ An extension for [Bonfire](https://bonfire.cafe/) to handle:
 - Ultra-fast search
 - LiveView search UI
 
-You can implement adapters for your prefered search backend. Adapters are included for:
+You can implement adapters for your prefered search backend. Currently adapters are included for:
 - [Meili Search](https://www.meilisearch.com/) 
 
 
-## Handy commands
+## Development & Deployment Documentation
+
+Refer to the main repo at: https://github.com/bonfire-networks/bonfire-app
 
 ## Copyright and License
 
