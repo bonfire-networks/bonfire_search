@@ -5,7 +5,7 @@
         live_component(
           @socket,
           Bonfire.Search.Web.FormLive,
-          current_user: @current_user,
+
           search: @search,
           page: @page
         )
@@ -17,7 +17,7 @@
           @socket,
           ResultsLive,
           hits: @hits,
-          current_user: @current_user,
+
           page: @page,
           has_next_page: false
         )

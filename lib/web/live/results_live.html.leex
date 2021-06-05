@@ -12,15 +12,14 @@
         live_component(
           @socket,
           Bonfire.UI.Social.ActivityLive,
-          activity: Map.merge(activity, %{object: Map.drop(hit, [:activity])}),
-          current_user: @current_user
+          activity: Map.merge(activity, %{object: Map.drop(hit, [:activity])})
         )
       _ ->
         live_component(
           @socket,
           Bonfire.UI.Social.ActivityLive,
           activity: %{object: hit},
-          current_user: @current_user,
+
         )
       end
       %>
@@ -31,7 +30,7 @@
   <div class="pagination">
     <button
       class="button--outline"
-      phx-click="search-paginate">
+      phx-click="Bonfire.Search:paginate">
       load more
     </button>
   </div>
