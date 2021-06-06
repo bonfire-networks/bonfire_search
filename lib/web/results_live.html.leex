@@ -2,9 +2,9 @@
   <div
   id="the_search_results"
   phx-update="replace"
-  data-page="<%= @page %>"
+  data-page="<%= e(assigns, :page, []) %>"
   class="selected__area">
-    <%= for hit <- @hits do %>
+    <%= for hit <- e(assigns, :hits, []) do %>
       <%=
       case hit do
       %{activity: activity} ->
@@ -26,7 +26,7 @@
     <% end %>
   </div>
 
-  <%= if @has_next_page do %>
+  <%= if e(assigns, :has_next_page, []) do %>
   <div class="pagination">
     <button
       class="button--outline"

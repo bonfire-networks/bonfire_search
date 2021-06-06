@@ -5,21 +5,19 @@
         live_component(
           @socket,
           Bonfire.Search.Web.FormLive,
-
-          search: @search,
-          page: @page
+          search: e(assigns, :search, ""),
+          page: e(assigns, :page, 1)
         )
           %>
 
-        <h3 class=""><%=e(@num_hits, "")%> search results</h3>
+        <h3 class=""><%=e(assigns, :num_hits, "")%> search results</h3>
         <%=
         live_component(
           @socket,
           ResultsLive,
-          hits: @hits,
-
-          page: @page,
-          has_next_page: false
+          assigns_merge(assigns,
+            hits: e(assigns, :hits, [])
+          )
         )
           %>
   </section>
@@ -36,29 +34,29 @@
 
         <ul class="">
 
-          <%= for {facet, num_matches} <- e(@facets, "index_type", []) do %>
+          <%= for {facet, num_matches} <- e(assigns, :facets, "index_type", []) do %>
             <li><%= live_patch link_body(facet, num_matches),
-              to: " /search?facet[index_type]="<>facet<>"&s=" <> @search,
-              class: if @selected_facets[facet], do: "active", else: ""
+              to: " /search?facet[index_type]="<>facet<>"&s=" <> e(assigns, :search, ""),
+              class: if e(assigns, :selected_facets, %{})[facet], do: "active", else: ""
             %></li>
           <% end %>
-          <%= if @selected_facets do %>
+          <%= if e(assigns, :selected_facets, nil) do %>
             <li><%= live_patch "All types",
-              to: " /search?s=" <> @search
+              to: " /search?s=" <> e(assigns, :search, "")
             %></li>
           <% end %>
         </ul>
-<hr/>
+        <hr/>
         <ul>
-        <%= for {tag, num_matches} <- e(@facets, "tag_names", []) do %>
+        <%= for {tag, num_matches} <- e(assigns, :facets, "tag_names", []) do %>
             <li><%= live_patch "#{num_matches} #{tag}",
-              to: " /search?facet[tag_names]="<>tag<>"&s=" <> @search,
-              class: if @selected_facets[tag], do: "active", else: ""
+              to: " /search?facet[tag_names]="<>tag<>"&s=" <> e(assigns, :search, ""),
+              class: if e(assigns, :selected_facets, %{})[tag], do: "active", else: ""
             %></li>
           <% end %>
-          <%= if @selected_facets do %>
+          <%= if e(assigns, :selected_facets, []) do %>
             <li><%= live_patch "All tags",
-              to: " /search?s=" <> @search
+              to: " /search?s=" <> e(assigns, :search, "")
             %></li>
           <% end %>
         </ul>

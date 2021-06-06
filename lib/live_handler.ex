@@ -1,18 +1,34 @@
 defmodule Bonfire.Search.LiveHandler do
   use Bonfire.Web, :live_handler
 
+  @default_limit 20
+
+  def handle_event("search", params, %{assigns: %{search_limit: search_limit}} = socket) do
+    IO.inspect(search: params)
+    # IO.inspect(socket)
+
+    live_search(params["s"], search_limit || @default_limit, nil, socket)
+  end
+
+  def handle_event("search", params, %{assigns: %{__context__: %{search_limit: search_limit}}} = socket) do
+    IO.inspect(search: params)
+    # IO.inspect(socket)
+
+    live_search(params["s"], search_limit || @default_limit, nil, socket)
+  end
+
   def handle_event("search", params, %{assigns: _assigns} = socket) do
     IO.inspect(search: params)
     # IO.inspect(socket)
 
-    live_search(params["s"], params["search_limit"], nil, socket)
+    live_search(params["s"], params["search_limit"] || @default_limit, nil, socket)
   end
 
-  def live_search(q, search_limit \\ 20, facet_filters \\ nil, socket)
+  def live_search(q, search_limit \\ @default_limit, facet_filters \\ nil, socket)
 
   def live_search(q, search_limit, facet_filters, socket) when is_binary(search_limit) and search_limit !="" do
     IO.inspect(search_limit)
-    search_limit = String.to_integer(search_limit) || 20
+    search_limit = String.to_integer(search_limit) || @default_limit
     live_search(q, search_limit, facet_filters, socket)
   end
 
@@ -27,7 +43,7 @@ defmodule Bonfire.Search.LiveHandler do
     IO.inspect(search_results: search)
 
     hits =
-      if(Map.has_key?(search, "hits") and length(search["hits"])) do
+      if(is_map(search) and Map.has_key?(search, "hits") and length(search["hits"])) do
         # search["hits"]
         Enum.map(search["hits"], &search_hit_prepare/1)
         # Enum.filter(hits, & &1)
@@ -44,8 +60,9 @@ defmodule Bonfire.Search.LiveHandler do
     # IO.inspect(hits: hits)
     IO.inspect(facets: facets)
 
+    # TODO use send_update to send results to ResultsLive
     {:noreply,
-     cast_self(socket,
+     assign_global(socket,
        selected_facets: facet_filters,
        hits: hits,
        facets: facets,
@@ -56,6 +73,7 @@ defmodule Bonfire.Search.LiveHandler do
   end
 
   def live_search(q, search_limit, facet_filters, socket) do
+    IO.inspect(invalid_search: search_limit)
     {:noreply, socket}
   end
 

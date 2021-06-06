@@ -25,31 +25,31 @@ defmodule Bonfire.Search.Web.SearchLive do
      |> assign(
        page: "search",
        page_title: "Search",
-       me: false,
-       selected_facets: nil,
-       search: "",
-       hits: [],
-       facets: %{},
-       num_hits: nil
+      #  me: false,
+      #  selected_facets: nil,
+      #  search: "",
+      #  hits: [],
+      #  facets: %{},
+      #  num_hits: nil
      )}
   end
 
   def handle_params(%{"s" => s, "facet" => facets} = _params, _url, socket) when s != "" do
 
-    Bonfire.Search.LiveHandler.live_search(s, 20, facets, socket)
+    Bonfire.Search.LiveHandler.live_search(s, 20, facets, socket |> assign_global(search_more: true))
 
   end
 
 
   def handle_params(%{"s" => s} = _params, _url, socket) when s != "" do
 
-    Bonfire.Search.LiveHandler.live_search(s, socket)
+    Bonfire.Search.LiveHandler.live_search(s, socket |> assign_global(search_more: true))
 
   end
 
   def handle_params(_params, _url, socket) do
     {:noreply,
-     socket}
+     socket |> assign_global(search_more: true)}
   end
 
   defp type_name(name) do
@@ -62,6 +62,10 @@ defmodule Bonfire.Search.Web.SearchLive do
   defp link_body(name, num) do
     type_name = type_name(name) |> Inflex.pluralize()
     "#{num} #{type_name}"
+  end
+
+  def handle_event("Bonfire.Search:search", params, %{assigns: %{__context__: %{selected_facets: selected_facets}}} = socket) when not is_nil(selected_facets) do
+    handle_event("Bonfire.Search:search", params, socket |> assign(selected_facets: selected_facets))
   end
 
   def handle_event("Bonfire.Search:search", params, %{assigns: %{selected_facets: selected_facets}} = socket) when not is_nil(selected_facets) do
@@ -80,6 +84,6 @@ defmodule Bonfire.Search.Web.SearchLive do
       socket |> Phoenix.LiveView.push_patch(to: "/search?s=" <> params["s"])}
   end
 
-  def handle_event(action, attrs, socket), do: Bonfire.Web.LiveHandler.handle_event(action, attrs, socket, __MODULE__)
+  def handle_event(action, attrs, socket), do: Bonfire.Common.LiveHandlers.handle_event(action, attrs, socket, __MODULE__)
 
 end
