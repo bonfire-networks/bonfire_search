@@ -37,14 +37,17 @@ defmodule Bonfire.Search.Web.SearchLive do
   def handle_params(%{"s" => s, "facet" => facets} = _params, _url, socket) when s != "" do
 
     Bonfire.Search.LiveHandler.live_search(s, 20, facets, socket |> assign_global(search_more: true))
-
   end
 
 
   def handle_params(%{"s" => s} = _params, _url, socket) when s != "" do
 
     Bonfire.Search.LiveHandler.live_search(s, socket |> assign_global(search_more: true))
+  end
 
+  def handle_params(%{"hashtag_search" => s} = _params, _url, socket) when s != "" do
+
+    Bonfire.Search.LiveHandler.live_search(s, socket |> assign_global(search_more: true))
   end
 
   def handle_params(_params, _url, socket) do

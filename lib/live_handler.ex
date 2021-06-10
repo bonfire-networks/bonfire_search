@@ -40,7 +40,7 @@ defmodule Bonfire.Search.LiveHandler do
 
     search = Bonfire.Search.search(q, opts, ["index_type"], facet_filters)
 
-    IO.inspect(search_results: search)
+    # IO.inspect(search_results: search)
 
     hits =
       if(is_map(search) and Map.has_key?(search, "hits") and length(search["hits"])) do

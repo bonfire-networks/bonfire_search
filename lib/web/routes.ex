@@ -17,11 +17,12 @@ defmodule Bonfire.Search.Web.Routes do
       end
 
       # pages you need an account to view
-      scope "/search", Bonfire.Search.Web do
+      scope "/", Bonfire.Search.Web do
         pipe_through :browser
         pipe_through :account_required
 
-        live "/", SearchLive
+        live "/search", SearchLive
+        live "/tag/:hashtag_search", SearchLive
       end
 
       # pages you need to view as a user
