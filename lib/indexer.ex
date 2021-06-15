@@ -41,7 +41,7 @@ defmodule Bonfire.Search.Indexer do
   end
 
   def maybe_indexable_object(%{__struct__: object_type} = object) do
-    Bonfire.Contexts.run_context_function(
+    Bonfire.Common.ContextModules.maybe_apply(
       object_type,
       :indexing_object_format,
       object
