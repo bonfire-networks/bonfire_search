@@ -3,8 +3,9 @@
   id="the_search_results"
   phx-update="replace"
   data-page="<%= e(assigns, :page, []) %>"
-  class="selected__area">
-    <%= for hit <- e(assigns, :hits, []) do %>
+  class="divide-y dark:divide-gray-600">
+  <%= for hit <- e(assigns, :hits, []) do %>
+  <div class="lg:p-3">
       <%=
       case hit do
       %{activity: activity} ->
@@ -23,16 +24,17 @@
         )
       end
       %>
+    </div>
     <% end %>
   </div>
 
   <%= if e(assigns, :has_next_page, []) do %>
-  <div class="pagination">
+  <div class="flex justify-center w-full p-3 mx-auto border-t dark:border-gray-600 place-items-center">
     <button
-      class="button--outline"
+      class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-md dark:text-gray-300 dark:hover:bg-gray-500 hover:bg-gray-50"
       phx-click="Bonfire.Search:paginate">
-      load more
-    </button>
+     Load more</button>
+
   </div>
   <% end %>
 
