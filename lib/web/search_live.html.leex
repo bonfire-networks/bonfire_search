@@ -36,7 +36,7 @@
   <aside class="flex-1 hidden mt-2 lg:flex md:flex-shrink-0">
     <div class="w-full h-full px-1">
       <div class="">
-        <span class="text-base font-bold tracking-wide dark:text-gray-300">Search filters</span>        
+        <span class="text-base font-bold tracking-wide dark:text-gray-300">Search filters</span>
         <!-- <%# <div class="">
           <input name="editor-style" type="checkbox" class="editor-style switch">
           <label for="editor-style">Search this instance only</label>
@@ -54,7 +54,7 @@
           <%= if e(assigns, :selected_facets, nil) do %>
             <li class="p-2 text-sm font-medium dark:text-gray-300 dark:hover:bg-gray-600"><%= live_patch "All types",
               to: " /search?s=" <> e(assigns, :search, ""),
-              class="block"
+              class: "block"
             %></li>
           <% end %>
         </ul>
