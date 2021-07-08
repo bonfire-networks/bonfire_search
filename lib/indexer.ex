@@ -69,6 +69,7 @@ defmodule Bonfire.Search.Indexer do
     if disabled != "true" and disabled != true do
       # FIXME - should create the index only once
       if init_index_first, do: init_index(index_name, true)
+
       @adapter.put(objects, index_name <> "/documents")
     end
   end
