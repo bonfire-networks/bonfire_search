@@ -116,27 +116,5 @@ defmodule Bonfire.Search.Indexer do
     ""
   end
 
-  def format_creator(%{creator_id: id} = obj) when not is_nil(id) do
-    creator = Bonfire.Repo.maybe_preload(obj, :creator) |> Map.get(:creator)
 
-    format_creator(creator)
-  end
-
-  def format_creator(%Pointers.Pointer{} = pointer) do
-    Bonfire.Common.Pointers.follow!(pointer) |> format_creator()
-  end
-
-  def format_creator(%{id: id} = creator) when not is_nil(id) do
-    %{
-      "id" => creator.id,
-      "name" => maybe_get(creator, :name) || maybe_get(creator, :profile) |> maybe_get(:name),
-      # FIXME
-      # "username" => CommonsPub.Characters.display_username(creator),
-      # "canonical_url" => CommonsPub.ActivityPub.Utils.get_actor_canonical_url(creator)
-    }
-  end
-
-  def format_creator(_) do
-    nil
-  end
 end

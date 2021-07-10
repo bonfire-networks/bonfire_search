@@ -51,8 +51,8 @@ defmodule Bonfire.Search.LiveHandler do
 
     # note we only get proper facets when not already faceting
     facets =
-      if !facet_filters and Map.has_key?(search, "facetsDistribution") do
-        search["facetsDistribution"]
+      if !facet_filters and e(search, "facetsDistribution", nil) do
+        e(search, "facetsDistribution", nil)
       else
         e(socket.assigns, :facets, nil)
       end
