@@ -95,7 +95,12 @@ defmodule Bonfire.Search.Meili do
       {:ok, %{ret | body: Jason.decode!(Map.get(ret, :body))}}
     else
       {_, %{body: body}} ->
-        Bonfire.Search.HTTP.http_error(fail_silently, http_method, Jason.decode!(body), object)
+        case Jason.decode(body) do
+          {:ok, body} ->
+            Bonfire.Search.HTTP.http_error(fail_silently, http_method, body, object)
+          _e ->
+            Bonfire.Search.HTTP.http_error(fail_silently, http_method, %{}, object)
+        end
       {_, message} ->
         Bonfire.Search.HTTP.http_error(fail_silently, http_method, message, object)
       other ->
