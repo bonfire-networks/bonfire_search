@@ -57,8 +57,15 @@ defmodule Bonfire.Search.LiveHandler do
         e(socket.assigns, :facets, nil)
       end
 
-    # IO.inspect(hits: hits)
-    IO.inspect(facets: facets)
+    # TODO: make this a non-blocking operation (ie. show the other results first and then inject the result of this lookup when ready)
+    hits = with {:ok, federated_object_or_character} <- Bonfire.Federate.ActivityPub.Utils.get_by_url_ap_id_or_username(q) do
+      [federated_object_or_character] ++ hits
+    else _ ->
+      hits
+    end
+
+    IO.inspect(hits: hits)
+    # IO.inspect(facets: facets)
 
     # TODO use send_update to send results to ResultsLive
     {:noreply,
