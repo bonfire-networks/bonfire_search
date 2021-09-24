@@ -1,5 +1,5 @@
 <form
-  class="w-full m-0"
+  class=""
   role="search"
   phx-change="Bonfire.Search:search"
   action="/search"
@@ -14,7 +14,7 @@
         </svg>
       </div>
       <input type="hidden" name="search_limit" value="<%=e(assigns, :search_limit, "") %>">
-      <input type="search" name="s" autocomplete="off" value="<%=e(assigns, :search, "")%>" placeholder="<%=e(assigns, :search_placeholder, "Search...")%>" phx-debounce="300" class="block w-full h-12 text-gray-600 placeholder-gray-600 border-none rounded dark:text-gray-300 bg-blueGray-200 dark:bg-gray-700 dark:placeholder-gray-200 focus:ring-indigo-500 focus:border-indigo-500 pl-9 sm:text-sm"/>
+      <input type="search" name="s" autocomplete="off" value="<%=e(assigns, :search, "")%>" placeholder="<%=e(assigns, :search_placeholder, "Search...")%>" phx-debounce="300" class="block w-full h-10 text-gray-600 placeholder-gray-600 border-none rounded dark:text-gray-300 bg-blueGray-200 dark:bg-gray-700 dark:placeholder-gray-200 focus:ring-indigo-500 focus:border-indigo-500 pl-9 sm:text-sm"/>
       </div>
     </label>
 </form>
