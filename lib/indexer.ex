@@ -31,7 +31,7 @@ defmodule Bonfire.Search.Indexer do
 
   def maybe_indexable_object(%{"id" => id} = object)
       when not is_nil(id) do
-    # probably already formatted indexable object
+    # hopefully already formatted indexable object
     object
   end
 
@@ -94,18 +94,17 @@ defmodule Bonfire.Search.Indexer do
     @adapter.create_index(index_name, fail_silently)
   end
 
-  def maybe_delete_object(object) do
-    delete_object(object)
+  def maybe_delete_object(object, index_name \\ "public") do
+    delete_object(object, index_name)
     :ok
   end
 
-  defp delete_object(nil) do
+  defp delete_object(nil, _) do
     Logger.warn("Couldn't get object ID in order to delete")
   end
 
-  defp delete_object(_object_id) do
-    # TODO
-    # @adapter.delete(object_id)
+  defp delete_object(object_id, index_name) do
+    @adapter.delete(object_id, index_name)
   end
 
   def host(url) when is_binary(url) do

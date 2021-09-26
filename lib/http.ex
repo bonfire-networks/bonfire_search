@@ -2,47 +2,46 @@
 
 defmodule Bonfire.Search.HTTP do
   require Logger
-  alias ActivityPub.HTTP # FIXME
+  alias ActivityPub.HTTP # FIXME: use something else?
 
-  def http_request(http_method, url, headers, nil) do
-    http_request(http_method, url, headers, %{})
-  end
-
-  def http_request(http_method, url, headers, object) do
-    # IO.inspect(url)
-
+  def http_request(http_method, url, headers, object \\ nil) do
     if(http_method == :get) do
       query_str = URI.encode_query(object)
-      get_url = url <> "?" <> query_str
-      apply(HTTP, http_method, [get_url, headers])
+      url = url <> "?" <> query_str
+      apply(HTTP, http_method, [url, headers])
     else
-      # IO.inspect(object)
-      json = Jason.encode!(object)
+
+      json = if object && object !="" && object !=%{} && object !=:ok do
+        Jason.encode!(object)
+      else
+        nil
+      end
+
       # IO.inspect(json: json)
       apply(HTTP, http_method, [url, json, headers])
     end
   end
 
-  def http_error(true, _http_method, _message, _object) do
+  def http_error(true, _http_method, _message, _object, _url) do
     :ok
   end
 
   if Mix.env() == :test do
-    def http_error(_, http_method, message, _object) do
-      Logger.debug("Search - Could not #{http_method} objects: #{inspect message}")
+    def http_error(_, http_method, message, _object, url) do
+      Logger.debug("Search - Could not #{http_method} objects on #{url}: #{inspect message}")
       {:error, message}
     end
   end
 
   if Mix.env() == :dev do
-    def http_error(_, http_method, message, object) do
-      Logger.error("Search - Could not #{http_method} object: #{inspect message}")
+    def http_error(_, http_method, message, object, url) do
+      Logger.error("Search - Could not #{http_method} object on #{url}: #{inspect message}")
       Logger.debug(inspect(object))
       {:error, message}
     end
   else
-    def http_error(_, http_method, message, _object) do
-      Logger.warn("Search - Could not #{http_method} object: #{inspect message}")
+    def http_error(_, http_method, message, _object, url) do
+      Logger.warn("Search - Could not #{http_method} object on #{url}: #{inspect message}")
       :ok
     end
   end

@@ -53,20 +53,16 @@ defmodule Bonfire.Search.Meili do
     api(:get, object, index_path, fail_silently)
   end
 
-  def post(object) do
-    post(object, "")
-  end
-
-  def post(object, index_path, fail_silently \\ false) do
+  def post(object, index_path \\ "", fail_silently \\ false) do
     api(:post, object, index_path, fail_silently)
   end
 
-  def put(object) do
-    put(object, "")
+  def put(object, index_path \\ "", fail_silently \\ false) do
+    api(:put, object, index_path, fail_silently) #|> IO.inspect
   end
 
-  def put(object, index_path, fail_silently \\ false) do
-    api(:put, object, index_path, fail_silently) #|> IO.inspect
+  def delete(object, index_path \\ "", fail_silently \\ false) do
+    api(:delete, object, index_path, fail_silently) #|> IO.inspect
   end
 
   def settings(object, index) do
@@ -97,14 +93,14 @@ defmodule Bonfire.Search.Meili do
       {_, %{body: body}} ->
         case Jason.decode(body) do
           {:ok, body} ->
-            Bonfire.Search.HTTP.http_error(fail_silently, http_method, body, object)
+            Bonfire.Search.HTTP.http_error(fail_silently, http_method, body, object, url)
           _e ->
-            Bonfire.Search.HTTP.http_error(fail_silently, http_method, %{}, object)
+            Bonfire.Search.HTTP.http_error(fail_silently, http_method, body, object, url)
         end
       {_, message} ->
-        Bonfire.Search.HTTP.http_error(fail_silently, http_method, message, object)
+        Bonfire.Search.HTTP.http_error(fail_silently, http_method, message, object, url)
       other ->
-        Bonfire.Search.HTTP.http_error(fail_silently, http_method, other, object)
+        Bonfire.Search.HTTP.http_error(fail_silently, http_method, other, object, url)
     end
   end
 end
