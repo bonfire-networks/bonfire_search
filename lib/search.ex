@@ -47,7 +47,7 @@ defmodule Bonfire.Search do
 
   def search(string, opts, calculate_facets, filter_facets) when is_list(filter_facets) do
     opts = Map.merge(opts, %{
-      facetFilters: List.flatten(filter_facets)
+      filter: List.flatten(filter_facets)
     })
 
     do_search(string, opts, calculate_facets)
@@ -113,6 +113,6 @@ defmodule Bonfire.Search do
   end
 
   def facet_from_map({key, value}) when is_binary(value) do
-    "#{key}:#{value}"
+    "#{key} = #{value}"
   end
 end

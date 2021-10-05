@@ -30,13 +30,13 @@ defmodule Bonfire.Search.Meili do
   end
 
   def list_facets(index_name \\ "public") do
-    get(nil, index_name <> "/settings/attributes-for-faceting")
+    get(nil, index_name <> "/settings/filterable-attributes")
   end
 
   def set_facets(index_name, facets) when is_list(facets) do
     post(
-      facets,
-      index_name <> "/settings/attributes-for-faceting",
+      %{"filterableAttributes" => facets},
+      index_name <> "/settings",
       false
     )
   end
@@ -81,9 +81,7 @@ defmodule Bonfire.Search.Meili do
       {"Content-type", "application/json"}
     ]
 
-    # else
-    #   headers = [] #FIXME
-    # end
+    IO.inspect(object)
 
     with {:ok, %{status: code} = ret} when code == 200 or code == 201 or code == 202 <-
            Bonfire.Search.HTTP.http_request(http_method, url, headers, object) do

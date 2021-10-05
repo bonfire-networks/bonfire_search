@@ -47,7 +47,7 @@ defmodule Bonfire.Search.Stopwords do
 
   def stop_words(language \\ @default)
 
-  def stop_words(@default=lang), do: Map.get(@languages_stopwords, lang) ++ ["offer", "offering", "needing", "need", "looking", "anyone", "anybody", "also"]
+  def stop_words(@default=lang), do: Map.get(@languages_stopwords, lang) ++ ["offer", "offering", "needing", "need", "looking", "anyone", "anybody", "also", "please"]
 
   def stop_words("french"=lang), do: Map.get(@languages_stopwords, lang) ++ ["offre", "donne", "besoin", "cherche", "quelqu'un", "j'ai"]
 

@@ -7,15 +7,15 @@
   <%= for hit <- e(assigns, :hits, []) do %>
   <div class="lg:p-3">
       <%=
-      case hit do
-      %{activity: activity} ->
+      case hit |> maybe_to_structs() do
+      %{activity: activity} = hit ->
         # TODO
         live_component(
           @socket,
           Bonfire.UI.Social.ActivityLive,
           activity: Map.merge(activity, %{object: Map.drop(hit, [:activity])})
         )
-      _ ->
+      hit ->
         live_component(
           @socket,
           Bonfire.UI.Social.ActivityLive,

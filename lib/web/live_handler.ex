@@ -1,7 +1,7 @@
 defmodule Bonfire.Search.LiveHandler do
   use Bonfire.Web, :live_handler
 
-  @default_limit 20
+  @default_limit 20 # TODO: put in config
 
   def handle_event("search", params, %{assigns: %{search_limit: search_limit}} = socket) do
     IO.inspect(search: params)
@@ -44,8 +44,7 @@ defmodule Bonfire.Search.LiveHandler do
 
     hits =
       if(is_map(search) and Map.has_key?(search, "hits") and length(search["hits"])) do
-        # search["hits"]
-        Enum.map(search["hits"], &search_hit_prepare/1)
+        search["hits"]
         # Enum.filter(hits, & &1)
       end
 
@@ -82,11 +81,6 @@ defmodule Bonfire.Search.LiveHandler do
   def live_search(q, search_limit, facet_filters, socket) do
     IO.inspect(invalid_search: search_limit)
     {:noreply, socket}
-  end
-
-  def search_hit_prepare(hit) do
-    hit
-    |> maybe_to_structs()
   end
 
   # def handle_event("search", params, %{assigns: _assigns} = socket) do
