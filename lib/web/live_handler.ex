@@ -38,7 +38,7 @@ defmodule Bonfire.Search.LiveHandler do
 
     opts = %{limit: search_limit}
 
-    search = Bonfire.Search.search(q, opts, ["index_type"], facet_filters)
+    search = Bonfire.Search.Fuzzy.search(q, opts, ["index_type"], facet_filters)
 
     # IO.inspect(search_results: search)
 
@@ -73,7 +73,7 @@ defmodule Bonfire.Search.LiveHandler do
        selected_facets: facet_filters,
        hits: hits,
        facets: facets,
-       num_hits: search["nbHits"],
+       num_hits: e(search, "nbHits", 0),
        search: q
        #  current_user: current_user(socket)
      )}

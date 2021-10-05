@@ -10,3 +10,4 @@ tesla = "~> 1.3"
 # for this extension
 inflex = "~> 2.0.0"
 recase = "~> 0.5"
+fast_ngram = "~> 1.0"
