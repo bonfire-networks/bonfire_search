@@ -18,7 +18,6 @@
       </div>
     </label>
 </form>
-<% IO.inspect(form: assigns) %>
 <%= if !e(assigns, :search_more, nil) && e(assigns, :num_hits, nil) do %>
   <div class="search_results">
   <h3><%=e(assigns, :num_hits, "no")%> results</h3>
