@@ -1,5 +1,6 @@
 defmodule Bonfire.Search.Web.SearchLive do
-  use Bonfire.Web, :live_view
+  use Bonfire.Web, {:surface_view, [layout: {Bonfire.UI.Social.Web.LayoutView, "without_sidebar.html"}]}
+
   alias Bonfire.Web.LivePlugs
 
   alias Bonfire.Search.Web.ResultsLive
