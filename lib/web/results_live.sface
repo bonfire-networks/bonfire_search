@@ -1,7 +1,7 @@
   <div
   id="the_search_results"
   phx-update="replace"
-  data-page="<%= e(assigns, :page, []) %>"
+  data-page={ e(assigns, :page, [])}
   class="divide-y dark:divide-base-200">
     {#for hit <- e(assigns, :hits, [])}
       <div class="lg:p-3">
