@@ -26,11 +26,7 @@
   <div :if={!e(assigns, :search_more, nil) && e(assigns, :num_hits, nil)} class="search_results">
     <h3>{e(assigns, :num_hits, "no")} {l "results"}</h3>
     {#if e(assigns, :num_hits, 0) > 0}
-      {live_component(
-        @socket,
-        ResultsLive,
-        hits: e(assigns, :hits, [])
-      )}
+      <ResultsLive hits={e(assigns, :hits, [])} />
     {/if}
   
   <LiveRedirect 

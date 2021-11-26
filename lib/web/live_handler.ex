@@ -27,9 +27,13 @@ defmodule Bonfire.Search.LiveHandler do
   def live_search(q, search_limit \\ @default_limit, facet_filters \\ nil, socket)
 
   def live_search(q, search_limit, facet_filters, socket) when is_binary(search_limit) and search_limit !="" do
-    IO.inspect(search_limit)
+    #IO.inspect(search_limit)
     search_limit = String.to_integer(search_limit) || @default_limit
     live_search(q, search_limit, facet_filters, socket)
+  end
+
+  def live_search(q, search_limit, facet_filters, socket) when search_limit =="" do
+    live_search(q, @default_limit, facet_filters, socket)
   end
 
   def live_search(q, search_limit, facet_filters, socket) when is_binary(q) and q != "" and is_integer(search_limit) do

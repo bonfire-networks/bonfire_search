@@ -52,14 +52,10 @@
     <Bonfire.UI.Social.PageHeaderLive
       page_title={e(assigns, :num_hits, "")}
     />
-    <main class="border-t-8 border-base-200 md:mx-0 text-base-content">
-      {live_component(
-        @socket,
-        Bonfire.Search.Web.ResultsLive,
-        assigns_merge(assigns,
-          hits: e(assigns, :hits, [])
-        )
-      )}
+    <main class="border-t-8 border-base-200 md:mx-0 text-base-content">            
+          
+      <Bonfire.Search.Web.ResultsLive hits={e(assigns, :hits, [])} />
+
       </main>
   </section>
 
