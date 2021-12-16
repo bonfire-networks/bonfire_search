@@ -1,4 +1,4 @@
-# Bonfire:Search
+# Bonfire.Search
 
 An extension for [Bonfire](https://bonfire.cafe/) to handle:
 
