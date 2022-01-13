@@ -1,5 +1,5 @@
 <main class="mx-3 lg:flex lg:mx-0 lg:space-x-4">
-  <section class="bg-white shadow dark:bg-gray-700 w-center">
+  <section class="bg-base-100 shadow dark:bg-neutral-700 w-center">
         <!-- <%#=
         live_component(
           @socket,
@@ -13,14 +13,14 @@
             <a
               aria-label="Navigate to the previous page"
               href="javascript:window.history.back()">
-              <span class="flex items-center w-8 h-8 rounded-full place-content-center bg-blueGray-200 dark:bg-gray-600 hover:bg-blueGray-300">
-                <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+              <span class="flex items-center w-8 h-8 rounded-full place-content-center bg-blueGray-200 dark:bg-neutral-600 hover:bg-blueGray-300">
+                <svg class="w-4 h-4 text-primary-content-600 dark:text-primary-content-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
               </span>
             </a>
-            <h1 class="text-xs text-gray-800 uppercase dark:text-gray-100 font-regular">{e(assigns, :num_hits, "")} {l "search results"}</h1>
+            <h1 class="text-xs text-primary-content-800 uppercase dark:text-primary-content-100 font-regular">{e(assigns, :num_hits, "")} {l "search results"}</h1>
           </div>
         </div>
-        <main class="mx-4 bg-white border-t-8 border-gray-100 dark:border-gray-600 dark:bg-gray-700 lg:mx-0">
+        <main class="mx-4 bg-base-100 border-t-8 border-gray-100 dark:border-gray-600 dark:bg-neutral-700 lg:mx-0">
           {live_component(
             @socket,
             ResultsLive,
@@ -34,37 +34,37 @@
   <aside class="flex-1 hidden mt-2 lg:flex md:flex-shrink-0">
     <div class="w-full h-full px-1">
       <div class="">
-        <span class="text-base font-bold tracking-wide dark:text-gray-300">Search filters</span>
+        <span class="text-base font-bold tracking-wide dark:text-primary-content-300">Search filters</span>
         <!-- <%# <div class="">
           <input name="editor-style" type="checkbox" class="editor-style switch">
           <label for="editor-style">Search this instance only</label>
         </div> %> -->
 
-        <div class="mt-4 mb-2 text-sm font-semibold text-gray-400">Type</div>
+        <div class="mt-4 mb-2 text-sm font-semibold text-primary-content-400">Type</div>
         <ul class="flex flex-col border rounded dark:border-gray-500">
           {#for {facet, num_matches} <- e(assigns, :facets, "index_type", [])}
-            <li class="p-2 text-sm font-medium dark:text-gray-300 dark:hover:bg-gray-600">
+            <li class="p-2 text-sm font-medium dark:text-primary-content-300 dark:hover:bg-neutral-600">
               <LiveRedirect to={"/search?facet[index_type]="<>facet<>"&s=" <> e(assigns, :search, "")}>
                 {link_body(facet, num_matches)}
               </LiveRedirect>
             </li>
           {/for}
           {#if e(assigns, :selected_facets, nil)}
-            <li class="p-2 text-sm font-medium dark:text-gray-300 dark:hover:bg-gray-600">
+            <li class="p-2 text-sm font-medium dark:text-primary-content-300 dark:hover:bg-neutral-600">
               <LiveRedirect to={"/search?s=" <> e(assigns, :search, "")}>
                 {l "All types"}
               </LiveRedirect>
             </li>
           {/if}
           <!-- <%= for {facet, num_matches} <- e(assigns, :facets, "index_type", []) do %>
-            <li class="p-2 text-sm font-medium dark:text-gray-300 dark:hover:bg-gray-600">
+            <li class="p-2 text-sm font-medium dark:text-primary-content-300 dark:hover:bg-neutral-600">
               <%= live_patch link_body(facet, num_matches),
                 to: " /search?facet[index_type]="<>facet<>"&s=" <> e(assigns, :search, ""),
-                class: if e(assigns, :selected_facets, %{})[facet], do: "bg-gray-500", else: "block"
+                class: if e(assigns, :selected_facets, %{})[facet], do: "bg-neutral-500", else: "block"
             %></li>
           <% end %> -->
           <!-- <%= if e(assigns, :selected_facets, nil) do %>
-            <li class="p-2 text-sm font-medium dark:text-gray-300 dark:hover:bg-gray-600"><%= live_patch "All types",
+            <li class="p-2 text-sm font-medium dark:text-primary-content-300 dark:hover:bg-neutral-600"><%= live_patch "All types",
               to: " /search?s=" <> e(assigns, :search, ""),
               class: "block"
             %></li>
@@ -80,7 +80,7 @@
             </li>
           {/for}
           {#if e(assigns, :selected_facets, [])}
-            <li class="text-sm font-medium dark:text-gray-300">
+            <li class="text-sm font-medium dark:text-primary-content-300">
               <LiveRedirect to={"/search?s=" <> e(assigns, :search, "")}>
                 {l "All tags"}
               </LiveRedirect>
@@ -96,7 +96,7 @@
             %></li>
           <% end %> -->
           <!-- <%= if e(assigns, :selected_facets, []) do %>
-            <li class="text-sm font-medium dark:text-gray-300"><%= live_patch "All tags",
+            <li class="text-sm font-medium dark:text-primary-content-300"><%= live_patch "All tags",
               to: " /search?s=" <> e(assigns, :search, "")
             %></li>
           <% end %> -->
