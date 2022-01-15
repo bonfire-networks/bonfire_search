@@ -19,7 +19,7 @@ defmodule Bonfire.Search.Web.SearchLive do
 
   defp mounted(params, session, socket) do
     # socket = init_assigns(params, session, socket)
-    IO.inspect(params, label: "PARAMS")
+    # IO.inspect(params, label: "PARAMS")
 
     {:ok,
      socket

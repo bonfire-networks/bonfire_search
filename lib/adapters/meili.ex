@@ -77,15 +77,16 @@ defmodule Bonfire.Search.Meili do
 
     # if api_key do
     headers = [
-      {"X-Meili-API-Key", api_key},
+      {"Authorization", "Bearer #{api_key}"},
       {"Content-type", "application/json"}
     ]
 
-    IO.inspect(object)
+    # IO.inspect(api: object)
 
     with {:ok, %{status: code} = ret} when code == 200 or code == 201 or code == 202 <-
            Bonfire.Search.HTTP.http_request(http_method, url, headers, object) do
       # IO.inspect(ret)
+      # Logger.debug("Search - api OK")
       {:ok, %{ret | body: Jason.decode!(Map.get(ret, :body))}}
     else
       {_, %{body: body}} ->
