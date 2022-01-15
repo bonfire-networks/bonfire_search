@@ -6,36 +6,13 @@
     {#for hit <- e(assigns, :hits, [])}
       <div class="lg:p-3">
         {#case hit |> maybe_to_structs()}
-          {#match {activity=activity} = hit }
+          {#match %{activity: activity} = hit }
             <Bonfire.UI.Social.ActivityLive activity={Map.merge(activity, %{object: Map.drop(hit, [:activity])})} />
           {#match hit}
             <Bonfire.UI.Social.ActivityLive activity={%{object: hit}} />
         {/case}
       </div>
     {/for}
-  <!-- <%= for hit <- e(assigns, :hits, []) do %>
-  <div class="lg:p-3">
-      <%=
-      case hit |> maybe_to_structs() do
-      %{activity: activity} = hit ->
-        # TODO
-        live_component(
-          @socket,
-          Bonfire.UI.Social.ActivityLive,
-          activity: Map.merge(activity, %{object: Map.drop(hit, [:activity])})
-        )
-      hit ->
-        live_component(
-          @socket,
-          Bonfire.UI.Social.ActivityLive,
-          activity: %{object: hit},
-
-        )
-      end
-      %>
-    </div>
-    <% end %> -->
-
   
   <div :if={e(assigns, :has_next_page, [])} class="flex justify-center w-full p-3 mx-auto border-t cursor-pointer border-base-200 place-items-center">
     <button
