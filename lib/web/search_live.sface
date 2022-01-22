@@ -1,63 +1,47 @@
-<main class="block w-full max-w-screen-lg mx-auto md:flex place-content-center">
-  <ul role="navigation" class="p-4 mr-3 shadow-lg w-80 menu bg-base-100 rounded-box">
-    <li class="menu-title">
-      <span>{l "Search filters"}</span>
-    </li>
-     {#for {facet, num_matches} <- e(assigns, :facets, "index_type", [])}
-      <li>
-        <LiveRedirect to={"/search?facet[index_type]="<>facet<>"&s=" <> e(assigns, :search, "")}>
-          {link_body(facet, num_matches)}
-        </LiveRedirect>
+<main class="items-start justify-center w-full max-w-screen-xl px-3 mx-auto h-body md:flex ">
+  <!-- <ul role="navigation" class="flex-col hidden rounded height-0 shrink-0 grow-0 md:flex w-72 bg-base-100"> -->
+    <ul class="p-3 rounded menu w-72 bg-base-100">
+      <li class="menu-title">
+        <span>{l "Search filters"}</span>
       </li>
-    {/for}
-    {#if e(assigns, :selected_facets, nil)}
-      <li>
-        <LiveRedirect to={"/search?s=" <> e(assigns, :search, "")}>
-          {l "All types"}
-        </LiveRedirect>
-      </li>
-    {/if}
-    {#for {tag, num_matches} <- e(assigns, :facets, "tag_names", [])}
-      <li>
-        <LiveRedirect class={"/search?facet[tag_names]="<>tag<>"&s=" <> e(assigns, :search, "")}>
-          {"#{num_matches} #{tag}"}
-        </LiveRedirect>
-      </li>
-    {/for}
-    {#if e(assigns, :selected_facets, [])}
-      <li class="">
-        <LiveRedirect to={"/search?s=" <> e(assigns, :search, "")}>
-          {l "All tags"}
-        </LiveRedirect>
-      <!-- <%= live_patch "All tags",
-        to: " /search?s=" <> e(assigns, :search, "")
-      %> -->
-      </li>
-    {/if}
+      {#for {facet, num_matches} <- e(assigns, :facets, "index_type", [])}
+        <li>
+          <LiveRedirect to={"/search?facet[index_type]="<>facet<>"&s=" <> e(assigns, :search, "")}>
+            {link_body(facet, num_matches)}
+          </LiveRedirect>
+        </li>
+      {/for}
+      {#if e(assigns, :selected_facets, nil)}
+        <li>
+          <LiveRedirect to={"/search?s=" <> e(assigns, :search, "")}>
+            {l "All types"}
+          </LiveRedirect>
+        </li>
+      {/if}
+      {#for {tag, num_matches} <- e(assigns, :facets, "tag_names", [])}
+        <li>
+          <LiveRedirect class={"/search?facet[tag_names]="<>tag<>"&s=" <> e(assigns, :search, "")}>
+            {"#{num_matches} #{tag}"}
+          </LiveRedirect>
+        </li>
+      {/for}
+      {#if e(assigns, :selected_facets, [])}
+        <li class="">
+          <LiveRedirect to={"/search?s=" <> e(assigns, :search, "")}>
+            {l "All tags"}
+          </LiveRedirect>
+        </li>
+      {/if}
   </ul>
-  <section class="shadow-lg bg-base-100 rounded-box w-center">
-    <!-- <div class="flex items-center p-3">
-
-      <div class="flex items-center flex-1 space-x-2 text-left">
-        <a
-          aria-label="Navigate to the previous page"
-          href="javascript:window.history.back()">
-          <span class="flex items-center w-8 h-8 rounded-full place-content-center bg-blueGray-200  hover:bg-blueGray-300">
-            <svg class="w-4 h-4 text-primary-content-600 " fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-          </span>
-        </a>
-        <h1 class="text-xs text-primary-content-800 uppercase  font-regular">{e(assigns, :num_hits, "")} {l "search results"}</h1>
-      </div>
-    </div> -->
+  <section class="flex-grow bg-base-100 w-full h-full mx-auto shrink-0 md:mx-3 md:mr-0 lg:mr-3 w-center max-w-[580px]">
     <Bonfire.UI.Social.PageHeaderLive
       page_title={e(assigns, :num_hits, "")}
     />
-    <main class="border-t-8 border-base-200 md:mx-0 text-base-content">            
-          
+    <div class="md:mx-0 text-base-content">              
       <Bonfire.Search.Web.ResultsLive hits={e(assigns, :hits, [])} />
-
-      </main>
+    </div>
   </section>
-
-  
+    <div class="w-[285px] justify-start hidden h-full overflow-hidden pointer-events-none lg:flex">
+      <div class="top-[76px] bottom-[16px] fixed h-full pointer-events-auto"></div>
+    </div>
 </main>
