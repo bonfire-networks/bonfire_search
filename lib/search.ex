@@ -18,7 +18,7 @@ defmodule Bonfire.Search do
 
     if(is_map(search) and Map.has_key?(search, "hits") and length(search["hits"])) do
       search["hits"]
-      |> Enum.filter(& &1)
+      |> Utils.filter_empty()
       |> Utils.input_to_atoms()
       # |> IO.inspect(label: "search results")
     end
