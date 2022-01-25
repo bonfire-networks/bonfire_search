@@ -6,7 +6,7 @@
     {#for hit <- e(assigns, :hits, [])}
       <div class="lg:p-3">
         {#case hit |> maybe_to_structs()}
-          {#match %{activity: activity} = hit }
+          {#match %{activity: %{id: _} = activity} = hit }
             <Bonfire.UI.Social.ActivityLive activity={Map.merge(activity, %{object: Map.drop(hit, [:activity])})} />
           {#match hit}
             <Bonfire.UI.Social.ActivityLive activity={%{object: hit}} />
