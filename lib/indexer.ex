@@ -9,7 +9,7 @@ defmodule Bonfire.Search.Indexer do
 
   @adapter Bonfire.Common.Config.get_ext!(:bonfire_search, :adapter)
 
-  import Bonfire.Common.Utils, only: [maybe_get: 2, maybe_get: 3]
+  use Bonfire.Common.Utils, only: [maybe_get: 2, maybe_get: 3]
 
   def maybe_index_object(object) do
     indexable_object = maybe_indexable_object(object)
