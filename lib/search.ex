@@ -3,7 +3,7 @@ Bonfire.Common.Config.require_extension_config!(:bonfire_search)
 
 # SPDX-License-Identifier: AGPL-3.0-only
 defmodule Bonfire.Search do
-  require Logger
+  import Where
   alias Bonfire.Common.Utils
 
   @adapter Bonfire.Common.Config.get_ext!(:bonfire_search, :adapter)
@@ -12,7 +12,7 @@ defmodule Bonfire.Search do
 
   def search_by_type(tag_search, facets \\ nil) do
     facets = search_facets(facets)
-    Logger.info("search: #{inspect tag_search} with facets #{inspect facets}")
+    debug("search: #{inspect tag_search} with facets #{inspect facets}")
     search = search(tag_search, false, facets)
     # IO.inspect(searched: search)
 

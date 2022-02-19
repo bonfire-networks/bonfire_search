@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Bonfire.Search.HTTP do
-  require Logger
+  import Where
   alias ActivityPub.HTTP # FIXME: use something else?
 
   def http_request(http_method, url, headers, object \\ nil) do
@@ -28,20 +28,20 @@ defmodule Bonfire.Search.HTTP do
 
   if Mix.env() == :test do
     def http_error(_, http_method, message, _object, url) do
-      Logger.debug("Search - Could not #{http_method} objects on #{url}: #{inspect message}")
+      debug("Search - Could not #{http_method} objects on #{url}: #{inspect message}")
       {:error, message}
     end
   end
 
   if Mix.env() == :dev do
     def http_error(_, http_method, message, object, url) do
-      Logger.error("Search - Could not #{http_method} object on #{url}: #{inspect message}")
-      Logger.debug(inspect(object))
+      error("Search - Could not #{http_method} object on #{url}: #{inspect message}")
+      debug(inspect(object))
       {:error, message}
     end
   else
     def http_error(_, http_method, message, _object, url) do
-      Logger.warn("Search - Could not #{http_method} object on #{url}: #{inspect message}")
+      warn("Search - Could not #{http_method} object on #{url}: #{inspect message}")
       :ok
     end
   end

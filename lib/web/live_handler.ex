@@ -4,22 +4,22 @@ defmodule Bonfire.Search.LiveHandler do
   @default_limit 20 # TODO: put in config
 
   def handle_event("search", params, %{assigns: %{search_limit: search_limit}} = socket) do
-    IO.inspect(search: params)
-    # IO.inspect(socket)
+    debug(search: params)
+    # debug(socket)
 
     live_search(params["s"], search_limit || @default_limit, nil, socket)
   end
 
   def handle_event("search", params, %{assigns: %{__context__: %{search_limit: search_limit}}} = socket) do
-    IO.inspect(search: params)
-    # IO.inspect(socket)
+    debug(search: params)
+    # debug(socket)
 
     live_search(params["s"], search_limit || @default_limit, nil, socket)
   end
 
   def handle_event("search", params, %{assigns: _assigns} = socket) do
-    IO.inspect(search: params)
-    # IO.inspect(socket)
+    debug(search: params)
+    # debug(socket)
 
     live_search(params["s"], params["search_limit"] || @default_limit, nil, socket)
   end
@@ -27,7 +27,7 @@ defmodule Bonfire.Search.LiveHandler do
   def live_search(q, search_limit \\ @default_limit, facet_filters \\ nil, socket)
 
   def live_search(q, search_limit, facet_filters, socket) when is_binary(search_limit) and search_limit !="" do
-    #IO.inspect(search_limit)
+    #debug(search_limit)
     search_limit = String.to_integer(search_limit) || @default_limit
     live_search(q, search_limit, facet_filters, socket)
   end
@@ -37,14 +37,14 @@ defmodule Bonfire.Search.LiveHandler do
   end
 
   def live_search(q, search_limit, facet_filters, socket) when is_binary(q) and q != "" and is_integer(search_limit) do
-    # IO.inspect(q, label: "SEARCH")
-    # IO.inspect(facet_filters, label: "TAB")
+    # debug(q, label: "SEARCH")
+    # debug(facet_filters, label: "TAB")
 
     opts = %{limit: search_limit}
 
     search = Bonfire.Search.Fuzzy.search(q, opts, ["index_type"], facet_filters)
 
-    # IO.inspect(search_results: search)
+    # debug(search_results: search)
 
     hits =
       if(is_map(search) and Map.has_key?(search, "hits") and length(search["hits"])) do
@@ -67,8 +67,8 @@ defmodule Bonfire.Search.LiveHandler do
       hits
     end
 
-    IO.inspect(hits: hits)
-    # IO.inspect(facets: facets)
+    debug(hits: hits)
+    # debug(facets: facets)
 
     # TODO use send_update to send results to ResultsLive
     {:noreply,
@@ -83,13 +83,13 @@ defmodule Bonfire.Search.LiveHandler do
   end
 
   def live_search(q, search_limit, facet_filters, socket) do
-    IO.inspect(invalid_search: search_limit)
+    debug(invalid_search: search_limit)
     {:noreply, socket}
   end
 
   # def handle_event("search", params, %{assigns: _assigns} = socket) do
-  #   IO.inspect(search: params)
-  #   IO.inspect(socket)
+  #   debug(search: params)
+  #   debug(socket)
 
   #   if(socket.view == Bonfire.Search.Web.SearchLive) do
   #     {:noreply,

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Bonfire.Search.Meili do
-  require Logger
+  import Where
 
   def search(%{} = params, index) when is_binary(index) do
     # IO.inspect(search_params: params)
@@ -10,8 +10,8 @@ defmodule Bonfire.Search.Meili do
       results
     else
       e ->
-        Logger.warn("Could not search Meili")
-        Logger.debug(inspect(e))
+        warn("Could not search Meili")
+        debug(inspect(e))
         nil
     end
   end
@@ -86,7 +86,7 @@ defmodule Bonfire.Search.Meili do
     with {:ok, %{status: code} = ret} when code == 200 or code == 201 or code == 202 <-
            Bonfire.Search.HTTP.http_request(http_method, url, headers, object) do
       # IO.inspect(ret)
-      # Logger.debug("Search - api OK")
+      # debug("Search - api OK")
       {:ok, %{ret | body: Jason.decode!(Map.get(ret, :body))}}
     else
       {_, %{body: body}} ->

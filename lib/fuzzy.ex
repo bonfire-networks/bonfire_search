@@ -1,7 +1,7 @@
 defmodule Bonfire.Search.Fuzzy do
 
   alias Bonfire.Search
-  require Logger
+  import Where
 
   @default_limit 20 # TODO: put in config
   @default_opts %{limit: @default_limit}
@@ -40,7 +40,7 @@ defmodule Bonfire.Search.Fuzzy do
     end
 
     def do_search(q, opts, calculate_facets, facet_filters) do
-      Logger.info("Search.Fuzzy: try #{q}")
+      debug("Search.Fuzzy: try #{q}")
 
       search = Search.search(q, opts, calculate_facets, facet_filters)
 

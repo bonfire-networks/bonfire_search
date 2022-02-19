@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Bonfire.Search.Indexer do
-  require Logger
+  import Where
 
   @public_index "public"
   # TODO: put in config
@@ -49,7 +49,7 @@ defmodule Bonfire.Search.Indexer do
   end
 
   def maybe_indexable_object(obj) do
-    Logger.warn("Could not index object (not pre-formated for indexing or not a struct)")
+    warn("Could not index object (not pre-formated for indexing or not a struct)")
     IO.inspect(obj)
     nil
   end
@@ -100,7 +100,7 @@ defmodule Bonfire.Search.Indexer do
   end
 
   defp delete_object(nil, _) do
-    Logger.warn("Couldn't get object ID in order to delete")
+    warn("Couldn't get object ID in order to delete")
   end
 
   defp delete_object(object_id, index_name) do

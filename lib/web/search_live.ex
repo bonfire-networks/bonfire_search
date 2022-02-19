@@ -19,7 +19,7 @@ defmodule Bonfire.Search.Web.SearchLive do
 
   defp mounted(params, session, socket) do
     # socket = init_assigns(params, session, socket)
-    # IO.inspect(params, label: "PARAMS")
+    # debug(params, label: "PARAMS")
 
     {:ok,
      socket
@@ -73,16 +73,16 @@ defmodule Bonfire.Search.Web.SearchLive do
   end
 
   def handle_event("Bonfire.Search:search", params, %{assigns: %{selected_facets: selected_facets}} = socket) when not is_nil(selected_facets) do
-    IO.inspect(search_with_facet: params)
-    # IO.inspect(socket)
+    debug(search_with_facet: params)
+    # debug(socket)
 
     {:noreply,
       socket |> Phoenix.LiveView.push_patch(to: "/search?"<>Plug.Conn.Query.encode(facet: selected_facets)<>"&s=" <> params["s"])}
   end
 
   def handle_event("Bonfire.Search:search", params, socket) do
-    # IO.inspect(search: params)
-    # IO.inspect(socket)
+    # debug(search: params)
+    # debug(socket)
 
     {:noreply,
       socket |> Phoenix.LiveView.push_patch(to: "/search?s=" <> params["s"])}
