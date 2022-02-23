@@ -37,8 +37,8 @@ defmodule Bonfire.Search.LiveHandler do
   end
 
   def live_search(q, search_limit, facet_filters, socket) when is_binary(q) and q != "" and is_integer(search_limit) do
-    # debug(q, label: "SEARCH")
-    # debug(facet_filters, label: "TAB")
+    # debug(q, "SEARCH")
+    # debug(facet_filters, "TAB")
 
     opts = %{limit: search_limit}
 
