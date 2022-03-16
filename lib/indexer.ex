@@ -36,7 +36,7 @@ defmodule Bonfire.Search.Indexer do
   end
 
   def maybe_indexable_object(%Pointers.Pointer{} = pointer) do
-    pointed_object = Bonfire.Common.Pointers.follow!(pointer)
+    pointed_object = Bonfire.Common.Pointers.get(pointer)
     maybe_indexable_object(pointed_object)
   end
 
