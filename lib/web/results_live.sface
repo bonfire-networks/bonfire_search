@@ -5,14 +5,14 @@
   class="divide-y dark:divide-base-200">
     {#for hit <- e(assigns, :hits, [])}
       <div class="lg:p-3">
-        {#case hit |> maybe_to_structs()}
+        {#case hit}
           {#match %{activity: %{id: id} = activity} = hit }
             <Bonfire.UI.Social.ActivityLive 
             id={"sa:"<>id}
             activity={Map.merge(activity, %{object: Map.drop(hit, [:activity])})} />
           {#match hit}
             <Bonfire.UI.Social.ActivityLive 
-            id={"sa:"<>e(hit, :id, Pointers.ULID.generate())}
+            id={e(hit, :index_type, "so:")<> ( e(hit, :id, nil) || Pointers.ULID.generate() )}
             activity={%{object: hit}} />
         {/case}
       </div>

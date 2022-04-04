@@ -49,7 +49,12 @@ defmodule Bonfire.Search.LiveHandler do
     hits =
       if(is_map(search) and Map.has_key?(search, "hits") and length(search["hits"])) do
         search["hits"]
-        # Enum.filter(hits, & &1)
+        |> Enum.map( # return object-like results
+          &( &1
+          |> input_to_atoms()
+          |> maybe_to_structs()
+          )
+        )
       end
 
     # note we only get proper facets when not already faceting
@@ -62,12 +67,14 @@ defmodule Bonfire.Search.LiveHandler do
 
     # TODO: make this a non-blocking operation (ie. show the other results first and then inject the result of this lookup when ready)
     hits = with {:ok, federated_object_or_character} <- Bonfire.Federate.ActivityPub.Utils.get_by_url_ap_id_or_username(q) do
-      [federated_object_or_character] ++ (hits || [])
+      [federated_object_or_character]
+      ++ (hits || [])
     else _ ->
       hits
     end
+    |> Enum.uniq_by(&(%{id: &1.id}))
 
-    debug(hits: hits)
+    debug(hits, "hits")
     # debug(facets: facets)
 
     # TODO use send_update to send results to ResultsLive
