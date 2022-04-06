@@ -66,12 +66,13 @@ defmodule Bonfire.Search.LiveHandler do
       end
 
     # TODO: make this a non-blocking operation (ie. show the other results first and then inject the result of this lookup when ready)
-    hits = with {:ok, federated_object_or_character} <- Bonfire.Federate.ActivityPub.Utils.get_by_url_ap_id_or_username(q) do
+    hits = (with {:ok, federated_object_or_character} <- Bonfire.Federate.ActivityPub.Utils.get_by_url_ap_id_or_username(q) do
       [federated_object_or_character]
       ++ (hits || [])
     else _ ->
       hits
     end
+    || [])
     |> Enum.uniq_by(&(%{id: &1.id}))
 
     debug(hits, "hits")
