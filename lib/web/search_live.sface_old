@@ -14,10 +14,10 @@
               aria-label="Navigate to the previous page"
               href="javascript:window.history.back()">
               <span class="flex items-center w-8 h-8 rounded-full place-content-center bg-blueGray-200  hover:bg-blueGray-300">
-                <svg class="w-4 h-4 text-base-content-600 " fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                <svg class="w-4 h-4 text-base-content opacity-60 " fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
               </span>
             </a>
-            <h1 class="text-xs text-base-content-800 uppercase  font-regular">{e(assigns, :num_hits, "")} {l "search results"}</h1>
+            <h1 class="text-xs text-base-content opacity-80 uppercase  font-regular">{e(assigns, :num_hits, "")} {l "search results"}</h1>
           </div>
         </div>
         <main class="mx-4 bg-base-100 border-t-8 border-gray-100   lg:mx-0">
@@ -40,7 +40,7 @@
           <label for="editor-style">Search this instance only</label>
         </div> %> -->
 
-        <div class="mt-4 mb-2 text-sm font-semibold text-base-content-400">Type</div>
+        <div class="mt-4 mb-2 text-sm font-semibold text-base-content opacity-60">Type</div>
         <ul class="flex flex-col border rounded ">
           {#for {facet, num_matches} <- e(assigns, :facets, "index_type", [])}
             <li class="p-2 text-sm font-medium  ">
