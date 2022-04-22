@@ -2,17 +2,19 @@
   id="the_search_results"
   phx-update="replace"
   data-page={ e(assigns, :page, [])}
-  class="divide-y dark:divide-base-200">
+  class="">
     {#for hit <- e(assigns, :hits, [])}
-      <div class="lg:p-3">
+      <div class="px-3">
         {#case hit}
           {#match %{activity: %{id: id} = activity} = hit }
             <Bonfire.UI.Social.ActivityLive 
             id={"sa:"<>id}
+            showing_within={:search}
             activity={Map.merge(activity, %{object: Map.drop(hit, [:activity])})} />
           {#match hit}
             <Bonfire.UI.Social.ActivityLive 
             id={e(hit, :index_type, "so:")<> ( e(hit, :id, nil) || Pointers.ULID.generate() )}
+            showing_within={:search}
             activity={%{object: hit}} />
         {/case}
       </div>

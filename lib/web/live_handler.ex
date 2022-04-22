@@ -75,7 +75,7 @@ defmodule Bonfire.Search.LiveHandler do
     || [])
     |> Enum.uniq_by(&(%{id: &1.id}))
 
-    debug(hits, "hits")
+    dump(hits, "hits")
     # debug(facets: facets)
 
     # TODO use send_update to send results to ResultsLive

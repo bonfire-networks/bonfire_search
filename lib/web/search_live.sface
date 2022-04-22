@@ -18,9 +18,9 @@
           </LiveRedirect>
         </li>
       {/if}
-      {#for {tag, num_matches} <- e(assigns, :facets, "tag_names", [])}
+      {#for {tag, num_matches} <- e(assigns, :facets, "tags", [])}
         <li>
-          <LiveRedirect class={"/search?facet[tag_names]="<>tag<>"&s=" <> e(assigns, :search, "")}>
+          <LiveRedirect to={"/search?facet[tags]="<>tag<>"&s=" <> e(assigns, :search, "")}>
             {"#{num_matches} #{tag}"}
           </LiveRedirect>
         </li>
@@ -35,7 +35,7 @@
   </ul>
   <section class="flex-grow bg-base-100 w-full h-full mx-auto shrink-0 md:mx-3 md:mr-0 lg:mr-3 w-center max-w-[580px]">
     <Bonfire.UI.Social.PageHeaderLive
-      page_title={e(assigns, :num_hits, "")}
+      page_title={l "%{num} results", num: e(assigns, :num_hits, 0)}
     />
     <div class="md:mx-0 text-base-content">              
       <Bonfire.Search.Web.ResultsLive hits={e(assigns, :hits, [])} />

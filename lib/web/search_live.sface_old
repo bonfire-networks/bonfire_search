@@ -72,9 +72,9 @@
         </ul>
 
         <ul class="mt-4">
-          {#for {tag, num_matches} <- e(assigns, :facets, "tag_names", [])}
+          {#for {tag, num_matches} <- e(assigns, :facets, "tags", [])}
             <li>
-              <LiveRedirect class={"/search?facet[tag_names]="<>tag<>"&s=" <> e(assigns, :search, "")}>
+              <LiveRedirect class={"/search?facet[tags]="<>tag<>"&s=" <> e(assigns, :search, "")}>
                 {"#{num_matches} #{tag}"}
               </LiveRedirect>
             </li>
@@ -89,9 +89,9 @@
             %> -->
             </li>
           {/if}
-          <!-- <%= for {tag, num_matches} <- e(assigns, :facets, "tag_names", []) do %>
+          <!-- <%= for {tag, num_matches} <- e(assigns, :facets, "tags", []) do %>
             <li><%= live_patch "#{num_matches} #{tag}",
-              to: " /search?facet[tag_names]="<>tag<>"&s=" <> e(assigns, :search, ""),
+              to: " /search?facet[tags]="<>tag<>"&s=" <> e(assigns, :search, ""),
               class: if e(assigns, :selected_facets, %{})[tag], do: "active", else: ""
             %></li>
           <% end %> -->
