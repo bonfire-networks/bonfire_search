@@ -38,7 +38,7 @@ defmodule Bonfire.Search.LiveHandler do
 
   def live_search(q, search_limit, facet_filters, socket) when is_binary(q) and q != "" and is_integer(search_limit) do
     # debug(q, "SEARCH")
-    # debug(facet_filters, "TAB")
+    debug(facet_filters, "TAB")
 
     opts = %{limit: search_limit}
 
@@ -76,7 +76,6 @@ defmodule Bonfire.Search.LiveHandler do
     |> Enum.uniq_by(&(%{id: &1.id}))
 
     dump(hits, "hits")
-    # debug(facets: facets)
 
     # TODO use send_update to send results to ResultsLive
     {:noreply,

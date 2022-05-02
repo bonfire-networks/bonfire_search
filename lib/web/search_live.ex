@@ -1,6 +1,5 @@
 defmodule Bonfire.Search.Web.SearchLive do
-  use Bonfire.Web, {:surface_view, [layout: {Bonfire.UI.Social.Web.LayoutView, "without_sidebar.html"}]}
-
+  use Bonfire.Web, :surface_view
   alias Bonfire.Web.LivePlugs
 
   alias Bonfire.Search.Web.ResultsLive
@@ -26,6 +25,7 @@ defmodule Bonfire.Search.Web.SearchLive do
      |> assign(
        page: "search",
        page_title: "Search",
+       selected_tab: "all",
       #  me: false,
       #  selected_facets: nil,
       #  search: "",
@@ -41,6 +41,7 @@ defmodule Bonfire.Search.Web.SearchLive do
 
 
   def handle_params(%{"s" => s} = _params, _url, socket) when s != "" do
+    IO.inspect("test 2")
     Bonfire.Search.LiveHandler.live_search(s, socket |> assign_global(search_more: true))
   end
 

@@ -9,12 +9,14 @@
           {#match %{activity: %{id: id} = activity} = hit }
             <Bonfire.UI.Social.ActivityLive 
             id={"sa:"<>id}
+            class=""
             showing_within={:search}
             activity={Map.merge(activity, %{object: Map.drop(hit, [:activity])})} />
           {#match hit}
             <Bonfire.UI.Social.ActivityLive 
             id={e(hit, :index_type, "so:")<> ( e(hit, :id, nil) || Pointers.ULID.generate() )}
             showing_within={:search}
+            class=""
             activity={%{object: hit}} />
         {/case}
       </div>
@@ -24,7 +26,7 @@
   
   <div :if={e(assigns, :has_next_page, [])} class="flex justify-center w-full p-3 mx-auto border-t cursor-pointer border-base-200 place-items-center">
     <button
-      class="relative items-center w-full px-4 py-2 text-sm font-medium text-center text-base-content bg-base-200 rounded hover:bg-base-300"
+      class="relative items-center w-full px-4 py-2 text-sm font-medium text-center rounded text-base-content bg-base-200 hover:bg-base-300"
       phx-click="Bonfire.Search:paginate">
       {l "Load more"}
      </button>
