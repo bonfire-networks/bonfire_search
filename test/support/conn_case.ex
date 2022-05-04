@@ -26,7 +26,7 @@ defmodule Bonfire.Search.ConnCase do
       import Bonfire.UI.Common.Testing.Helpers
 
       import Phoenix.LiveViewTest
-      import Bonfire.Search.ConnCase
+      # import Bonfire.Search.ConnCase
       import Bonfire.Search.Test.ConnHelpers
       import Bonfire.Search.Test.FakeHelpers
       alias Bonfire.Search.Fake
