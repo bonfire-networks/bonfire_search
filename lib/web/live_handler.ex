@@ -1,5 +1,5 @@
 defmodule Bonfire.Search.LiveHandler do
-  use Bonfire.Web, :live_handler
+  use Bonfire.UI.Common.Web, :live_handler
 
   @default_limit 20 # TODO: put in config
 
