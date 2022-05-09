@@ -1,13 +1,14 @@
+<div class="relative">
 <form
-  class=""
+  class="w-full"
   role="search"
   phx-change="Bonfire.Search:search"
   action="/search"
   method="GET">
   <label>
     <span class="sr-only">{e(assigns, :search_placeholder, "Search")}</span>
-    <div class="relative rounded-md">
-      <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none" aria-hidden="true">
+    <div class="relative w-full rounded">
+      <div class="absolute inset-y-0 right-0 flex items-center pl-3 pointer-events-none" aria-hidden="true">
         <Solid.SearchIcon class="w-4 h-4 mr-3 text-base-content text-opacity-80" />
       </div>
       
@@ -19,19 +20,21 @@
         value={e(assigns, :search, "")} 
         placeholder={e(assigns, :search_placeholder, "Search...")} 
         phx-debounce="300" 
-        class="pl-8 input"/>
+        class="w-full h-12 pr-8 text-base rounded-xl input text-base-content placeholder-base-content placeholder-opacity-80"/>
       </div>
     </label>
 </form>
-  <div :if={!e(assigns, :search_more, nil) && e(assigns, :num_hits, nil)} class="search_results">
-    <h3>{e(assigns, :num_hits, "no")} {l "results"}</h3>
+  <div :if={!e(assigns, :search_more, nil) && e(assigns, :num_hits, nil)} class="absolute left-0 right-0 z-50 w-full rounded-lg shadow top-[3.75rem] search_results menu bg-neutral">
+    <div class="p-3 text-sm border-b text-base-content border-opacity-10">{e(assigns, :num_hits, "no")} {l "total results"}</div>
     {#if e(assigns, :num_hits, 0) > 0}
-      <ResultsLive hits={e(assigns, :hits, [])} />
+      <ResultsLive search_more={e(assigns, :search_more, nil)} hits={e(assigns, :hits, [])} />
     {/if}
   
-  <LiveRedirect 
-    to={"/search?s=" <> e(assigns, :search, "")}
-    :if={e(assigns, :show_more_link, true) && e(assigns, :num_hits, nil) > e(assigns, :search_limit, 5)}>
-    {l  "Filter or show more results"}
-  </LiveRedirect>
+    <LiveRedirect 
+      class="w-full p-3 mx-auto text-center border-t link link-hover border-base-content border-opacity-10"
+      to={"/search?s=" <> e(assigns, :search, "")}
+      :if={e(assigns, :show_more_link, true) && e(assigns, :num_hits, nil) > e(assigns, :search_limit, 5)}>
+      {l  "Filter or show more results"}
+    </LiveRedirect>
+  </div>
 </div>

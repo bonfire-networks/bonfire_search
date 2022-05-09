@@ -35,7 +35,7 @@
   </ul> -->
   <section class="flex-grow bg-base-100 w-full h-full mx-auto shrink-0 md:mx-3 md:mr-0 lg:mr-3 w-center max-w-[580px] rounded-xl">
     <Bonfire.UI.Social.PageHeaderLive
-      page_title={l "%{num} results", num: e(assigns, :num_hits, 0)}
+      page_title={l "%{num} results for %{keyword}", num: e(assigns, :num_hits, 0), keyword: e(assigns, :search, "")}
     />
     <div class="md:mx-0 text-base-content">  
     <nav
@@ -55,7 +55,7 @@
       <LiveRedirect 
         class={"hover:bg-base-content hover:bg-opacity-10 flex-1 pt-2 font-semibold place-content-center flex capitalize text-base"} 
         to={"/search?facet[index_type]=Bonfire.Data.Identity.User&s=" <> e(assigns, :search, "")}>
-        <div class={"tab tab-bordered", "tab-active": @selected_tab == "users"}>
+        <div class={"tab tab-bordered", "tab-active": @selected_tab == "Bonfire.Data.Identity.User"}>
           {l "Users"}
         </div>
       </LiveRedirect>
@@ -63,18 +63,18 @@
       <LiveRedirect 
         class={"hover:bg-base-content hover:bg-opacity-10 flex-1 pt-2 font-semibold place-content-center flex capitalize text-base"} 
         to={"/search?facet[index_type]=Bonfire.Data.Social.Post&s=" <> e(assigns, :search, "")}>
-        <div class={"tab tab-bordered", "tab-active": @selected_tab == "posts"}>
+        <div class={"tab tab-bordered", "tab-active": @selected_tab == "Bonfire.Data.Social.Post"}>
           {l "Posts"}
         </div>
       </LiveRedirect>
-      <!-- HASHTAGS -->
-      <LiveRedirect 
+      
+      <!-- <LiveRedirect 
         class={"hover:bg-base-content hover:bg-opacity-10 flex-1 pt-2 font-semibold place-content-center flex capitalize text-base"} 
         to={"/search?facet[index_type]=Bonfire.Data.Identity.Tags&s="<> e(assigns, :search, "")}>
         <div class={"tab tab-bordered", "tab-active": @selected_tab == "hashtags"}>
           {l "Hashtags"}
         </div>
-      </LiveRedirect>
+      </LiveRedirect> -->
 
 
       <!-- {#for {facet, num_matches} <- e(assigns, :facets, "index_type", [])} 

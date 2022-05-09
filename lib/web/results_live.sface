@@ -4,7 +4,7 @@
   data-page={ e(assigns, :page, [])}
   class="">
     {#for hit <- e(assigns, :hits, [])}
-      <div class="px-3">
+      <div class="">
         {#case hit}
           {#match %{activity: %{id: id} = activity} = hit }
             <Bonfire.UI.Social.ActivityLive 
@@ -24,13 +24,12 @@
       <Bonfire.UI.Social.EmptyFeed/>
     {/for}
   
-  <div :if={e(assigns, :has_next_page, [])} class="flex justify-center w-full p-3 mx-auto border-t cursor-pointer border-base-200 place-items-center">
+  <!-- <div :if={e(assigns, :has_next_page, []) } class="flex justify-center w-full p-3 mx-auto border-t cursor-pointer border-base-200 place-items-center">
     <button
       class="relative items-center w-full px-4 py-2 text-sm font-medium text-center rounded text-base-content bg-base-200 hover:bg-base-300"
       phx-click="Bonfire.Search:paginate">
       {l "Load more"}
      </button>
-
-  </div>
+  </div> -->
   
 </div>
