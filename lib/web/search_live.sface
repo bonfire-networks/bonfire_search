@@ -34,7 +34,7 @@
       {/if}
   </ul> -->
   <section class="flex-grow bg-base-100 w-full h-full mx-auto shrink-0 md:mx-3 md:mr-0 lg:mr-3 w-center max-w-[580px] rounded-xl">
-    <Bonfire.UI.Social.PageHeaderLive
+    <Bonfire.UI.Common.PageHeaderLive
       page_title={l "%{num} results for %{keyword}", num: e(assigns, :num_hits, 0), keyword: e(assigns, :search, "")}
     />
     <div class="md:mx-0 text-base-content">  

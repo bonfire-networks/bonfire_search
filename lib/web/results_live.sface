@@ -25,7 +25,7 @@
         {/case}
       </div>
     {#else}
-      <Bonfire.UI.Social.EmptyFeed/>
+       <!-- no results -->
     {/for}
   
   <!-- <div :if={e(assigns, :has_next_page, []) } class="flex justify-center w-full p-3 mx-auto border-t cursor-pointer border-base-200 place-items-center">
