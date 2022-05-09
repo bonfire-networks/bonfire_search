@@ -7,17 +7,21 @@
       <div class="">
         {#case hit}
           {#match %{activity: %{id: id} = activity} = hit }
-            <Bonfire.UI.Social.ActivityLive 
-            id={"sa:"<>id}
-            class=""
-            showing_within={:search}
-            activity={Map.merge(activity, %{object: Map.drop(hit, [:activity])})} />
+            <Surface.Components.Dynamic.LiveComponent
+              module={Bonfire.UI.Social.ActivityLive}
+              id={"sa:"<>id}
+              class=""
+              showing_within={:search}
+              activity={Map.merge(activity, %{object: Map.drop(hit, [:activity])})} 
+            />
           {#match hit}
-            <Bonfire.UI.Social.ActivityLive 
-            id={e(hit, :index_type, "so:")<> ( e(hit, :id, nil) || Pointers.ULID.generate() )}
-            showing_within={:search}
-            class=""
-            activity={%{object: hit}} />
+            <Surface.Components.Dynamic.LiveComponent
+              module={Bonfire.UI.Social.ActivityLive}
+              id={e(hit, :index_type, "so:")<> ( e(hit, :id, nil) || Pointers.ULID.generate() )}
+              showing_within={:search}
+              class=""
+              activity={%{object: hit}} 
+            />
         {/case}
       </div>
     {#else}
