@@ -49,8 +49,7 @@ defmodule Bonfire.Search.Indexer do
   end
 
   def maybe_indexable_object(obj) do
-    warn("Could not index object (not pre-formated for indexing or not a struct)")
-    IO.inspect(obj)
+    warn(obj, "Could not index object (not pre-formated for indexing or not a struct)")
     nil
   end
 

@@ -75,7 +75,7 @@ defmodule Bonfire.Search.LiveHandler do
     || [])
     |> Enum.uniq_by(&(%{id: &1.id}))
 
-    dump(hits, "hits")
+    # dump(hits, "hits")
 
     # TODO use send_update to send results to ResultsLive
     {:noreply,
