@@ -38,8 +38,8 @@ defmodule Bonfire.Search.Web.SearchLive do
 
   def handle_params(%{"s" => s, "facet" => facets} = _params, _url, socket) when s != "" do
     index_type = e(facets, :index_type, nil)
-    
-    Bonfire.Search.LiveHandler.live_search(s, 20, facets, socket 
+
+    Bonfire.Search.LiveHandler.live_search(s, 20, facets, socket
     |> assign(selected_tab: index_type)
     |> assign_global(search_more: true))
   end
