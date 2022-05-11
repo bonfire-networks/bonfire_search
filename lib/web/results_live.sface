@@ -13,6 +13,8 @@
               class=""
               showing_within={:search}
               activity={Map.merge(activity, %{object: Map.drop(hit, [:activity])})} 
+              object_boundary={:skip}
+              check_object_boundary={true}
             />
           {#match hit}
             <Surface.Components.Dynamic.LiveComponent
@@ -21,6 +23,8 @@
               showing_within={:search}
               class=""
               activity={%{object: hit}} 
+              object_boundary={:skip}
+              check_object_boundary={true}
             />
         {/case}
       </div>
