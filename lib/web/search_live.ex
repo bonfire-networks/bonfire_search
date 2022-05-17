@@ -1,6 +1,6 @@
 defmodule Bonfire.Search.Web.SearchLive do
   use Bonfire.UI.Common.Web, :surface_view
-  alias Bonfire.Me.Web.LivePlugs
+  alias Bonfire.UI.Me.LivePlugs
 
   alias Bonfire.Search.Web.ResultsLive
 

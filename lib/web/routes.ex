@@ -4,13 +4,13 @@ defmodule Bonfire.Search.Web.Routes do
     quote do
 
       # pages anyone can view
-      scope "/search", Bonfire.Me.Web do
+      scope "/search", Bonfire.UI.Me do
         pipe_through :browser
 
       end
 
       # pages only guests can view
-      scope "/search", Bonfire.Me.Web do
+      scope "/search", Bonfire.UI.Me do
         pipe_through :browser
         pipe_through :guest_only
 
@@ -26,14 +26,14 @@ defmodule Bonfire.Search.Web.Routes do
       end
 
       # pages you need to view as a user
-      scope "/search", Bonfire.Me.Web do
+      scope "/search", Bonfire.UI.Me do
         pipe_through :browser
         pipe_through :user_required
 
       end
 
       # pages only admins can view
-      scope "/search", Bonfire.Me.Web do
+      scope "/search", Bonfire.UI.Me do
         pipe_through :browser
         pipe_through :admin_required
 
