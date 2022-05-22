@@ -1,6 +1,6 @@
-<main class="items-start justify-center w-full max-w-screen-xl px-3 mx-auto h-body md:flex ">
-  <!-- <ul role="navigation" class="flex-col hidden rounded height-0 shrink-0 grow-0 md:flex w-72 bg-base-100"> -->
-    <!-- <ul class="p-3 rounded menu w-72 bg-base-100">
+<main class="items-start justify-center w-full h-main max-w-screen-xl px-3 mx-auto md:flex ">
+  <!-- <ul role="navigation" class="flex-col hidden rounded height-0 shrink-0 grow-0 md:flex w-[285px] bg-base-100"> -->
+    <!-- <ul class="p-3 rounded menu w-[285px] bg-base-100">
       <li class="menu-title">
         <span>{l "Search filters"}</span>
       </li>
