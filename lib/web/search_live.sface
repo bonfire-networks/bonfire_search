@@ -1,4 +1,4 @@
-<main class="items-start justify-center w-full h-main max-w-screen-xl px-3 mx-auto md:flex ">
+<main class="items-start justify-center w-full max-w-screen-xl px-3 mx-auto h-main md:flex ">
   <!-- <ul role="navigation" class="flex-col hidden rounded height-0 shrink-0 grow-0 md:flex w-[285px] bg-base-100"> -->
     <!-- <ul class="p-3 rounded menu w-[285px] bg-base-100">
       <li class="menu-title">
@@ -33,7 +33,7 @@
         </li>
       {/if}
   </ul> -->
-  <section class="flex-grow bg-base-100 w-full h-full mx-auto shrink-0 md:mx-3 md:mr-0 lg:mr-3 w-center max-w-[580px] rounded-xl">
+  <section class="flex-grow bg-base-100 w-full h-full mx-auto shrink-0 md:mx-3 md:mr-0 lg:mr-3 w-center max-w-[600px] rounded-xl">
     <Bonfire.UI.Common.PageHeaderLive
       page_title={l "%{num} results for %{keyword}", num: e(assigns, :num_hits, 0), keyword: e(assigns, :search, "")}
     />
