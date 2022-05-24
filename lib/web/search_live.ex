@@ -36,7 +36,7 @@ defmodule Bonfire.Search.Web.SearchLive do
      )}
   end
 
-  def handle_params(%{"s" => s, "facet" => facets} = _params, _url, socket) when s != "" do
+  def do_handle_params(%{"s" => s, "facet" => facets} = _params, _url, socket) when s != "" do
     index_type = e(facets, :index_type, nil)
 
     Bonfire.Search.LiveHandler.live_search(s, 20, facets, socket
@@ -44,18 +44,26 @@ defmodule Bonfire.Search.Web.SearchLive do
     |> assign_global(search_more: true))
   end
 
-
-  def handle_params(%{"s" => s} = _params, _url, socket) when s != "" do
+  def do_handle_params(%{"s" => s} = _params, _url, socket) when s != "" do
     Bonfire.Search.LiveHandler.live_search(s, socket |> assign_global(search_more: true))
   end
 
-  def handle_params(%{"hashtag_search" => s} = _params, _url, socket) when s != "" do
+  def do_handle_params(%{"hashtag_search" => s} = _params, _url, socket) when s != "" do
     Bonfire.Search.LiveHandler.live_search("\"#{s}\"", socket |> assign_global(search_more: true))
   end
 
-  def handle_params(_params, _url, socket) do
+  def do_handle_params(_params, _url, socket) do
     {:noreply,
      socket |> assign_global(search_more: true)}
+  end
+
+  def handle_params(params, uri, socket) do
+    # poor man's hook I guess
+    with {_, socket} <- Bonfire.UI.Common.LiveHandlers.handle_params(params, uri, socket) do
+      undead_params(socket, fn ->
+        do_handle_params(params, uri, socket)
+      end)
+    end
   end
 
   defp type_name(name) do
