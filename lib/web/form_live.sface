@@ -18,7 +18,7 @@
         name="s" 
         autocomplete="off" 
         value={e(assigns, :search, "")} 
-        placeholder={e(assigns, :search_placeholder, "Search...")} 
+        placeholder={e(assigns, :search_placeholder, l "Search...")} 
         phx-debounce="300" 
         class="w-full h-12 pr-8 text-base rounded-xl input text-base-content placeholder-base-content placeholder-opacity-80"/>
       </div>
