@@ -87,7 +87,7 @@ defmodule Bonfire.Search.Web.SearchLive do
     # debug(socket)
 
     {:noreply,
-      socket |> Phoenix.LiveView.push_patch(to: "/search?"<>Plug.Conn.Query.encode(facet: selected_facets)<>"&s=" <> params["s"])}
+      socket |> patch_to("/search?"<>Plug.Conn.Query.encode(facet: selected_facets)<>"&s=" <> params["s"])}
   end
 
   def handle_event("Bonfire.Search:search", params, socket) do
@@ -95,7 +95,7 @@ defmodule Bonfire.Search.Web.SearchLive do
     # debug(socket)
 
     {:noreply,
-      socket |> Phoenix.LiveView.push_patch(to: "/search?s=" <> params["s"])}
+      socket |> patch_to("/search?s=" <> params["s"])}
   end
 
   def handle_event(action, attrs, socket), do: Bonfire.UI.Common.LiveHandlers.handle_event(action, attrs, socket, __MODULE__)
