@@ -100,10 +100,10 @@ defmodule Bonfire.Search.LiveHandler do
 
   #   if(socket.view == Bonfire.Search.Web.SearchLive) do
   #     {:noreply,
-  #     socket |> Phoenix.LiveView.push_patch(to: "/instance/search/all/" <> params["search_field"]["query"])}
+  #     socket |> patch_to("/instance/search/all/" <> params["search_field"]["query"])}
   #   else
   #     {:noreply,
-  #     socket |> Phoenix.LiveView.push_redirect(to: "/instance/search/all/" <> params["search_field"]["query"])}
+  #     socket |> redirect_to("/instance/search/all/" <> params["search_field"]["query"])}
   #   end
   # end
 
