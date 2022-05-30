@@ -1,97 +1,39 @@
-<main class="items-start justify-center w-full max-w-screen-xl px-3 mx-auto h-main md:flex ">
-  <!-- <ul role="navigation" class="flex-col hidden rounded height-0 shrink-0 grow-0 md:flex w-[285px] bg-base-100"> -->
-    <!-- <ul class="p-3 rounded menu w-[285px] bg-base-100">
-      <li class="menu-title">
-        <span>{l "Search filters"}</span>
-      </li>
-      {#for {facet, num_matches} <- e(assigns, :facets, "index_type", [])}
-        <li>
-          <LiveRedirect to={"/search?facet[index_type]="<>facet<>"&s=" <> e(assigns, :search, "")}>
-            {link_body(facet, num_matches)}
-          </LiveRedirect>
-        </li>
-      {/for}
-      {#if e(assigns, :selected_facets, nil)}
-        <li>
-          <LiveRedirect to={"/search?s=" <> e(assigns, :search, "")}>
-            {l "All types"}
-          </LiveRedirect>
-        </li>
-      {/if}
-      {#for {tag, num_matches} <- e(assigns, :facets, "tags", [])}
-        <li>
-          <LiveRedirect to={"/search?facet[tags]="<>tag<>"&s=" <> e(assigns, :search, "")}>
-            {"#{num_matches} #{tag}"}
-          </LiveRedirect>
-        </li>
-      {/for}
-      {#if e(assigns, :selected_facets, [])}
-        <li class="">
-          <LiveRedirect to={"/search?s=" <> e(assigns, :search, "")}>
-            {l "All tags"}
-          </LiveRedirect>
-        </li>
-      {/if}
-  </ul> -->
-  <section class="flex-grow bg-base-100 w-full h-full mx-auto shrink-0 md:mx-3 md:mr-0 lg:mr-3 w-center max-w-[600px] rounded-md">
+<main class="flex flex-col h-body">
     <Bonfire.UI.Common.PageHeaderLive
       page_title={l "%{num} results for %{keyword}", num: e(assigns, :num_hits, 0), keyword: e(assigns, :search, "")}
     />
-    <div class="md:mx-0 text-base-content">  
-    <nav
-      role="tabpanel"
-      class="flex justify-between w-full pt-2 mb-2 border-b bg-base-200 tabs border-base-content border-opacity-10"
-      aria-label="Switch between search filter tabs"
-    >
-      <!-- ALL TYPES -->
-      <LiveRedirect
-        class={"hover:bg-base-content hover:bg-opacity-10 flex-1 pt-2 font-semibold place-content-center flex capitalize text-base"}  
-        to={"/search?s=" <> e(assigns, :search, "")}>
-        <div class={"tab tab-bordered", "tab-active": @selected_tab == "all"}>
-          {l "All types"}
-        </div>
-      </LiveRedirect>
-      <!-- USERS -->
-      <LiveRedirect 
-        class={"hover:bg-base-content hover:bg-opacity-10 flex-1 pt-2 font-semibold place-content-center flex capitalize text-base"} 
-        to={"/search?facet[index_type]=Bonfire.Data.Identity.User&s=" <> e(assigns, :search, "")}>
-        <div class={"tab tab-bordered", "tab-active": @selected_tab == "Bonfire.Data.Identity.User"}>
-          {l "Users"}
-        </div>
-      </LiveRedirect>
-      <!-- POSTS -->
-      <LiveRedirect 
-        class={"hover:bg-base-content hover:bg-opacity-10 flex-1 pt-2 font-semibold place-content-center flex capitalize text-base"} 
-        to={"/search?facet[index_type]=Bonfire.Data.Social.Post&s=" <> e(assigns, :search, "")}>
-        <div class={"tab tab-bordered", "tab-active": @selected_tab == "Bonfire.Data.Social.Post"}>
-          {l "Posts"}
-        </div>
-      </LiveRedirect>
-      
-      <!-- <LiveRedirect 
-        class={"hover:bg-base-content hover:bg-opacity-10 flex-1 pt-2 font-semibold place-content-center flex capitalize text-base"} 
-        to={"/search?facet[index_type]=Bonfire.Data.Identity.Tags&s="<> e(assigns, :search, "")}>
-        <div class={"tab tab-bordered", "tab-active": @selected_tab == "hashtags"}>
-          {l "Hashtags"}
-        </div>
-      </LiveRedirect> -->
-
-
-      <!-- {#for {facet, num_matches} <- e(assigns, :facets, "index_type", [])} 
-        <LiveRedirect 
-          class={"hover:bg-base-content hover:bg-opacity-10 flex-1 pt-2 font-normal place-content-center flex capitalize text-base"} 
-          to={"/search?facet[index_type]="<>facet<>"&s=" <> e(assigns, :search, "")}>
-          <div class={"tab tab-bordered"}>
-            {link_body(facet, num_matches)}
+    <div class="flex-1 bg-base-100 rounded-b-md">  
+      <nav
+        role="tabpanel"
+        class="flex justify-between w-full pt-2 mb-2 border-b bg-base-200 tabs border-base-content border-opacity-10"
+        aria-label="Switch between search filter tabs"
+      >
+        <!-- ALL TYPES -->
+        <LiveRedirect
+          class={"hover:bg-base-content hover:bg-opacity-10 flex-1 pt-2 font-semibold place-content-center flex capitalize text-base"}  
+          to={"/search?s=" <> e(assigns, :search, "")}>
+          <div class={"tab tab-bordered", "tab-active": @selected_tab == "all"}>
+            {l "All types"}
           </div>
         </LiveRedirect>
-      {/for} -->
-    </nav>
+        <!-- USERS -->
+        <LiveRedirect 
+          class={"hover:bg-base-content hover:bg-opacity-10 flex-1 pt-2 font-semibold place-content-center flex capitalize text-base"} 
+          to={"/search?facet[index_type]=Bonfire.Data.Identity.User&s=" <> e(assigns, :search, "")}>
+          <div class={"tab tab-bordered", "tab-active": @selected_tab == "Bonfire.Data.Identity.User"}>
+            {l "Users"}
+          </div>
+        </LiveRedirect>
+        <!-- POSTS -->
+        <LiveRedirect 
+          class={"hover:bg-base-content hover:bg-opacity-10 flex-1 pt-2 font-semibold place-content-center flex capitalize text-base"} 
+          to={"/search?facet[index_type]=Bonfire.Data.Social.Post&s=" <> e(assigns, :search, "")}>
+          <div class={"tab tab-bordered", "tab-active": @selected_tab == "Bonfire.Data.Social.Post"}>
+            {l "Posts"}
+          </div>
+        </LiveRedirect>
+      </nav>
             
       <Bonfire.Search.Web.ResultsLive hits={e(assigns, :hits, [])} />
-    </div>
-  </section>
-    <div class="w-[285px] justify-start hidden h-full overflow-hidden pointer-events-none lg:flex">
-      <div class="top-[76px] bottom-[16px] fixed h-full pointer-events-auto"></div>
-    </div>
+    </div> 
 </main>
