@@ -1,7 +1,10 @@
 <main class="flex flex-col h-body">
-    <Bonfire.UI.Common.PageHeaderLive
-      page_title={l "%{num} results for %{keyword}", num: e(assigns, :num_hits, 0), keyword: e(assigns, :search, "")}
-    />
+    <Bonfire.UI.Common.PageHeaderLive>
+      <h1 class="hidden ml-3 font-bold tablet:block text-base-content">{l "%{num} results for %{keyword}", num: e(assigns, :num_hits, 0), keyword: e(assigns, :search, "")}</h1> 
+      <div class="flex-1 tablet:hidden">
+        <Bonfire.Search.Web.FormLive />
+      </div>
+    </Bonfire.UI.Common.PageHeaderLive>
     <div class="flex-1 bg-base-100 rounded-b-md">  
       <nav
         role="tabpanel"
