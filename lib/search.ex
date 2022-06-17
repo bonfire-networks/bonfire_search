@@ -1,5 +1,5 @@
 # check that this extension is configured
-Bonfire.Common.Config.require_extension_config!(:bonfire_search)
+# Bonfire.Common.Config.require_extension_config!(:bonfire_search)
 
 # SPDX-License-Identifier: AGPL-3.0-only
 defmodule Bonfire.Search do
