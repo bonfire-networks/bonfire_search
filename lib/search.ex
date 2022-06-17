@@ -6,7 +6,7 @@ defmodule Bonfire.Search do
   import Where
   alias Bonfire.Common.Utils
 
-  @adapter Bonfire.Common.Config.get_ext!(:bonfire_search, :adapter)
+  def adapter, do: Bonfire.Common.Config.get_ext!(:bonfire_search, :adapter)
 
   def public_index(), do: Bonfire.Common.Config.get_ext(:bonfire_search, :public_index, "public")
 
@@ -98,7 +98,7 @@ defmodule Bonfire.Search do
   end
 
   def search(object, index) when is_map(object) and is_binary(index) do
-    @adapter.search(object, index)
+    adapter().search(object, index)
   end
 
   def search(object, _) when is_map(object) do

@@ -2,12 +2,11 @@
 
 defmodule Bonfire.Search.Indexer do
   import Where
+  import Bonfire.Search, only: [adapter: 0]
 
   @public_index "public"
   # TODO: put in config
   @public_facets ["index_type", "index_instance", "tags"]
-
-  @adapter Bonfire.Common.Config.get_ext!(:bonfire_search, :adapter)
 
   use Bonfire.Common.Utils, only: [maybe_get: 2, maybe_get: 3, ulid: 1]
 
@@ -69,7 +68,7 @@ defmodule Bonfire.Search.Indexer do
       # FIXME - should create the index only once
       if init_index_first, do: init_index(index_name, true)
 
-      @adapter.put(objects, index_name <> "/documents")
+      adapter().put(objects, index_name <> "/documents")
     end
   end
 
@@ -83,14 +82,14 @@ defmodule Bonfire.Search.Indexer do
   def init_index(index_name \\ "public", fail_silently \\ false)
 
   def init_index("public" = index_name, fail_silently) do
-    @adapter.create_index(index_name, fail_silently)
+    adapter().create_index(index_name, fail_silently)
 
     # define facets to be used for filtering main search index
-    @adapter.set_facets(index_name, @public_facets)
+    adapter().set_facets(index_name, @public_facets)
   end
 
   def init_index(index_name, fail_silently) do
-    @adapter.create_index(index_name, fail_silently)
+    adapter().create_index(index_name, fail_silently)
   end
 
   def maybe_delete_object(object, index_name \\ "public") do
@@ -103,7 +102,7 @@ defmodule Bonfire.Search.Indexer do
   end
 
   defp delete_object(object_id, index_name) do
-    @adapter.delete(object_id, index_name)
+    adapter().delete(object_id, index_name)
   end
 
   def host(url) when is_binary(url) do
