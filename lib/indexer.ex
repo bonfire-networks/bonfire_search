@@ -35,22 +35,56 @@ defmodule Bonfire.Search.Indexer do
     object
   end
 
-  def maybe_indexable_object(%Pointers.Pointer{} = pointer) do
-    pointed_object = Bonfire.Common.Pointers.get(pointer)
-    maybe_indexable_object(pointed_object)
+  def maybe_indexable_object(%Bonfire.Data.Identity.User{} = object) do
+    maybe_indexable_and_discoverable(object, object)
+  end
+  def maybe_indexable_object(%{subject: %{id: _} = creator} = object) do
+    maybe_indexable_and_discoverable(creator, object)
+  end
+  def maybe_indexable_object(%{subject: %{character: %{id: _} = creator}} = object) do
+    maybe_indexable_and_discoverable(creator, object)
+  end
+  def maybe_indexable_object(%{creator: %{id: _} = creator} = object) do
+    maybe_indexable_and_discoverable(creator, object)
+  end
+  def maybe_indexable_object(%{created: %{creator: %{id: _} = creator}} = object) do
+    maybe_indexable_and_discoverable(creator, object)
+  end
+  def maybe_indexable_object(%{activity: %{created: %{creator: %{id: _} = creator}}} = object) do
+    maybe_indexable_and_discoverable(creator, object)
+  end
+  def maybe_indexable_object(%{activity: %{object: %{created: %{creator: %{id: _} = creator}}}} = object) do
+    maybe_indexable_and_discoverable(creator, object)
+  end
+  def maybe_indexable_object(%{object: %{created: %{creator: %{id: _} = creator}}} = object) do
+    maybe_indexable_and_discoverable(creator, object)
   end
 
-  def maybe_indexable_object(%{__struct__: object_type} = object) do
-    Bonfire.Common.ContextModules.maybe_apply(
-      object_type,
-      :indexing_object_format,
-      object
-    )
+  def maybe_indexable_object(%Pointers.Pointer{} = pointer) do
+    Bonfire.Common.Pointers.get(pointer)
+    |> maybe_indexable_object()
+  end
+
+  def maybe_indexable_object(%{__struct__: _} = object) do
+    warn("Could not identify creator to determine if they allow discoverability. Indexing by default...")
+    do_indexable_object(object)
   end
 
   def maybe_indexable_object(obj) do
     warn(obj, "Could not index object (not pre-formated for indexing or not a struct)")
     nil
+  end
+
+  def maybe_indexable_and_discoverable(creator, object) do
+    if Bonfire.Me.Settings.get([Bonfire.Me.Users, :discoverable], true, current_user: creator), do: do_indexable_object(object)
+  end
+
+  defp do_indexable_object(%{__struct__: object_type} = object) do
+    Bonfire.Common.ContextModules.maybe_apply(
+      object_type,
+      :indexing_object_format,
+      object
+    )
   end
 
   # add to general instance search index
