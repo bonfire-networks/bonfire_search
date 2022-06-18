@@ -45,6 +45,14 @@ defmodule Bonfire.Search.Meili do
     set_facets(index_name, [facet])
   end
 
+  def set_searchable_fields(index_name, fields) do
+    post(
+      fields,
+      index_name <> "/settings/searchable-attributes",
+      false
+    )
+  end
+
   def get(object) do
     get(object, "")
   end

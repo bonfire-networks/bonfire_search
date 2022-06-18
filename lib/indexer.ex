@@ -7,6 +7,7 @@ defmodule Bonfire.Search.Indexer do
   @public_index "public"
   # TODO: put in config
   @public_facets ["index_type", "index_instance", "tags"]
+  @public_searcheable_fields ["character.username", "profile.name", "post_content.name", "post_content.summary", "tags", "post_content.html_body"]
 
   use Bonfire.Common.Utils, only: [maybe_get: 2, maybe_get: 3, ulid: 1]
 
@@ -86,6 +87,7 @@ defmodule Bonfire.Search.Indexer do
 
     # define facets to be used for filtering main search index
     adapter().set_facets(index_name, @public_facets)
+    adapter().set_searchable_fields(index_name, @public_searcheable_fields)
   end
 
   def init_index(index_name, fail_silently) do

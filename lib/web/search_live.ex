@@ -49,7 +49,7 @@ defmodule Bonfire.Search.Web.SearchLive do
   end
 
   def do_handle_params(%{"hashtag_search" => s} = _params, _url, socket) when s != "" do
-    Bonfire.Search.LiveHandler.live_search("\"#{s}\"", socket |> assign_global(search_more: true))
+    Bonfire.Search.LiveHandler.live_search("##{s}", socket |> assign_global(search_more: true))
   end
 
   def do_handle_params(_params, _url, socket) do
