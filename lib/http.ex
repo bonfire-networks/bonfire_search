@@ -2,13 +2,16 @@
 
 defmodule Bonfire.Search.HTTP do
   import Where
-  alias ActivityPub.HTTP # FIXME: use something else?
+
+  def http_adapter(), do: Bonfire.Common.Config.get_ext!(:bonfire_search, :http_adapter)
 
   def http_request(http_method, url, headers, object \\ nil) do
+    http_adapter = http_adapter()
+
     if(http_method == :get) do
       query_str = URI.encode_query(object)
       url = url <> "?" <> query_str
-      apply(HTTP, http_method, [url, headers])
+      apply(http_adapter, http_method, [url, headers])
     else
 
       json = if object && object !="" && object !=%{} && object !=:ok do
@@ -18,7 +21,7 @@ defmodule Bonfire.Search.HTTP do
       end
 
       # IO.inspect(json: json)
-      apply(HTTP, http_method, [url, json, headers])
+      apply(http_adapter, http_method, [url, json, headers])
     end
   end
 
@@ -26,21 +29,21 @@ defmodule Bonfire.Search.HTTP do
     :ok
   end
 
-  if Mix.env() == :test do
-    def http_error(_, http_method, message, _object, url) do
-      debug("Search - Could not #{http_method} objects on #{url}: #{inspect message}")
-      {:error, message}
-    end
-  end
+  case Mix.env() do
+    :dev ->
+      def http_error(_, http_method, message, object, url) do
+        error(object, "Search - Could not #{http_method} object on #{url}: #{inspect message}")
+        {:error, message}
+      end
 
-  if Mix.env() == :dev do
-    def http_error(_, http_method, message, object, url) do
-      error("Search - Could not #{http_method} object on #{url}: #{inspect message}")
-      debug(inspect(object))
-      {:error, message}
-    end
-  else
-    def http_error(_, http_method, message, _object, url) do
+    :test ->
+      def http_error(_, http_method, message, _object, url) do
+        debug("Search - Could not #{http_method} objects on #{url}: #{inspect message}")
+        {:error, message}
+      end
+
+    _ ->
+      def http_error(_, http_method, message, _object, url) do
       warn("Search - Could not #{http_method} object on #{url}: #{inspect message}")
       :ok
     end

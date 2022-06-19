@@ -1,6 +1,7 @@
 import Config
 
 config :bonfire_search,
+  http_adapter: Bonfire.Common.HTTP,
   disable_indexing: System.get_env("SEARCH_INDEXING_DISABLED", "false"),
   adapter: Bonfire.Search.Meili,
   instance: System.get_env("SEARCH_MEILI_INSTANCE", "http://search:7700"), # protocol, hostname and port
