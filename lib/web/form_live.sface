@@ -5,13 +5,8 @@
   phx-change="Bonfire.Search:search"
   action="/search"
   method="GET">
-  <label>
     <span class="sr-only">{e(assigns, :search_placeholder, "Search")}</span>
     <div class="relative w-full rounded">
-      <div class="absolute inset-y-0 right-0 flex items-center pl-3 pointer-events-none" aria-hidden="true">
-        <Solid.SearchIcon class="w-4 h-4 mr-3 text-base-content text-opacity-80" />
-      </div>
-      
       <input type="hidden" name="search_limit" value={e(assigns, :search_limit, "")}>
       <input 
         type="search" 
@@ -20,9 +15,11 @@
         value={e(assigns, :search, "")} 
         placeholder={e(assigns, :search_placeholder, l "Search...")} 
         phx-debounce="300" 
-        class="w-full h-12 pr-8 text-base rounded-md input text-base-content placeholder-base-content placeholder-opacity-80"/>
+        class="z-10 w-full h-12 pr-8 text-base rounded-md input text-base-content placeholder-base-content placeholder-opacity-80"/>
+        <button type="submit" class="absolute top-[6px] right-[6px] z-30 flex items-center pl-1  cursor-pointer btn btn-sm w-[36px] h-[36px] btn-ghost  btn-square" >
+          <Solid.SearchIcon class="w-5 h-5 text-base-content text-opacity-80" />
+        </button>
       </div>
-    </label>
 </form>
   <div :if={!e(assigns, :search_more, nil) && e(assigns, :num_hits, nil)} class="absolute left-0 right-0 z-50 w-full rounded-lg shadow top-[3.75rem] search_results menu bg-neutral">
     <div class="p-3 text-sm border-b text-base-content border-opacity-10">{e(assigns, :num_hits, "no")} {l "total results"}</div>
