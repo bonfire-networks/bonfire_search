@@ -1,6 +1,3 @@
-<!-- <Bonfire.UI.Common.PageHeaderLive>
-  <h1 class="hidden ml-3 font-bold tablet:block text-base-content">{l "%{num} results for %{keyword}", num: e(assigns, :num_hits, 0), keyword: e(assigns, :search, "")}</h1> 
-</Bonfire.UI.Common.PageHeaderLive> -->
   <div class="flex-1 m-3 border rounded-md bg-base-200 border-base-content/10 tablet:hidden">
     <Bonfire.Search.Web.FormLive />
   </div>
@@ -14,7 +11,7 @@
     <!-- ALL TYPES -->
     <LiveRedirect
       class={"hover:bg-base-content/10 group flex-1 pt-2 font-semibold place-content-center flex capitalize text-base"}  
-      to={"/search?s=" <> e(assigns, :search, "")}>
+      to={"/search?s=" <> e(@search, "")}>
       <div class={"tab tab-bordered group-hover:text-opacity-100", "tab-active": @selected_tab == "all"}>
         {l "All types"}
       </div>
@@ -22,7 +19,7 @@
     <!-- USERS -->
     <LiveRedirect 
       class={"hover:bg-base-content/10 group flex-1 pt-2 font-semibold place-content-center flex capitalize text-base"} 
-      to={"/search?facet[index_type]=Bonfire.Data.Identity.User&s=" <> e(assigns, :search, "")}>
+      to={"/search?facet[index_type]=Bonfire.Data.Identity.User&s=" <> e(@search, "")}>
       <div class={"tab tab-bordered group-hover:text-opacity-100", "tab-active": @selected_tab == "Bonfire.Data.Identity.User"}>
         {l "Users"}
       </div>
@@ -30,12 +27,12 @@
     <!-- POSTS -->
     <LiveRedirect 
       class={"hover:bg-base-content/10 group flex-1 pt-2 font-semibold place-content-center flex capitalize text-base"} 
-      to={"/search?facet[index_type]=Bonfire.Data.Social.Post&s=" <> e(assigns, :search, "")}>
+      to={"/search?facet[index_type]=Bonfire.Data.Social.Post&s=" <> e(@search, "")}>
       <div class={"tab tab-bordered group-hover:text-opacity-100", "tab-active": @selected_tab == "Bonfire.Data.Social.Post"}>
         {l "Posts"}
       </div>
     </LiveRedirect>
   </nav>
         
-  <Bonfire.Search.Web.ResultsLive hits={e(assigns, :hits, [])} />
+  <Bonfire.Search.Web.ResultsLive hits={e(@hits, [])} />
 </div> 

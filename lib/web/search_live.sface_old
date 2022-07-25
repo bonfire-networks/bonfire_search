@@ -4,8 +4,8 @@
         live_component(
           @socket,
           Bonfire.Search.Web.FormLive,
-          search: e(assigns, :search, ""),
-          page: e(assigns, :page, 1)
+          search: e(@search, ""),
+          page: e(@page, 1)
         )
           %> -->
         <div class="flex items-center p-3">
@@ -17,7 +17,7 @@
                 <svg class="w-4 h-4 text-base-content opacity-60 " fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
               </span>
             </a>
-            <h1 class="text-xs text-base-content opacity-80 uppercase  font-regular">{e(assigns, :num_hits, "")} {l "search results"}</h1>
+            <h1 class="text-xs text-base-content opacity-80 uppercase  font-regular">{e(@num_hits, "")} {l "search results"}</h1>
           </div>
         </div>
         <main class="mx-4 bg-base-100 border-t-8 border-gray-100   lg:mx-0">
@@ -25,7 +25,7 @@
             @socket,
             ResultsLive,
             assigns_merge(assigns,
-              hits: e(assigns, :hits, [])
+              hits: e(@hits, [])
             )
           )}
           </main>
@@ -42,62 +42,62 @@
 
         <div class="mt-4 mb-2 text-sm font-semibold text-base-content opacity-60">Type</div>
         <ul class="flex flex-col border rounded ">
-          {#for {facet, num_matches} <- e(assigns, :facets, "index_type", [])}
+          {#for {facet, num_matches} <- e(@facets, "index_type", [])}
             <li class="p-2 text-sm font-medium  ">
-              <LiveRedirect to={"/search?facet[index_type]="<>facet<>"&s=" <> e(assigns, :search, "")}>
+              <LiveRedirect to={"/search?facet[index_type]="<>facet<>"&s=" <> e(@search, "")}>
                 {link_body(facet, num_matches)}
               </LiveRedirect>
             </li>
           {/for}
-          {#if e(assigns, :selected_facets, nil)}
+          {#if e(@selected_facets, nil)}
             <li class="p-2 text-sm font-medium  ">
-              <LiveRedirect to={"/search?s=" <> e(assigns, :search, "")}>
+              <LiveRedirect to={"/search?s=" <> e(@search, "")}>
                 {l "All types"}
               </LiveRedirect>
             </li>
           {/if}
-          <!-- <%= for {facet, num_matches} <- e(assigns, :facets, "index_type", []) do %>
+          <!-- <%= for {facet, num_matches} <- e(@facets, "index_type", []) do %>
             <li class="p-2 text-sm font-medium  ">
               <%= live_patch link_body(facet, num_matches),
-                to: " /search?facet[index_type]="<>facet<>"&s=" <> e(assigns, :search, ""),
-                class: if e(assigns, :selected_facets, %{})[facet], do: "bg-neutral", else: "block"
+                to: " /search?facet[index_type]="<>facet<>"&s=" <> e(@search, ""),
+                class: if e(@selected_facets, %{})[facet], do: "bg-neutral", else: "block"
             %></li>
           <% end %> -->
-          <!-- <%= if e(assigns, :selected_facets, nil) do %>
+          <!-- <%= if e(@selected_facets, nil) do %>
             <li class="p-2 text-sm font-medium  "><%= live_patch "All types",
-              to: " /search?s=" <> e(assigns, :search, ""),
+              to: " /search?s=" <> e(@search, ""),
               class: "block"
             %></li>
           <% end %> -->
         </ul>
 
         <ul class="mt-4">
-          {#for {tag, num_matches} <- e(assigns, :facets, "tags", [])}
+          {#for {tag, num_matches} <- e(@facets, "tags", [])}
             <li>
-              <LiveRedirect class={"/search?facet[tags]="<>tag<>"&s=" <> e(assigns, :search, "")}>
+              <LiveRedirect class={"/search?facet[tags]="<>tag<>"&s=" <> e(@search, "")}>
                 {"#{num_matches} #{tag}"}
               </LiveRedirect>
             </li>
           {/for}
-          {#if e(assigns, :selected_facets, [])}
+          {#if e(@selected_facets, [])}
             <li class="text-sm font-medium ">
-              <LiveRedirect to={"/search?s=" <> e(assigns, :search, "")}>
+              <LiveRedirect to={"/search?s=" <> e(@search, "")}>
                 {l "All tags"}
               </LiveRedirect>
             <!-- <%= live_patch "All tags",
-              to: " /search?s=" <> e(assigns, :search, "")
+              to: " /search?s=" <> e(@search, "")
             %> -->
             </li>
           {/if}
-          <!-- <%= for {tag, num_matches} <- e(assigns, :facets, "tags", []) do %>
+          <!-- <%= for {tag, num_matches} <- e(@facets, "tags", []) do %>
             <li><%= live_patch "#{num_matches} #{tag}",
-              to: " /search?facet[tags]="<>tag<>"&s=" <> e(assigns, :search, ""),
-              class: if e(assigns, :selected_facets, %{})[tag], do: "active", else: ""
+              to: " /search?facet[tags]="<>tag<>"&s=" <> e(@search, ""),
+              class: if e(@selected_facets, %{})[tag], do: "active", else: ""
             %></li>
           <% end %> -->
-          <!-- <%= if e(assigns, :selected_facets, []) do %>
+          <!-- <%= if e(@selected_facets, []) do %>
             <li class="text-sm font-medium "><%= live_patch "All tags",
-              to: " /search?s=" <> e(assigns, :search, "")
+              to: " /search?s=" <> e(@search, "")
             %></li>
           <% end %> -->
         </ul>
