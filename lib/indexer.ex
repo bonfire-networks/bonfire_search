@@ -139,6 +139,7 @@ defmodule Bonfire.Search.Indexer do
 
   defp delete_object(object_id, index_name) do
     adapter().delete(object_id, index_name)
+    |> debug()
   end
 
   def host(url) when is_binary(url) do
