@@ -34,10 +34,9 @@ defmodule Bonfire.Search.Meili do
   end
 
   def set_facets(index_name, facets) when is_list(facets) do
-    post(
+    settings(
       %{"filterableAttributes" => facets},
-      index_name <> "/settings",
-      false
+      index_name
     )
   end
 
@@ -46,10 +45,9 @@ defmodule Bonfire.Search.Meili do
   end
 
   def set_searchable_fields(index_name, fields) do
-    post(
-      fields,
-      index_name <> "/settings/searchable-attributes",
-      false
+    settings(
+      %{"searchableAttributes"=> fields},
+      index_name
     )
   end
 
@@ -69,12 +67,16 @@ defmodule Bonfire.Search.Meili do
     api(:put, object, index_path, fail_silently) #|> IO.inspect
   end
 
+  def patch(object, index_path \\ "", fail_silently \\ false) do
+    api(:patch, object, index_path, fail_silently) #|> IO.inspect
+  end
+
   def delete(object, index_path \\ "", fail_silently \\ false) do
     api(:delete, object, index_path, fail_silently) #|> IO.inspect
   end
 
   def settings(object, index) do
-    post(object, index <> "/settings")
+    patch(object, index <> "/settings")
   end
 
   def api(http_method, object, index_path, fail_silently \\ false) do
@@ -89,7 +91,7 @@ defmodule Bonfire.Search.Meili do
       {"Content-type", "application/json"}
     ]
 
-    # IO.inspect(api: object)
+    debug(object, "object to #{http_method}")
 
     with {:ok, %{status: code} = ret} when code == 200 or code == 201 or code == 202 <-
            Bonfire.Search.HTTP.http_request(http_method, url, headers, object) do
@@ -97,12 +99,12 @@ defmodule Bonfire.Search.Meili do
       # debug("Search - api OK")
       {:ok, %{ret | body: Jason.decode!(Map.get(ret, :body))}}
     else
-      {_, %{body: body}} ->
+      {_, %{body: body, status: code}} ->
         case Jason.decode(body) do
           {:ok, body} ->
-            Bonfire.Search.HTTP.http_error(fail_silently, http_method, body, object, url)
+            Bonfire.Search.HTTP.http_error(fail_silently, http_method, %{code: code, body: body}, object, url)
           _e ->
-            Bonfire.Search.HTTP.http_error(fail_silently, http_method, body, object, url)
+            Bonfire.Search.HTTP.http_error(fail_silently, http_method, %{code: code, body: body}, object, url)
         end
       {_, message} ->
         Bonfire.Search.HTTP.http_error(fail_silently, http_method, message, object, url)

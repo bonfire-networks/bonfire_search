@@ -29,10 +29,10 @@ defmodule Bonfire.Search.HTTP do
     :ok
   end
 
-  case Mix.env() do
+  case Bonfire.Common.Config.get(:env) || Mix.env() do
     :dev ->
       def http_error(_, http_method, message, object, url) do
-        error(object, "Search - Could not #{http_method} object on #{url}: #{inspect message}")
+        error(object, "Search - Could not #{http_method} object on #{url}, got: #{inspect message} \n -- Sent object")
         {:error, message}
       end
 
@@ -42,11 +42,13 @@ defmodule Bonfire.Search.HTTP do
         {:error, message}
       end
 
-    _ ->
+    env ->
+      # debug(env)
+
       def http_error(_, http_method, message, _object, url) do
-      warn("Search - Could not #{http_method} object on #{url}: #{inspect message}")
-      :ok
-    end
+        warn("Search - Could not #{http_method} object on #{url}: #{inspect message}")
+        :ok
+      end
   end
 
 end
