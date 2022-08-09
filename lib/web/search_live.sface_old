@@ -49,7 +49,7 @@
               </LiveRedirect>
             </li>
           {/for}
-          {#if e(@selected_facets, nil)}
+          {#if @selected_facets}
             <li class="p-2 text-sm font-medium  ">
               <LiveRedirect to={"/search?s=" <> e(@search, "")}>
                 {l "All types"}
@@ -63,7 +63,7 @@
                 class: if e(@selected_facets, %{})[facet], do: "bg-neutral", else: "block"
             %></li>
           <% end %> -->
-          <!-- <%= if e(@selected_facets, nil) do %>
+          <!-- <%= if @selected_facets do %>
             <li class="p-2 text-sm font-medium  "><%= live_patch "All types",
               to: " /search?s=" <> e(@search, ""),
               class: "block"

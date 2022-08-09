@@ -21,16 +21,16 @@
         </button>
       </div>
 </form>
-  <div :if={!e(@search_more, nil) && e(@num_hits, nil)} class="absolute left-0 right-0 z-50 w-full rounded-lg top-[3.75rem] search_results menu bg-base-100">
+  <div :if={!@search_more && @num_hits} class="absolute left-0 right-0 z-50 w-full rounded-lg top-[3.75rem] search_results menu bg-base-100">
     <div class="p-3 text-sm border-b border-base-content/10 text-base-content">{e(@num_hits, "no")} {l "total results"}</div>
     {#if e(@num_hits, 0) > 0}
-      <ResultsLive search_more={e(@search_more, nil)} hits={e(@hits, [])} />
+      <ResultsLive search_more={@search_more} hits={e(@hits, [])} />
     {/if}
   
     <LiveRedirect 
       class="w-full p-3 mx-auto text-center border-t link link-hover border-base-content/10"
       to={"/search?s=" <> e(@search, "")}
-      :if={@show_more_link && e(@num_hits, nil) > e(@search_limit, 5)}>
+      :if={@show_more_link && @num_hits > e(@search_limit, 5)}>
       {l  "Filter or show more results"}
     </LiveRedirect>
   </div>
