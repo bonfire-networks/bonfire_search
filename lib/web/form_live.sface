@@ -15,8 +15,8 @@
         value={e(@search, "")} 
         placeholder={e(@search_placeholder, l "Search...")} 
         phx-debounce="300" 
-        class="z-10 w-full h-12 pr-8 text-base rounded-md input bg-base-content/10 text-base-content placeholder-base-content placeholder-opacity-80"/>
-        <button type="submit" class="absolute top-[6px] right-[6px] z-30 flex items-center pl-1  cursor-pointer btn btn-sm w-[36px] h-[36px] btn-ghost  btn-square" >
+        class="z-10 w-full h-10 pr-8 text-base rounded-md input bg-base-content/10 text-base-content placeholder-base-content placeholder-opacity-80"/>
+        <button type="submit" class="absolute top-[4px] right-[6px] z-30 flex items-center pl-1  cursor-pointer btn btn-sm w-[32px] h-[32px] btn-ghost btn-square" >
           <Icon solid="Search" class="w-5 h-5 text-base-content text-opacity-80" />
         </button>
       </div>
