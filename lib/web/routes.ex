@@ -22,7 +22,7 @@ defmodule Bonfire.Search.Web.Routes do
         pipe_through :account_required
 
         live "/search", SearchLive
-        live "/tag/:hashtag_search", SearchLive, as: Bonfire.Tag.Hashtag
+        live "/search/tag/:hashtag_search", SearchLive #, as: Bonfire.Tag.Hashtag
       end
 
       # pages you need to view as a user
