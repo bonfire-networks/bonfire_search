@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Bonfire.Search.Indexer do
-  import Where
+  import Untangle
   import Bonfire.Search, only: [adapter: 0]
 
   @public_index "public"

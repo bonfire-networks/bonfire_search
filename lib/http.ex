@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Bonfire.Search.HTTP do
-  import Where
+  import Untangle
 
   def http_adapter(), do: Bonfire.Common.Config.get_ext!(:bonfire_search, :http_adapter)
 

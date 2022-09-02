@@ -3,7 +3,7 @@
 
 # SPDX-License-Identifier: AGPL-3.0-only
 defmodule Bonfire.Search do
-  import Where
+  import Untangle
   alias Bonfire.Common.Utils
 
   def adapter, do: Bonfire.Common.Config.get_ext!(:bonfire_search, :adapter)

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Bonfire.Search.Meili do
-  import Where
+  import Untangle
 
   def search(%{} = params, index) when is_binary(index) do
     # IO.inspect(search_params: params)

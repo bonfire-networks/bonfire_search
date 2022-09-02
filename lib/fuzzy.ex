@@ -1,7 +1,7 @@
 defmodule Bonfire.Search.Fuzzy do
 
   alias Bonfire.Search
-  import Where
+  import Untangle
 
   @default_limit 20 # TODO: put in config
   @default_opts %{limit: @default_limit}
