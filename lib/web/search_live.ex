@@ -4,6 +4,9 @@ defmodule Bonfire.Search.Web.SearchLive do
 
   alias Bonfire.Search.Web.ResultsLive
 
+
+  declare_extension("Search", icon: "bx:search-alt", exclude_from_nav: true)
+
   def mount(params, session, socket) do
     live_plug params, session, socket, [
       LivePlugs.LoadCurrentAccount,
@@ -29,8 +32,8 @@ defmodule Bonfire.Search.Web.SearchLive do
        selected_tab: "all",
       #  me: false,
       #  selected_facets: nil,
-      #  search: "",
-      #  hits: [],
+       search: "",
+       hits: [],
       #  facets: %{},
       #  num_hits: nil
      )}
