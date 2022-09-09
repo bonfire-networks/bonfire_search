@@ -7,7 +7,7 @@
       <div class="">
         {#case hit}
           {#match %{activity: %{id: id} = activity} = hit }
-            <Surface.Components.Dynamic.LiveComponent
+            <Dynamic.LiveComponent
               module={Bonfire.UI.Social.ActivityLive}
               id={"sa:"<>id}
               class=""
@@ -17,7 +17,7 @@
               check_object_boundary={true}
             />
           {#match hit}
-            <Surface.Components.Dynamic.LiveComponent
+            <Dynamic.LiveComponent
               module={Bonfire.UI.Social.ActivityLive}
               id={e(hit, :index_type, "so:")<> ( e(hit, :id, nil) || Pointers.ULID.generate() )}
               showing_within={:search}
