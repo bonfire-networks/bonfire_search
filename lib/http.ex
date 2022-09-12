@@ -3,7 +3,8 @@
 defmodule Bonfire.Search.HTTP do
   import Untangle
 
-  def http_adapter(), do: Bonfire.Common.Config.get_ext!(:bonfire_search, :http_adapter)
+  def http_adapter(),
+    do: Bonfire.Common.Config.get_ext!(:bonfire_search, :http_adapter)
 
   def http_request(http_method, url, headers, object \\ nil) do
     http_adapter = http_adapter()
@@ -13,12 +14,12 @@ defmodule Bonfire.Search.HTTP do
       url = url <> "?" <> query_str
       apply(http_adapter, http_method, [url, headers])
     else
-
-      json = if object && object !="" && object !=%{} && object !=:ok do
-        Jason.encode!(object)
-      else
-        nil
-      end
+      json =
+        if object && object != "" && object != %{} && object != :ok do
+          Jason.encode!(object)
+        else
+          nil
+        end
 
       # IO.inspect(json: json)
       apply(http_adapter, http_method, [url, json, headers])
@@ -32,13 +33,18 @@ defmodule Bonfire.Search.HTTP do
   case Bonfire.Common.Config.get(:env) || Mix.env() do
     :dev ->
       def http_error(_, http_method, message, object, url) do
-        error(object, "Search - Could not #{http_method} object on #{url}, got: #{inspect message} \n -- Sent object")
+        error(
+          object,
+          "Search - Could not #{http_method} object on #{url}, got: #{inspect(message)} \n -- Sent object"
+        )
+
         {:error, message}
       end
 
     :test ->
       def http_error(_, http_method, message, _object, url) do
-        debug("Search - Could not #{http_method} objects on #{url}: #{inspect message}")
+        debug("Search - Could not #{http_method} objects on #{url}: #{inspect(message)}")
+
         {:error, message}
       end
 
@@ -46,9 +52,9 @@ defmodule Bonfire.Search.HTTP do
       # debug(env)
 
       def http_error(_, http_method, message, _object, url) do
-        warn("Search - Could not #{http_method} object on #{url}: #{inspect message}")
+        warn("Search - Could not #{http_method} object on #{url}: #{inspect(message)}")
+
         :ok
       end
   end
-
 end

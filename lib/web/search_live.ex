@@ -4,11 +4,10 @@ defmodule Bonfire.Search.Web.SearchLive do
 
   alias Bonfire.Search.Web.ResultsLive
 
-
   declare_extension("Search", icon: "bx:search-alt", exclude_from_nav: true)
 
   def mount(params, session, socket) do
-    live_plug params, session, socket, [
+    live_plug(params, session, socket, [
       LivePlugs.LoadCurrentAccount,
       LivePlugs.LoadCurrentUser,
       # LivePlugs.LoadCurrentUserCircles,
@@ -16,8 +15,8 @@ defmodule Bonfire.Search.Web.SearchLive do
       Bonfire.UI.Common.LivePlugs.StaticChanged,
       Bonfire.UI.Common.LivePlugs.Csrf,
       Bonfire.UI.Common.LivePlugs.Locale,
-      &mounted/3,
-    ]
+      &mounted/3
+    ])
   end
 
   defp mounted(params, session, socket) do
@@ -25,44 +24,58 @@ defmodule Bonfire.Search.Web.SearchLive do
     # debug(params, "PARAMS")
 
     {:ok,
-     socket
-     |> assign(
+     assign(
+       socket,
        page: "search",
        page_title: "Search",
        selected_tab: "all",
-      #  me: false,
-      #  selected_facets: nil,
+       #  me: false,
+       #  selected_facets: nil,
        search: "",
-       hits: [],
-      #  facets: %{},
-      #  num_hits: nil
+       hits: []
+
+       #  facets: %{},
+       #  num_hits: nil
      )}
   end
 
-  def do_handle_params(%{"s" => s, "facet" => facets} = _params, _url, socket) when s != "" do
+  def do_handle_params(%{"s" => s, "facet" => facets} = _params, _url, socket)
+      when s != "" do
     index_type = e(facets, :index_type, nil)
 
-    Bonfire.Search.LiveHandler.live_search(s, 20, facets, socket
-    |> assign(selected_tab: index_type)
-    |> assign_global(search_more: true))
+    Bonfire.Search.LiveHandler.live_search(
+      s,
+      20,
+      facets,
+      socket
+      |> assign(selected_tab: index_type)
+      |> assign_global(search_more: true)
+    )
   end
 
   def do_handle_params(%{"s" => s} = _params, _url, socket) when s != "" do
-    Bonfire.Search.LiveHandler.live_search(s, socket |> assign_global(search_more: true))
+    Bonfire.Search.LiveHandler.live_search(
+      s,
+      assign_global(socket, search_more: true)
+    )
   end
 
-  def do_handle_params(%{"hashtag_search" => s} = _params, _url, socket) when s != "" do
-    Bonfire.Search.LiveHandler.live_search("##{s}", socket |> assign_global(search_more: true))
+  def do_handle_params(%{"hashtag_search" => s} = _params, _url, socket)
+      when s != "" do
+    Bonfire.Search.LiveHandler.live_search(
+      "##{s}",
+      assign_global(socket, search_more: true)
+    )
   end
 
   def do_handle_params(_params, _url, socket) do
-    {:noreply,
-     socket |> assign_global(search_more: true)}
+    {:noreply, assign_global(socket, search_more: true)}
   end
 
   def handle_params(params, uri, socket) do
     # poor man's hook I guess
-    with {_, socket} <- Bonfire.UI.Common.LiveHandlers.handle_params(params, uri, socket) do
+    with {_, socket} <-
+           Bonfire.UI.Common.LiveHandlers.handle_params(params, uri, socket) do
       undead_params(socket, fn ->
         do_handle_params(params, uri, socket)
       end)
@@ -72,35 +85,61 @@ defmodule Bonfire.Search.Web.SearchLive do
   defp type_name(name) do
     String.split(name, ".") |> List.last() |> Recase.to_title()
   end
+
   defp link_body(name, 1 = num) do
     type_name = type_name(name) |> Inflex.singularize()
     "#{num} #{type_name}"
   end
+
   defp link_body(name, num) do
     type_name = type_name(name) |> Inflex.pluralize()
     "#{num} #{type_name}"
   end
 
-  def handle_event("Bonfire.Search:search", params, %{assigns: %{__context__: %{selected_facets: selected_facets}}} = socket) when not is_nil(selected_facets) do
-    handle_event("Bonfire.Search:search", params, socket |> assign(selected_facets: selected_facets))
+  def handle_event(
+        "Bonfire.Search:search",
+        params,
+        %{assigns: %{__context__: %{selected_facets: selected_facets}}} = socket
+      )
+      when not is_nil(selected_facets) do
+    handle_event(
+      "Bonfire.Search:search",
+      params,
+      assign(socket, selected_facets: selected_facets)
+    )
   end
 
-  def handle_event("Bonfire.Search:search", params, %{assigns: %{selected_facets: selected_facets}} = socket) when not is_nil(selected_facets) do
+  def handle_event(
+        "Bonfire.Search:search",
+        params,
+        %{assigns: %{selected_facets: selected_facets}} = socket
+      )
+      when not is_nil(selected_facets) do
     debug(search_with_facet: params)
+
     # debug(socket)
 
     {:noreply,
-      socket |> patch_to("/search?"<>Plug.Conn.Query.encode(facet: selected_facets)<>"&s=" <> params["s"])}
+     patch_to(
+       socket,
+       "/search?" <>
+         Plug.Conn.Query.encode(facet: selected_facets) <> "&s=" <> params["s"]
+     )}
   end
 
   def handle_event("Bonfire.Search:search", params, socket) do
     # debug(search: params)
     # debug(socket)
 
-    {:noreply,
-      socket |> patch_to("/search?s=" <> params["s"])}
+    {:noreply, patch_to(socket, "/search?s=" <> params["s"])}
   end
 
-  def handle_event(action, attrs, socket), do: Bonfire.UI.Common.LiveHandlers.handle_event(action, attrs, socket, __MODULE__)
-
+  def handle_event(action, attrs, socket),
+    do:
+      Bonfire.UI.Common.LiveHandlers.handle_event(
+        action,
+        attrs,
+        socket,
+        __MODULE__
+      )
 end

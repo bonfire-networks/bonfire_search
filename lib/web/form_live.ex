@@ -10,5 +10,4 @@ defmodule Bonfire.Search.Web.FormLive do
   prop show_more_link, :boolean, default: true
   prop num_hits, :integer, default: nil
   prop hits, :list, default: []
-
 end

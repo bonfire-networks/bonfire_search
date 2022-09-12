@@ -7,7 +7,14 @@ defmodule Bonfire.Search.Indexer do
   @public_index "public"
   # TODO: put in config
   @public_facets ["index_type", "index_instance", "tags"]
-  @public_searcheable_fields ["character.username", "profile.name", "post_content.name", "post_content.summary", "tags", "post_content.html_body"]
+  @public_searcheable_fields [
+    "character.username",
+    "profile.name",
+    "post_content.name",
+    "post_content.summary",
+    "tags",
+    "post_content.html_body"
+  ]
 
   use Bonfire.Common.Utils, only: [maybe_get: 2, maybe_get: 3, ulid: 1]
 
@@ -38,24 +45,33 @@ defmodule Bonfire.Search.Indexer do
   def maybe_indexable_object(%Bonfire.Data.Identity.User{} = object) do
     maybe_indexable_and_discoverable(object, object)
   end
+
   def maybe_indexable_object(%{subject: %{id: _} = creator} = object) do
     maybe_indexable_and_discoverable(creator, object)
   end
+
   def maybe_indexable_object(%{subject: %{character: %{id: _} = creator}} = object) do
     maybe_indexable_and_discoverable(creator, object)
   end
+
   def maybe_indexable_object(%{creator: %{id: _} = creator} = object) do
     maybe_indexable_and_discoverable(creator, object)
   end
+
   def maybe_indexable_object(%{created: %{creator: %{id: _} = creator}} = object) do
     maybe_indexable_and_discoverable(creator, object)
   end
+
   def maybe_indexable_object(%{activity: %{created: %{creator: %{id: _} = creator}}} = object) do
     maybe_indexable_and_discoverable(creator, object)
   end
-  def maybe_indexable_object(%{activity: %{object: %{created: %{creator: %{id: _} = creator}}}} = object) do
+
+  def maybe_indexable_object(
+        %{activity: %{object: %{created: %{creator: %{id: _} = creator}}}} = object
+      ) do
     maybe_indexable_and_discoverable(creator, object)
   end
+
   def maybe_indexable_object(%{object: %{created: %{creator: %{id: _} = creator}}} = object) do
     maybe_indexable_and_discoverable(creator, object)
   end
@@ -66,17 +82,25 @@ defmodule Bonfire.Search.Indexer do
   end
 
   def maybe_indexable_object(%{__struct__: _} = object) do
-    warn("Could not identify creator to determine if they allow discoverability. Indexing by default...")
+    warn(
+      "Could not identify creator to determine if they allow discoverability. Indexing by default..."
+    )
+
     do_indexable_object(object)
   end
 
   def maybe_indexable_object(obj) do
-    warn(obj, "Could not index object (not pre-formated for indexing or not a struct)")
+    warn(
+      obj,
+      "Could not index object (not pre-formated for indexing or not a struct)"
+    )
+
     nil
   end
 
   def maybe_indexable_and_discoverable(creator, object) do
-    if Bonfire.Me.Settings.get([Bonfire.Me.Users, :discoverable], true, current_user: creator), do: do_indexable_object(object)
+    if Bonfire.Me.Settings.get([Bonfire.Me.Users, :discoverable], true, current_user: creator),
+      do: do_indexable_object(object)
   end
 
   defp do_indexable_object(%{__struct__: object_type} = object) do
@@ -96,9 +120,11 @@ defmodule Bonfire.Search.Indexer do
   # index several things in an existing index
   def index_objects(objects, index_name, init_index_first \\ true)
 
-  def index_objects(objects, index_name, init_index_first) when is_list(objects) do
+  def index_objects(objects, index_name, init_index_first)
+      when is_list(objects) do
     # IO.inspect(objects)
     disabled = Bonfire.Common.Config.get_ext(:bonfire_search, :disable_indexing)
+
     if disabled != "true" and disabled != true do
       # FIXME - should create the index only once
       if init_index_first, do: init_index(index_name, true)
@@ -149,6 +175,4 @@ defmodule Bonfire.Search.Indexer do
   def host(_) do
     ""
   end
-
-
 end

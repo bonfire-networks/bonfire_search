@@ -1,37 +1,33 @@
-  <div
-  id="the_search_results"
-  phx-update="replace"
-  data-page={ e(@page, [])}
-  class="">
-    {#for hit <- e(@hits, [])}
-      <div class="">
-        {#case hit}
-          {#match %{activity: %{id: id} = activity} = hit }
-            <Dynamic.LiveComponent
-              module={Bonfire.UI.Social.ActivityLive}
-              id={"sa:"<>id}
-              class=""
-              showing_within={:search}
-              activity={Map.merge(activity, %{object: Map.drop(hit, [:activity])})} 
-              object_boundary={:skip}
-              check_object_boundary={true}
-            />
-          {#match hit}
-            <Dynamic.LiveComponent
-              module={Bonfire.UI.Social.ActivityLive}
-              id={e(hit, :index_type, "so:")<> ( e(hit, :id, nil) || Pointers.ULID.generate() )}
-              showing_within={:search}
-              class=""
-              activity={%{object: hit}} 
-              object_boundary={:skip}
-              check_object_boundary={true}
-            />
-        {/case}
-      </div>
-    {#else}
-       <!-- no results -->
-    {/for}
-  
+<div id="the_search_results" phx-update="replace" data-page={e(@page, [])} class="">
+  {#for hit <- e(@hits, [])}
+    <div class="">
+      {#case hit}
+        {#match %{activity: %{id: id} = activity} = hit}
+          <Dynamic.LiveComponent
+            module={Bonfire.UI.Social.ActivityLive}
+            id={"sa:" <> id}
+            class=""
+            showing_within={:search}
+            activity={Map.merge(activity, %{object: Map.drop(hit, [:activity])})}
+            object_boundary={:skip}
+            check_object_boundary
+          />
+        {#match hit}
+          <Dynamic.LiveComponent
+            module={Bonfire.UI.Social.ActivityLive}
+            id={e(hit, :index_type, "so:") <> (e(hit, :id, nil) || Pointers.ULID.generate())}
+            showing_within={:search}
+            class=""
+            activity={%{object: hit}}
+            object_boundary={:skip}
+            check_object_boundary
+          />
+      {/case}
+    </div>
+  {#else}
+    <!-- no results -->
+  {/for}
+
   <!-- <div :if={e(@has_next_page, []) } class="flex justify-center w-full p-3 mx-auto border-t cursor-pointer border-base-200 place-items-center">
     <button
       class="relative items-center w-full px-4 py-2 text-sm font-medium text-center rounded text-base-content bg-base-200 hover:bg-base-300"
@@ -39,5 +35,4 @@
       {l "Load more"}
      </button>
   </div> -->
-  
 </div>

@@ -1,37 +1,46 @@
 <div class="relative">
-<form
-  class="w-full"
-  role="search"
-  phx-change="Bonfire.Search:search"
-  action="/search"
-  method="GET">
-    <span class="sr-only">{e(@search_placeholder, l "Search")}</span>
+  <form
+    class="w-full"
+    role="search"
+    phx-change="Bonfire.Search:search"
+    action="/search"
+    method="GET"
+  >
+    <span class="sr-only">{e(@search_placeholder, l("Search"))}</span>
     <div class="relative w-full rounded">
       <input type="hidden" name="search_limit" value={e(@search_limit, "")}>
-      <input 
-        type="search" 
-        name="s" 
-        autocomplete="off" 
-        value={e(@search, "")} 
-        placeholder={e(@search_placeholder, l "Search...")} 
-        phx-debounce="300" 
-        class="z-[100] w-[240px] h-10 pr-8 text-base rounded-md input input-bordered bg-base-100 text-base-content placeholder-base-content placeholder-opacity-80"/>
-        <button type="submit" class="absolute top-[2px] right-[8px] z-30 flex items-center pl-1  cursor-pointer btn btn-sm w-[32px] h-[32px] btn-ghost btn-square" >
-          <Icon solid="Search" class="w-5 h-5 text-base-content text-opacity-80" />
-        </button>
-      </div>
-</form>
-  <div :if={!@search_more && @num_hits} class="absolute left-0 right-0 z-50 w-full rounded-lg top-[3.75rem] search_results menu bg-base-100">
-    <div class="p-3 text-sm border-b border-base-content/10 text-base-content">{e(@num_hits, "no")} {l "total results"}</div>
+      <input
+        type="search"
+        name="s"
+        autocomplete="off"
+        value={e(@search, "")}
+        placeholder={e(@search_placeholder, l("Search..."))}
+        phx-debounce="300"
+        class="z-[100] w-[240px] h-10 pr-8 text-base rounded-md input input-bordered bg-base-100 text-base-content placeholder-base-content placeholder-opacity-80"
+      />
+      <button
+        type="submit"
+        class="absolute top-[2px] right-[8px] z-30 flex items-center pl-1  cursor-pointer btn btn-sm w-[32px] h-[32px] btn-ghost btn-square"
+      >
+        <Icon solid="Search" class="w-5 h-5 text-base-content text-opacity-80" />
+      </button>
+    </div>
+  </form>
+  <div
+    :if={!@search_more && @num_hits}
+    class="absolute left-0 right-0 z-50 w-full rounded-lg top-[3.75rem] search_results menu bg-base-100"
+  >
+    <div class="p-3 text-sm border-b border-base-content/10 text-base-content">{e(@num_hits, "no")} {l("total results")}</div>
     {#if e(@num_hits, 0) > 0}
       <ResultsLive search_more={@search_more} hits={e(@hits, [])} />
     {/if}
-  
-    <LiveRedirect 
+
+    <LiveRedirect
       class="w-full p-3 mx-auto text-center border-t link link-hover border-base-content/10"
       to={"/search?s=" <> e(@search, "")}
-      :if={@show_more_link && @num_hits > e(@search_limit, 5)}>
-      {l  "Filter or show more results"}
+      :if={@show_more_link && @num_hits > e(@search_limit, 5)}
+    >
+      {l("Filter or show more results")}
     </LiveRedirect>
   </div>
 </div>

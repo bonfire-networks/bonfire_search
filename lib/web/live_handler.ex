@@ -1,16 +1,25 @@
 defmodule Bonfire.Search.LiveHandler do
   use Bonfire.UI.Common.Web, :live_handler
 
-  @default_limit 20 # TODO: put in config
+  # TODO: put in config
+  @default_limit 20
 
-  def handle_event("search", params, %{assigns: %{search_limit: search_limit}} = socket) do
+  def handle_event(
+        "search",
+        params,
+        %{assigns: %{search_limit: search_limit}} = socket
+      ) do
     debug(search: params)
     # debug(socket)
 
     live_search(params["s"], search_limit || @default_limit, nil, socket)
   end
 
-  def handle_event("search", params, %{assigns: %{__context__: %{search_limit: search_limit}}} = socket) do
+  def handle_event(
+        "search",
+        params,
+        %{assigns: %{__context__: %{search_limit: search_limit}}} = socket
+      ) do
     debug(search: params)
     # debug(socket)
 
@@ -21,22 +30,35 @@ defmodule Bonfire.Search.LiveHandler do
     debug(search: params)
     # debug(socket)
 
-    live_search(params["s"], params["search_limit"] || @default_limit, nil, socket)
+    live_search(
+      params["s"],
+      params["search_limit"] || @default_limit,
+      nil,
+      socket
+    )
   end
 
-  def live_search(q, search_limit \\ @default_limit, facet_filters \\ nil, socket)
+  def live_search(
+        q,
+        search_limit \\ @default_limit,
+        facet_filters \\ nil,
+        socket
+      )
 
-  def live_search(q, search_limit, facet_filters, socket) when is_binary(search_limit) and search_limit !="" do
-    #debug(search_limit)
+  def live_search(q, search_limit, facet_filters, socket)
+      when is_binary(search_limit) and search_limit != "" do
+    # debug(search_limit)
     search_limit = String.to_integer(search_limit) || @default_limit
     live_search(q, search_limit, facet_filters, socket)
   end
 
-  def live_search(q, search_limit, facet_filters, socket) when search_limit =="" do
+  def live_search(q, search_limit, facet_filters, socket)
+      when search_limit == "" do
     live_search(q, @default_limit, facet_filters, socket)
   end
 
-  def live_search(q, search_limit, facet_filters, socket) when is_binary(q) and q != "" and is_integer(search_limit) do
+  def live_search(q, search_limit, facet_filters, socket)
+      when is_binary(q) and q != "" and is_integer(search_limit) do
     # debug(q, "SEARCH")
     debug(facet_filters, "TAB")
 
@@ -47,13 +69,16 @@ defmodule Bonfire.Search.LiveHandler do
     # debug(search_results: search)
 
     hits =
-      if(is_map(search) and Map.has_key?(search, "hits") and length(search["hits"])) do
+      if(
+        is_map(search) and Map.has_key?(search, "hits") and
+          length(search["hits"])
+      ) do
         search["hits"]
-        |> Enum.map( # return object-like results
-          &( &1
-          |> input_to_atoms()
-          |> maybe_to_structs()
-          )
+        # return object-like results
+        |> Enum.map(
+          &(&1
+            |> input_to_atoms()
+            |> maybe_to_structs())
         )
       end
 
@@ -67,16 +92,19 @@ defmodule Bonfire.Search.LiveHandler do
 
     # TODO: make this a non-blocking operation (ie. show the other results first and then inject the result of this lookup when ready)
     # FIXME: use maybe_apply
-    hits = (with {:ok, federated_object_or_character} <- Bonfire.Federate.ActivityPub.Utils.get_by_url_ap_id_or_username(q) do
-      [federated_object_or_character]
-      ++ (hits || [])
-    else _ ->
-      hits
-    end
-    || [])
-    |> Enum.uniq_by(&(%{id: &1.id}))
+    hits =
+      (with {:ok, federated_object_or_character} <-
+              Bonfire.Federate.ActivityPub.Utils.get_by_url_ap_id_or_username(q) do
+         [federated_object_or_character] ++
+           (hits || [])
+       else
+         _ ->
+           hits
+       end ||
+         [])
+      |> Enum.uniq_by(&%{id: &1.id})
 
-    # dump(hits, "hits")
+    # debug(hits, "hits")
 
     # TODO use send_update to send results to ResultsLive
     {:noreply,
@@ -107,6 +135,4 @@ defmodule Bonfire.Search.LiveHandler do
   #     socket |> redirect_to("/instance/search/all/" <> params["search_field"]["query"])}
   #   end
   # end
-
-
 end

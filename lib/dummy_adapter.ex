@@ -1,3 +1,2 @@
 defmodule DummyAdapter do
-
 end

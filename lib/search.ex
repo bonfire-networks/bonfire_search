@@ -8,46 +8,54 @@ defmodule Bonfire.Search do
 
   def adapter, do: Bonfire.Common.Config.get_ext!(:bonfire_search, :adapter)
 
-  def public_index(), do: Bonfire.Common.Config.get_ext(:bonfire_search, :public_index, "public")
+  def public_index(),
+    do: Bonfire.Common.Config.get_ext(:bonfire_search, :public_index, "public")
 
   def search_by_type(tag_search, facets \\ nil) do
     facets = search_facets(facets)
-    debug("search: #{inspect tag_search} with facets #{inspect facets}")
+    debug("search: #{inspect(tag_search)} with facets #{inspect(facets)}")
     search = search(tag_search, %{}, false, facets)
+
     # IO.inspect(searched: search)
 
     if(is_map(search) and Map.has_key?(search, "hits") and length(search["hits"])) do
       search["hits"]
       |> Utils.filter_empty([])
+
       # |> IO.inspect(label: "search results")
     end
   end
 
   defp search_facets(facets) when is_list(facets) or not is_nil(facets) do
-    %{"index_type" => List.wrap(facets)
-      #|> search_prefix()
+    %{
+      "index_type" => List.wrap(facets)
+
+      # |> search_prefix()
     }
   end
+
   defp search_facets(nil) do
     nil
   end
 
   def search(string, opts \\ %{}, calculate_facets, filter_facets)
 
-  def search(string, opts, calculate_facets, filter_facets) when is_map(filter_facets) do
+  def search(string, opts, calculate_facets, filter_facets)
+      when is_map(filter_facets) do
     search(
       string,
       opts,
       calculate_facets,
-      filter_facets
-      |> Enum.map(&facet_from_map/1)
+      Enum.map(filter_facets, &facet_from_map/1)
     )
   end
 
-  def search(string, opts, calculate_facets, filter_facets) when is_list(filter_facets) do
-    opts = Map.merge(opts, %{
-      filter: List.flatten(filter_facets)
-    })
+  def search(string, opts, calculate_facets, filter_facets)
+      when is_list(filter_facets) do
+    opts =
+      Map.merge(opts, %{
+        filter: List.flatten(filter_facets)
+      })
 
     do_search(string, opts, calculate_facets)
   end
@@ -56,8 +64,8 @@ defmodule Bonfire.Search do
     do_search(string, opts, calculate_facets)
   end
 
-
-  defp do_search(string, opts, calculate_facets) when not is_nil(calculate_facets) do
+  defp do_search(string, opts, calculate_facets)
+       when not is_nil(calculate_facets) do
     # opts = Map.merge(%{
     #   facetDistribution: ["*"]
     # }, opts)
@@ -69,7 +77,6 @@ defmodule Bonfire.Search do
     search(string, opts)
   end
 
-
   def search(string, opts_or_index \\ nil)
 
   def search(string, index) when is_binary(string) and is_binary(index) do
@@ -77,10 +84,12 @@ defmodule Bonfire.Search do
     object = %{
       q: string
     }
+
     search(object, index)
   end
 
-  def search(string, %{index: index} = opts) when is_binary(string) and is_map(opts) do
+  def search(string, %{index: index} = opts)
+      when is_binary(string) and is_map(opts) do
     %{
       q: string
     }
@@ -105,10 +114,8 @@ defmodule Bonfire.Search do
     search(object, public_index())
   end
 
-
   def facet_from_map({key, values}) when is_list(values) do
-    values
-    |> Enum.map(&facet_from_map({key, &1}))
+    Enum.map(values, &facet_from_map({key, &1}))
   end
 
   def facet_from_map({key, value}) when is_binary(value) or is_atom(value) do
