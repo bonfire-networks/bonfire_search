@@ -25,15 +25,21 @@ defmodule Bonfire.Search.Web.SearchLive do
 
     {:ok,
      assign(
-       socket,
-       page: "search",
-       page_title: "Search",
-       selected_tab: "all",
-       #  me: false,
-       #  selected_facets: nil,
-       search: "",
-       hits: []
-
+        socket,
+        page: "search",
+        page_title: "Search",
+        selected_tab: "all",
+        #  me: false,
+        #  selected_facets: nil,
+        search: "",
+        hits: [],
+        sidebar_widgets: [
+          users: [
+            secondary: [
+              {Bonfire.UI.Coordination.FiltersSearchLive, [selected_tab: "all", search: ""]},
+            ]
+          ]
+        ]
        #  facets: %{},
        #  num_hits: nil
      )}

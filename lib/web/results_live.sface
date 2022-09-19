@@ -26,6 +26,10 @@
     </div>
   {#else}
     <!-- no results -->
+    <Bonfire.UI.Common.EmptyFeed
+      feedback_title={l("We didn't found anything relevant")}
+      feedback_message={""}
+    />
   {/for}
 
   <!-- <div :if={e(@has_next_page, []) } class="flex justify-center w-full p-3 mx-auto border-t cursor-pointer border-base-200 place-items-center">
