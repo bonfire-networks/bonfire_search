@@ -4,7 +4,7 @@ defmodule Bonfire.Search.Web.SearchLive do
 
   alias Bonfire.Search.Web.ResultsLive
 
-  declare_extension("Search", icon: "bx:search-alt", exclude_from_nav: true)
+  declare_extension("Search", icon: "twemoji:magnifying-glass-tilted-left")
 
   def mount(params, session, socket) do
     live_plug(params, session, socket, [
