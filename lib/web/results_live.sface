@@ -28,7 +28,7 @@
     <!-- no results -->
     <Bonfire.UI.Common.EmptyFeed
       feedback_title={l("We didn't found anything relevant")}
-      feedback_message={""}
+      feedback_message=""
     />
   {/for}
 
