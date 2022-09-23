@@ -1,5 +1,5 @@
 <div class="flex-1 m-3 border rounded-md bg-base-200 border-base-content/10 tablet:hidden">
-  <Bonfire.Search.Web.FormLive />
+  <Bonfire.Search.Web.FormLive search={@search} search_limit={@search_limit} />
 </div>
 
 <div class="flex-1 bg-base-100 rounded-b-md">

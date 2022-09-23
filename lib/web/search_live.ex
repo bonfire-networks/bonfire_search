@@ -4,6 +4,8 @@ defmodule Bonfire.Search.Web.SearchLive do
 
   alias Bonfire.Search.Web.ResultsLive
 
+  @default_limit 20
+
   declare_extension("Search", icon: "twemoji:magnifying-glass-tilted-left")
 
   def mount(params, session, socket) do
@@ -29,20 +31,25 @@ defmodule Bonfire.Search.Web.SearchLive do
        page: "search",
        page_title: "Search",
        selected_tab: "all",
+       search_limit: @default_limit,
        #  me: false,
        #  selected_facets: nil,
-       search: "",
+       search: nil,
        hits: [],
-       sidebar_widgets: [
-         users: [
-           secondary: [
-             {Bonfire.UI.Coordination.FiltersSearchLive, [selected_tab: "all", search: ""]}
-           ]
-         ]
-       ]
+       sidebar_widgets: widget(nil)
        #  facets: %{},
        #  num_hits: nil
      )}
+  end
+
+  defp widget(search) do
+    [
+      users: [
+        secondary: [
+          {Bonfire.UI.Coordination.FiltersSearchLive, [selected_tab: "all", search: search]}
+        ]
+      ]
+    ]
   end
 
   def do_handle_params(%{"s" => s, "facet" => facets} = _params, _url, socket)
@@ -51,10 +58,13 @@ defmodule Bonfire.Search.Web.SearchLive do
 
     Bonfire.Search.LiveHandler.live_search(
       s,
-      20,
+      @default_limit,
       facets,
       socket
-      |> assign(selected_tab: index_type)
+      |> assign(
+        selected_tab: index_type,
+        sidebar_widgets: widget(s)
+      )
       |> assign_global(search_more: true)
     )
   end
@@ -62,7 +72,9 @@ defmodule Bonfire.Search.Web.SearchLive do
   def do_handle_params(%{"s" => s} = _params, _url, socket) when s != "" do
     Bonfire.Search.LiveHandler.live_search(
       s,
-      assign_global(socket, search_more: true)
+      socket
+      |> assign(sidebar_widgets: widget(s))
+      |> assign_global(search_more: true)
     )
   end
 

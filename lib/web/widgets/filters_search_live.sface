@@ -1,6 +1,6 @@
-<Bonfire.UI.Common.WidgetBlockLive widget_title="Advanced filters">
+<Bonfire.UI.Common.WidgetBlockLive widget_title={l("Filters")}>
   <div class="p-3">
-    <Bonfire.Search.Web.FormLive />
+    <Bonfire.Search.Web.FormLive search={@search} />
     <!-- <form action="?" phx-submit="search" method="get">
       <fieldset>
         <legend class="text-sm font-normal text-base-content/70">{l("Search for")}</legend>
