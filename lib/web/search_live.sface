@@ -1,9 +1,9 @@
-<div class="flex-1 m-3 border rounded-md bg-base-200 border-base-content/10 tablet:hidden">
+<div class="flex-1 my-3 bg-base-200 tablet:hidden">
   <Bonfire.Search.Web.FormLive search={@search} search_limit={@search_limit} />
 </div>
 
 <div class="flex-1 bg-base-100 rounded-b-md">
-  <div class="flex items-center justify-between w-full p-4 mb-2 border-b bg-base-200 border-base-content/10">
+  <div class="flex items-center justify-between w-full p-4 mb-2 border-b bg-base-300 border-base-content/10">
     <div class="text-base font-normal text-base-content/80">{l("Results for")} <b class="font-bold underline">{@search}</b>
     </div>
   </div>
