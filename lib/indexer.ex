@@ -104,7 +104,7 @@ defmodule Bonfire.Search.Indexer do
   end
 
   defp do_indexable_object(%{__struct__: object_type} = object) do
-    Bonfire.Common.ContextModules.maybe_apply(
+    Bonfire.Common.ContextModule.maybe_apply(
       object_type,
       :indexing_object_format,
       object
