@@ -99,7 +99,7 @@ defmodule Bonfire.Search.Indexer do
   end
 
   def maybe_indexable_and_discoverable(creator, object) do
-    if Bonfire.Me.Settings.get([Bonfire.Me.Users, :discoverable], true, current_user: creator),
+    if !Bonfire.Me.Settings.get([Bonfire.Me.Users, :undiscoverable], false, current_user: creator),
       do: do_indexable_object(object)
   end
 
