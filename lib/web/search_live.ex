@@ -6,7 +6,7 @@ defmodule Bonfire.Search.Web.SearchLive do
 
   @default_limit 20
 
-  declare_extension("Search", icon: "twemoji:magnifying-glass-tilted-left")
+  # declare_extension("Search", icon: "twemoji:magnifying-glass-tilted-left")
 
   def mount(params, session, socket) do
     live_plug(params, session, socket, [
