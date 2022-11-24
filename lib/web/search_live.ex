@@ -90,16 +90,6 @@ defmodule Bonfire.Search.Web.SearchLive do
     {:noreply, assign_global(socket, search_more: true)}
   end
 
-  def handle_params(params, uri, socket) do
-    # poor man's hook I guess
-    with {_, socket} <-
-           Bonfire.UI.Common.LiveHandlers.handle_params(params, uri, socket) do
-      undead_params(socket, fn ->
-        do_handle_params(params, uri, socket)
-      end)
-    end
-  end
-
   defp type_name(name) do
     String.split(name, ".") |> List.last() |> Recase.to_title()
   end
@@ -114,7 +104,7 @@ defmodule Bonfire.Search.Web.SearchLive do
     "#{num} #{type_name}"
   end
 
-  def handle_event(
+  def do_handle_event(
         "Bonfire.Search:search",
         params,
         %{assigns: %{__context__: %{selected_facets: selected_facets}}} = socket
@@ -127,7 +117,7 @@ defmodule Bonfire.Search.Web.SearchLive do
     )
   end
 
-  def handle_event(
+  def do_handle_event(
         "Bonfire.Search:search",
         params,
         %{assigns: %{selected_facets: selected_facets}} = socket
@@ -145,19 +135,36 @@ defmodule Bonfire.Search.Web.SearchLive do
      )}
   end
 
-  def handle_event("Bonfire.Search:search", params, socket) do
+  def do_handle_event("Bonfire.Search:search", params, socket) do
     # debug(search: params)
     # debug(socket)
 
     {:noreply, patch_to(socket, "/search?s=" <> params["s"])}
   end
 
-  def handle_event(action, attrs, socket),
+  def handle_params(params, uri, socket),
     do:
-      Bonfire.UI.Common.LiveHandlers.handle_event(
-        action,
-        attrs,
+      Bonfire.UI.Common.LiveHandlers.handle_params(
+        params,
+        uri,
         socket,
         __MODULE__
       )
+
+  def handle_info(info, socket),
+    do: Bonfire.UI.Common.LiveHandlers.handle_info(info, socket, __MODULE__)
+
+  def handle_event(
+        action,
+        attrs,
+        socket
+      ),
+      do:
+        Bonfire.UI.Common.LiveHandlers.handle_event(
+          action,
+          attrs,
+          socket,
+          __MODULE__,
+          &do_handle_event/3
+        )
 end
