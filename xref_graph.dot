@@ -1,0 +1,28 @@
+digraph "xref graph" {
+  "lib/adapters/meili.ex"
+  "lib/adapters/meili.ex" -> "lib/http.ex"
+  "lib/dummy_adapter.ex"
+  "lib/fuzzy.ex"
+  "lib/fuzzy.ex" -> "lib/search.ex"
+  "lib/fuzzy.ex" -> "lib/stopwords.ex"
+  "lib/http.ex"
+  "lib/indexer.ex"
+  "lib/indexer.ex" -> "lib/search.ex" [label="(export)"]
+  "lib/runtime_config.ex"
+  "lib/runtime_config.ex" -> "lib/adapters/meili.ex"
+  "lib/search.ex"
+  "lib/stopwords.ex"
+  "lib/web/form_live.ex"
+  "lib/web/form_live.ex" -> "lib/web/results_live.ex" [label="(export)"]
+  "lib/web/live_handler.ex"
+  "lib/web/live_handler.ex" -> "lib/fuzzy.ex"
+  "lib/web/results_live.ex"
+  "lib/web/routes.ex"
+  "lib/web/search_live.ex"
+  "lib/web/search_live.ex" -> "lib/web/form_live.ex" [label="(export)"]
+  "lib/web/search_live.ex" -> "lib/web/live_handler.ex"
+  "lib/web/search_live.ex" -> "lib/web/results_live.ex" [label="(export)"]
+  "lib/web/search_live.ex" -> "lib/web/widgets/filters_search_live.ex"
+  "lib/web/widgets/filters_search_live.ex" -> "lib/web/form_live.ex" [label="(export)"]
+  "lib/web/widgets/filters_search_live.ex"
+}
