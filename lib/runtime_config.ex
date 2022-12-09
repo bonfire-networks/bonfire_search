@@ -9,7 +9,7 @@ defmodule Bonfire.Search.RuntimeConfig do
       http_adapter:
         String.to_existing_atom(System.get_env("SEARCH_HTTP_ADAPTER", "nil")) ||
           Bonfire.Common.HTTP,
-      disable_indexing: System.get_env("SEARCH_INDEXING_DISABLED", "false"),
+      disable_indexing: System.get_env("SEARCH_INDEXING_DISABLED") in ["true", "1"],
       adapter: Bonfire.Search.Meili,
       # protocol, hostname and port
       instance: System.get_env("SEARCH_MEILI_INSTANCE", "http://search:7700"),

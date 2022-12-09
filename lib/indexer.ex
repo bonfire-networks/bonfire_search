@@ -123,9 +123,8 @@ defmodule Bonfire.Search.Indexer do
   def index_objects(objects, index_name, init_index_first)
       when is_list(objects) do
     # IO.inspect(objects)
-    disabled = Bonfire.Common.Config.get_ext(:bonfire_search, :disable_indexing)
 
-    if disabled != "true" and disabled != true do
+    if !Bonfire.Common.Config.get_ext(:bonfire_search, :disable_indexing) do
       # FIXME - should create the index only once
       if init_index_first, do: init_index(index_name, true)
 
