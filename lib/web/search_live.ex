@@ -34,6 +34,7 @@ defmodule Bonfire.Search.Web.SearchLive do
        search_limit: @default_limit,
        #  me: false,
        #  selected_facets: nil,
+       nav_items: Bonfire.Common.ExtensionModule.default_nav(:bonfire_ui_social),
        search: nil,
        hits: [],
        sidebar_widgets: widget(nil)
