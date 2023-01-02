@@ -16,10 +16,13 @@ defmodule Bonfire.Search.Indexer do
     "post_content.html_body"
   ]
 
-  use Bonfire.Common.Utils, only: [maybe_get: 2, maybe_get: 3, ulid: 1]
+  use Bonfire.Common.Utils, only: [maybe_get: 2, maybe_get: 3, ulid: 1, filter_empty: 2]
 
   def maybe_index_object(object) do
-    indexable_object = maybe_indexable_object(object)
+    indexable_object =
+      maybe_indexable_object(object)
+      |> filter_empty(nil)
+      |> debug("filtered")
 
     if !is_nil(indexable_object) do
       index_public_object(indexable_object)
@@ -118,22 +121,25 @@ defmodule Bonfire.Search.Indexer do
   end
 
   # index several things in an existing index
-  def index_objects(objects, index_name, init_index_first \\ true)
+  defp index_objects(objects, index_name, init_index_first \\ true)
 
-  def index_objects(objects, index_name, init_index_first)
-      when is_list(objects) do
+  defp index_objects(objects, index_name, init_index_first)
+       when is_list(objects) do
     # IO.inspect(objects)
 
     if !Bonfire.Common.Config.get_ext(:bonfire_search, :disable_indexing) do
       # FIXME - should create the index only once
       if init_index_first, do: init_index(index_name, true)
 
-      adapter().put(objects, index_name <> "/documents")
+      objects
+      # |> debug("filtered")
+      |> adapter().put(index_name <> "/documents")
+      |> debug("result of PUT")
     end
   end
 
   # index something in an existing index
-  def index_objects(object, index_name, init_index_first) do
+  defp index_objects(object, index_name, init_index_first) do
     # IO.inspect(object)
     index_objects([object], index_name, init_index_first)
   end

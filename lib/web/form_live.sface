@@ -2,7 +2,7 @@
   <form
     class="w-full"
     role="search"
-    phx-change="Bonfire.Search:search"
+    phx-change={if @__context__[:current_view] == Bonfire.Search.Web.SearchLive, do: "Bonfire.Search:search"}
     action="/search"
     method="GET"
   >
@@ -13,7 +13,7 @@
         type="search"
         name="s"
         autocomplete="off"
-        value={e(@search, "")}
+        value={@search || e(@__context__, :current_params, "s", nil)}
         placeholder={e(@search_placeholder, l("Search..."))}
         phx-debounce="300"
         class="w-[inherit] pr-8 text-base rounded h-[42px] input bg-base-content/5 text-base-content placeholder-base-content placeholder-opacity-80"
