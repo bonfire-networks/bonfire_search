@@ -1,4 +1,4 @@
-<div id="the_search_results" phx-update="replace" data-page={e(@page, [])} class="">
+<div id="the_search_results" phx-update="replace" data-page={e(@page, [])} class="divide-y divide-base-content/10">
   {#for hit <- e(@hits, [])}
     <div class="">
       {#case hit}

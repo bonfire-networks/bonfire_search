@@ -37,21 +37,30 @@ defmodule Bonfire.Search.Web.SearchLive do
        nav_items: Bonfire.Common.ExtensionModule.default_nav(:bonfire_ui_social),
        search: nil,
        hits: [],
-       sidebar_widgets: widget(nil)
+       sidebar_widgets: [
+          users: [
+            secondary: [
+              {Bonfire.Tag.Web.WidgetTagsLive, []}
+            ]
+          ],
+          guests: [
+            secondary: nil
+          ]
+        ],
        #  facets: %{},
        #  num_hits: nil
      )}
   end
 
-  defp widget(search) do
-    [
-      users: [
-        secondary: [
-          {Bonfire.UI.Coordination.FiltersSearchLive, [selected_tab: "all", search: search]}
-        ]
-      ]
-    ]
-  end
+  # defp widget(search) do
+  #   [
+  #     users: [
+  #       secondary: [
+  #         {Bonfire.UI.Coordination.FiltersSearchLive, [selected_tab: "all", search: search]}
+  #       ]
+  #     ]
+  #   ]
+  # end
 
   def do_handle_params(%{"s" => s, "facet" => facets} = _params, _url, socket)
       when s != "" do
@@ -64,7 +73,7 @@ defmodule Bonfire.Search.Web.SearchLive do
       socket
       |> assign(
         selected_tab: index_type,
-        sidebar_widgets: widget(s)
+        # sidebar_widgets: widget(s)
       )
       |> assign_global(search_more: true)
     )
@@ -74,7 +83,7 @@ defmodule Bonfire.Search.Web.SearchLive do
     Bonfire.Search.LiveHandler.live_search(
       s,
       socket
-      |> assign(sidebar_widgets: widget(s))
+      # |> assign(sidebar_widgets: widget(s))
       |> assign_global(search_more: true)
     )
   end
