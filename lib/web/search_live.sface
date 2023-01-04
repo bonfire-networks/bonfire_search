@@ -16,26 +16,38 @@
     >
       <!-- ALL TYPES -->
       <LiveRedirect
-        class={"hover:bg-base-content hover:bg-opacity-10 flex-1 pt-4  place-content-center flex capitalize text-base"}  
-        to={"/search?s=" <> e(assigns, :search, "")}>
-        <div class={"text-base-content/60 text-sm pb-3 border-b-2 border-transparent", "font-semibold border-primary text-primary": @selected_tab == "all"}>
-          {l "All types"}
+        class="hover:bg-base-content hover:bg-opacity-10 flex-1 pt-4  place-content-center flex capitalize text-base"
+        to={"/search?s=" <> e(assigns, :search, "")}
+      >
+        <div class={
+          "text-base-content/60 text-sm pb-3 border-b-2 border-transparent",
+          "font-semibold border-primary text-primary": @selected_tab == "all"
+        }>
+          {l("All types")}
         </div>
       </LiveRedirect>
       <!-- USERS -->
-      <LiveRedirect 
-        class={"hover:bg-base-content hover:bg-opacity-10 flex-1 pt-4  place-content-center flex capitalize text-base"} 
-        to={"/search?facet[index_type]=Bonfire.Data.Identity.User&s=" <> e(assigns, :search, "")}>
-        <div class={"text-base-content/60 text-sm pb-3 border-b-2 border-transparent", "font-semibold border-primary text-primary": @selected_tab == "Bonfire.Data.Identity.User"}>
-          {l "Users"}
+      <LiveRedirect
+        class="hover:bg-base-content hover:bg-opacity-10 flex-1 pt-4  place-content-center flex capitalize text-base"
+        to={"/search?facet[index_type]=Bonfire.Data.Identity.User&s=" <> e(assigns, :search, "")}
+      >
+        <div class={
+          "text-base-content/60 text-sm pb-3 border-b-2 border-transparent",
+          "font-semibold border-primary text-primary": @selected_tab == "Bonfire.Data.Identity.User"
+        }>
+          {l("Users")}
         </div>
       </LiveRedirect>
       <!-- POSTS -->
-      <LiveRedirect 
-        class={"hover:bg-base-content hover:bg-opacity-10 flex-1 pt-4  place-content-center flex capitalize text-base"} 
-        to={"/search?facet[index_type]=Bonfire.Data.Social.Post&s=" <> e(assigns, :search, "")}>
-        <div class={"text-base-content/60 text-sm pb-3 border-b-2 border-transparent", "font-semibold border-primary text-primary": @selected_tab == "Bonfire.Data.Social.Post"}>
-          {l "Posts"}
+      <LiveRedirect
+        class="hover:bg-base-content hover:bg-opacity-10 flex-1 pt-4  place-content-center flex capitalize text-base"
+        to={"/search?facet[index_type]=Bonfire.Data.Social.Post&s=" <> e(assigns, :search, "")}
+      >
+        <div class={
+          "text-base-content/60 text-sm pb-3 border-b-2 border-transparent",
+          "font-semibold border-primary text-primary": @selected_tab == "Bonfire.Data.Social.Post"
+        }>
+          {l("Posts")}
         </div>
       </LiveRedirect>
     </nav>

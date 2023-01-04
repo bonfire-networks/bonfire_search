@@ -38,15 +38,15 @@ defmodule Bonfire.Search.Web.SearchLive do
        search: nil,
        hits: [],
        sidebar_widgets: [
-          users: [
-            secondary: [
-              {Bonfire.Tag.Web.WidgetTagsLive, []}
-            ]
-          ],
-          guests: [
-            secondary: nil
-          ]
-        ],
+         users: [
+           secondary: [
+             {Bonfire.Tag.Web.WidgetTagsLive, []}
+           ]
+         ],
+         guests: [
+           secondary: nil
+         ]
+       ]
        #  facets: %{},
        #  num_hits: nil
      )}
@@ -72,7 +72,7 @@ defmodule Bonfire.Search.Web.SearchLive do
       facets,
       socket
       |> assign(
-        selected_tab: index_type,
+        selected_tab: index_type
         # sidebar_widgets: widget(s)
       )
       |> assign_global(search_more: true)
