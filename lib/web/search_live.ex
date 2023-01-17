@@ -32,6 +32,7 @@ defmodule Bonfire.Search.Web.SearchLive do
        page_title: "Search",
        selected_tab: "all",
        search_limit: @default_limit,
+       page_header_icon: "heroicons-solid:search",
        #  me: false,
        #  selected_facets: nil,
        nav_items: Bonfire.Common.ExtensionModule.default_nav(:bonfire_ui_social),
