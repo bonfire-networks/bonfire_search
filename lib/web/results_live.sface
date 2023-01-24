@@ -13,7 +13,8 @@
             id={"sa:" <> id}
             class=""
             showing_within={:search}
-            activity={Map.merge(activity, %{object: Map.drop(hit, [:activity])})}
+            activity={activity}
+            object={Map.drop(hit, [:activity])}
             object_boundary={:skip}
             check_object_boundary
           />
@@ -23,7 +24,7 @@
             id={e(hit, :index_type, "so:") <> (e(hit, :id, nil) || Pointers.ULID.generate())}
             showing_within={:search}
             class=""
-            activity={%{object: hit}}
+            object={hit}
             object_boundary={:skip}
             check_object_boundary
           />
