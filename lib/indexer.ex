@@ -16,7 +16,7 @@ defmodule Bonfire.Search.Indexer do
     "post_content.html_body"
   ]
 
-  use Bonfire.Common.Utils, only: [maybe_get: 2, maybe_get: 3, ulid: 1, filter_empty: 2]
+  use Bonfire.Common.Utils
 
   def maybe_index_object(object) do
     indexable_object =
