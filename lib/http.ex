@@ -48,7 +48,7 @@ defmodule Bonfire.Search.HTTP do
         {:error, message}
       end
 
-    env ->
+    _env ->
       # debug(env)
 
       def http_error(_, http_method, message, _object, url) do

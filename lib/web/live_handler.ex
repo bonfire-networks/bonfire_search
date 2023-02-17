@@ -118,8 +118,8 @@ defmodule Bonfire.Search.LiveHandler do
      )}
   end
 
-  def live_search(q, search_limit, facet_filters, socket) do
-    debug(invalid_search: search_limit)
+  def live_search(q, _search_limit, _facet_filters, socket) do
+    debug(q, "invalid search")
     {:noreply, socket}
   end
 

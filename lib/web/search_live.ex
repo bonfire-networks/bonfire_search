@@ -1,8 +1,7 @@
 defmodule Bonfire.Search.Web.SearchLive do
   use Bonfire.UI.Common.Web, :surface_live_view
   alias Bonfire.UI.Me.LivePlugs
-
-  alias Bonfire.Search.Web.ResultsLive
+  # alias Bonfire.Search.Web.ResultsLive
 
   @default_limit 20
 
@@ -21,7 +20,7 @@ defmodule Bonfire.Search.Web.SearchLive do
     ])
   end
 
-  defp mounted(params, session, socket) do
+  defp mounted(_params, _session, socket) do
     # socket = init_assigns(params, session, socket)
     # debug(params, "PARAMS")
 
@@ -101,19 +100,19 @@ defmodule Bonfire.Search.Web.SearchLive do
     {:noreply, assign_global(socket, search_more: true)}
   end
 
-  defp type_name(name) do
-    String.split(name, ".") |> List.last() |> Recase.to_title()
-  end
+  # defp type_name(name) do
+  #   String.split(name, ".") |> List.last() |> Recase.to_title()
+  # end
 
-  defp link_body(name, 1 = num) do
-    type_name = type_name(name) |> Inflex.singularize()
-    "#{num} #{type_name}"
-  end
+  # defp link_body(name, 1 = num) do
+  #   type_name = type_name(name) |> Inflex.singularize()
+  #   "#{num} #{type_name}"
+  # end
 
-  defp link_body(name, num) do
-    type_name = type_name(name) |> Inflex.pluralize()
-    "#{num} #{type_name}"
-  end
+  # defp link_body(name, num) do
+  #   type_name = type_name(name) |> Inflex.pluralize()
+  #   "#{num} #{type_name}"
+  # end
 
   def handle_event(
         "Bonfire.Search:search",

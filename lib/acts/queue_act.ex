@@ -6,8 +6,8 @@ defmodule Bonfire.Search.Acts.Queue do
   use Arrows
   require Logger
 
-  alias Bonfire.Epics
-  alias Bonfire.Epics.Act
+  # alias Bonfire.Epics
+  # alias Bonfire.Epics.Act
   alias Bonfire.Epics.Epic
   alias Bonfire.Common.Utils
   alias Ecto.Changeset

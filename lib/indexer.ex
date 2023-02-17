@@ -121,8 +121,6 @@ defmodule Bonfire.Search.Indexer do
   end
 
   # index several things in an existing index
-  defp index_objects(objects, index_name, init_index_first \\ true)
-
   defp index_objects(objects, index_name, init_index_first)
        when is_list(objects) do
     # IO.inspect(objects)

@@ -52,7 +52,7 @@ defmodule Bonfire.Search.Stopwords do
     |> Enum.reject(&(&1 == []))
   end
 
-  defp filter_sentence(text, language \\ nil) do
+  defp filter_sentence(text, language) do
     text
     |> split_words()
     |> Enum.reject(&filter_stop_word(&1, language))
