@@ -94,7 +94,9 @@ defmodule Bonfire.Search.LiveHandler do
     # FIXME: use maybe_apply
     hits =
       (with {:ok, federated_object_or_character} <-
-              Bonfire.Federate.ActivityPub.AdapterUtils.get_by_url_ap_id_or_username(q) do
+              Bonfire.Federate.ActivityPub.AdapterUtils.get_by_url_ap_id_or_username(q,
+                fetch_collection: :async
+              ) do
          [federated_object_or_character] ++
            (hits || [])
        else
