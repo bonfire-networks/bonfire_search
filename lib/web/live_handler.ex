@@ -4,6 +4,12 @@ defmodule Bonfire.Search.LiveHandler do
   # TODO: put in config
   @default_limit 20
 
+  def handle_event("go_search", %{"s" => s} = params, socket) do
+    # TODO: show results in a modal rather than a seperate page
+
+    {:noreply, socket |> redirect_to("/search/?s=" <> s)}
+  end
+
   def handle_event(
         "search",
         params,
@@ -62,11 +68,45 @@ defmodule Bonfire.Search.LiveHandler do
     # debug(q, "SEARCH")
     debug(facet_filters, "TAB")
 
+    q = String.trim(q)
     opts = %{limit: search_limit}
 
-    search = Bonfire.Search.Fuzzy.search(q, opts, ["index_type"], facet_filters)
+    # TODO: make this a non-blocking operation? (ie. show the other results first and then inject the result of this lookup when ready)
+    # FIXME: use maybe_apply
+    # TODO fetch async and use send_update to send results to ResultsLive?
+    by_link_or_username =
+      with {:ok, federated_object_or_character} <-
+             Bonfire.Federate.ActivityPub.AdapterUtils.get_by_url_ap_id_or_username(q,
+               fetch_collection: :async
+             ) do
+        [federated_object_or_character]
+        # {:noreply, socket |> redirect_to(path(federated_object_or_character))}
+      else
+        _ ->
+          []
+      end
 
-    # debug(search_results: search)
+    {num_hits, hits, facets} = do_search(q, facet_filters, opts)
+
+    {:noreply,
+     assign_global(socket,
+       selected_facets: facet_filters,
+       hits: (by_link_or_username ++ hits) |> Enum.uniq_by(&%{id: &1.id}),
+       facets: facets || e(socket.assigns, :facets, nil),
+       num_hits: num_hits,
+       search: q
+       #  current_user: current_user(socket)
+     )}
+  end
+
+  def live_search(q, _search_limit, _facet_filters, socket) do
+    debug(q, "invalid search")
+    {:noreply, socket}
+  end
+
+  defp do_search(q, facet_filters, opts) do
+    search = Bonfire.Search.Fuzzy.search(q, opts, ["index_type"], facet_filters)
+    # |> debug()
 
     hits =
       if(
@@ -86,55 +126,8 @@ defmodule Bonfire.Search.LiveHandler do
     facets =
       if !facet_filters and e(search, "facetDistribution", nil) do
         e(search, "facetDistribution", nil)
-      else
-        e(socket.assigns, :facets, nil)
       end
 
-    # TODO: make this a non-blocking operation (ie. show the other results first and then inject the result of this lookup when ready)
-    # FIXME: use maybe_apply
-    hits =
-      (with {:ok, federated_object_or_character} <-
-              Bonfire.Federate.ActivityPub.AdapterUtils.get_by_url_ap_id_or_username(q,
-                fetch_collection: :async
-              ) do
-         [federated_object_or_character] ++
-           (hits || [])
-       else
-         _ ->
-           hits
-       end ||
-         [])
-      |> Enum.uniq_by(&%{id: &1.id})
-
-    # debug(hits, "hits")
-
-    # TODO use send_update to send results to ResultsLive
-    {:noreply,
-     assign_global(socket,
-       selected_facets: facet_filters,
-       hits: hits,
-       facets: facets,
-       num_hits: e(search, "nbHits", 0),
-       search: q
-       #  current_user: current_user(socket)
-     )}
+    {e(search, "nbHits", 0), hits || [], facets}
   end
-
-  def live_search(q, _search_limit, _facet_filters, socket) do
-    debug(q, "invalid search")
-    {:noreply, socket}
-  end
-
-  # def handle_event("search", params, %{assigns: _assigns} = socket) do
-  #   debug(search: params)
-  #   debug(socket)
-
-  #   if(socket.view == Bonfire.Search.Web.SearchLive) do
-  #     {:noreply,
-  #     socket |> patch_to("/instance/search/all/" <> params["search_field"]["query"])}
-  #   else
-  #     {:noreply,
-  #     socket |> redirect_to("/instance/search/all/" <> params["search_field"]["query"])}
-  #   end
-  # end
 end

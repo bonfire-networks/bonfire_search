@@ -2,7 +2,12 @@
   <form
     class="w-full"
     role="search"
-    phx-change={if @__context__[:current_view] == Bonfire.Search.Web.SearchLive, do: "Bonfire.Search:search"}
+    phx-change={if @__context__[:current_view] == Bonfire.Search.Web.SearchLive,
+      do: "Bonfire.Search:search",
+      else: "Bonfire.Search:go_search"}
+    phx-submit={if @__context__[:current_view] == Bonfire.Search.Web.SearchLive,
+      do: "Bonfire.Search:search",
+      else: "Bonfire.Search:go_search"}
     action="/search"
     method="GET"
   >
