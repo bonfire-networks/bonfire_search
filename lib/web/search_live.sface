@@ -20,7 +20,7 @@
         to={"/search?s=" <> e(assigns, :search, "")}
       >
         <div class={
-          "text-base-content/60 text-sm pb-3 border-b-2 border-transparent",
+          "text-base-content/70 text-sm pb-3 border-b-2 border-transparent",
           "font-semibold border-primary text-primary": @selected_tab == "all"
         }>
           {l("All types")}
@@ -32,7 +32,7 @@
         to={"/search?facet[index_type]=Bonfire.Data.Identity.User&s=" <> e(assigns, :search, "")}
       >
         <div class={
-          "text-base-content/60 text-sm pb-3 border-b-2 border-transparent",
+          "text-base-content/70 text-sm pb-3 border-b-2 border-transparent",
           "font-semibold border-primary text-primary": @selected_tab == "Bonfire.Data.Identity.User"
         }>
           {l("Users")}
@@ -44,7 +44,7 @@
         to={"/search?facet[index_type]=Bonfire.Data.Social.Post&s=" <> e(assigns, :search, "")}
       >
         <div class={
-          "text-base-content/60 text-sm pb-3 border-b-2 border-transparent",
+          "text-base-content/70 text-sm pb-3 border-b-2 border-transparent",
           "font-semibold border-primary text-primary": @selected_tab == "Bonfire.Data.Social.Post"
         }>
           {l("Posts")}
