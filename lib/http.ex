@@ -30,7 +30,7 @@ defmodule Bonfire.Search.HTTP do
     :ok
   end
 
-  case Bonfire.Common.Config.get(:env) || Mix.env() do
+  case Bonfire.Common.Config.env() || Mix.env() do
     :dev ->
       def http_error(_, http_method, message, object, url) do
         error(
