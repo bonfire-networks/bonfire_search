@@ -10,7 +10,7 @@
         {#match %{activity: %{id: id} = activity} = hit}
           <Dynamic.LiveComponent
             module={Bonfire.UI.Social.ActivityLive}
-            id={"sa:" <> id}
+            id={"sa-" <> id}
             class=""
             showing_within={:search}
             activity={activity}
@@ -21,7 +21,7 @@
         {#match hit}
           <Dynamic.LiveComponent
             module={Bonfire.UI.Social.ActivityLive}
-            id={e(hit, :index_type, "so:") <> (e(hit, :id, nil) || Pointers.ULID.generate())}
+            id={e(hit, :index_type, "so-") <> (id(hit) || Pointers.ULID.generate())}
             showing_within={:search}
             class=""
             object={hit}
