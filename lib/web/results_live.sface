@@ -11,7 +11,6 @@
           <Dynamic.LiveComponent
             module={Bonfire.UI.Social.ActivityLive}
             id={"sa-" <> id}
-            class=""
             showing_within={:search}
             activity={activity}
             object={Map.drop(hit, [:activity])}
@@ -23,7 +22,6 @@
             module={Bonfire.UI.Social.ActivityLive}
             id={e(hit, :index_type, "so-") <> (id(hit) || Pointers.ULID.generate())}
             showing_within={:search}
-            class=""
             object={hit}
             object_boundary={:skip}
             check_object_boundary
