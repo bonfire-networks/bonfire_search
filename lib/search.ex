@@ -12,17 +12,19 @@ defmodule Bonfire.Search do
     do: Bonfire.Common.Config.get_ext(:bonfire_search, :public_index, "public")
 
   def search_by_type(tag_search, facets \\ nil) do
-    facets = search_facets(facets)
-    debug("search: #{inspect(tag_search)} with facets #{inspect(facets)}")
-    search = search(tag_search, %{}, false, facets)
+    if Bonfire.Common.Config.get_ext(:bonfire_search, :disable_for_autocompletes) != true do
+      facets = search_facets(facets)
+      debug("search: #{inspect(tag_search)} with facets #{inspect(facets)}")
+      search = search(tag_search, %{}, false, facets)
 
-    # IO.inspect(searched: search)
+      # IO.inspect(searched: search)
 
-    if(is_map(search) and Map.has_key?(search, "hits") and length(search["hits"])) do
-      search["hits"]
-      |> Enums.filter_empty([])
+      if(is_map(search) and Map.has_key?(search, "hits") and length(search["hits"])) do
+        search["hits"]
+        |> Enums.filter_empty([])
 
-      # |> IO.inspect(label: "search results")
+        # |> IO.inspect(label: "search results")
+      end
     end
   end
 
