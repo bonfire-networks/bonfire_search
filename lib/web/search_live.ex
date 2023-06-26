@@ -5,7 +5,10 @@ defmodule Bonfire.Search.Web.SearchLive do
 
   @default_limit 20
 
-  declare_extension("Search", icon: "twemoji:magnifying-glass-tilted-left", exclude_from_nav: true)
+  declare_extension("Search",
+    icon: "twemoji:magnifying-glass-tilted-left",
+    exclude_from_nav: true
+  )
 
   on_mount {LivePlugs, [Bonfire.UI.Me.LivePlugs.LoadCurrentUser]}
 
