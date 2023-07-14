@@ -7,6 +7,7 @@ defmodule Bonfire.Search.Web.SearchLive do
 
   declare_extension("Search",
     icon: "twemoji:magnifying-glass-tilted-left",
+    emoji: "🔍",
     exclude_from_nav: true
   )
 
