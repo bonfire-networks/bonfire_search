@@ -12,7 +12,10 @@ defmodule Bonfire.Search do
     do: Bonfire.Common.Config.get_ext(:bonfire_search, :public_index, "public")
 
   def search_by_type(tag_search, facets \\ nil) do
-    if Bonfire.Common.Config.get_ext(:bonfire_search, :disable_for_autocompletes) != true do
+    if Bonfire.Common.Config.get_ext(:bonfire_search, :disable_for_autocompletes) do
+      debug("disable_for_autocompletes set, so skip searching ")
+      nil
+    else
       facets = search_facets(facets)
       debug("search: #{inspect(tag_search)} with facets #{inspect(facets)}")
       search = search(tag_search, %{}, false, facets)
