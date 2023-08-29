@@ -95,7 +95,7 @@ defmodule Bonfire.Search.LiveHandler do
        facets: facets || e(socket.assigns, :facets, nil),
        num_hits: num_hits,
        search: q
-       #  current_user: current_user(socket)
+       #  current_user: current_user(socket.assigns)
      )}
   end
 
