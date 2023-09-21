@@ -11,7 +11,7 @@
     </div> -->
     <nav
       role="tabpanel"
-      class="flex justify-between w-full mb-2 border-b bg-base-300 tabs border-base-content border-opacity-10"
+      class="flex justify-between w-full mb-2 border-b bg-base-100 tabs border-base-content border-opacity-10"
       aria-label="Switch between search filter tabs"
     >
       <!-- ALL TYPES -->
