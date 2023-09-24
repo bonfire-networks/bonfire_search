@@ -78,7 +78,8 @@ defmodule Bonfire.Search.LiveHandler do
       with {:ok, federated_object_or_character} <-
              Bonfire.Federate.ActivityPub.AdapterUtils.get_by_url_ap_id_or_username(q,
                fetch_collection: :async
-             ) do
+             )
+             |> debug("got_by_url_ap_id_or_username") do
         [federated_object_or_character]
         # {:noreply, socket |> redirect_to(path(federated_object_or_character))}
       else
