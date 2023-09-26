@@ -1,7 +1,7 @@
 <Bonfire.UI.Common.WidgetBlockLive widget_title={l("Filters")}>
   <div class="p-3">
     <Bonfire.Search.Web.FormLive search={@search} />
-    <!-- <form action="?" phx-submit="search" method="get">
+    {!-- <form action="?" phx-submit="search" method="get">
       <fieldset>
         <legend class="text-sm font-normal text-base-content/70">{l("Search for")}</legend>
         <input
@@ -12,7 +12,7 @@
           placeholder="Search..."
         />
       </fieldset>
-    </form> -->
+    </form> --}
 
     <form action="?" phx-change="filter" method="get">
       <fieldset class="mt-4">
@@ -45,7 +45,7 @@
         </div>
       </fieldset>
 
-      <!-- <fieldset class="mt-4">
+      {!-- <fieldset class="mt-4">
         <legend class="text-sm font-normal text-base-content/70">{l("From")}</legend>
         <div class="flex items-center mt-2 border rounded-lg border-base-content/20 bg-base-100">
           <div class="flex items-center flex-1 p-3">
@@ -61,7 +61,7 @@
             </label>
           </div>
         </div>
-      </fieldset> -->
+      </fieldset> --}
     </form>
   </div>
 </Bonfire.UI.Common.WidgetBlockLive>

@@ -1,20 +1,20 @@
-<!-- <Bonfire.UI.Common.PageTitleLive page_title={@page_title} /> -->
+{!-- <Bonfire.UI.Common.PageTitleLive page_title={@page_title} /> --}
 <div class="">
   <div class="flex-1 p-3 bg-base-200 tablet:hidden">
     <Bonfire.Search.Web.FormLive search={@search} search_limit={@search_limit} />
   </div>
 
   <div class="">
-    <!-- <div class="flex items-center justify-between w-full p-4 mb-2 border-b bg-base-content/10 border-base-content/5">
+    {!-- <div class="flex items-center justify-between w-full p-4 mb-2 border-b bg-base-content/10 border-base-content/5">
       <div class="text-base font-normal text-base-content/70">{l("Results for")} <b class="font-bold underline">{@search}</b>
       </div>
-    </div> -->
+    </div> --}
     <nav
       role="tabpanel"
       class="flex justify-between w-full mb-2 border-b bg-base-100 tabs border-base-content border-opacity-10"
       aria-label="Switch between search filter tabs"
     >
-      <!-- ALL TYPES -->
+      {!-- ALL TYPES --}
       <LiveRedirect
         class="flex flex-1 pt-4 text-base capitalize hover:bg-base-content hover:bg-opacity-10 place-content-center"
         to={"/search?s=" <> e(assigns, :search, "")}
@@ -26,7 +26,7 @@
           {l("All types")}
         </div>
       </LiveRedirect>
-      <!-- USERS -->
+      {!-- USERS --}
       <LiveRedirect
         class="flex flex-1 pt-4 text-base capitalize hover:bg-base-content hover:bg-opacity-10 place-content-center"
         to={"/search?facet[index_type]=Bonfire.Data.Identity.User&s=" <> e(assigns, :search, "")}
@@ -38,7 +38,7 @@
           {l("Users")}
         </div>
       </LiveRedirect>
-      <!-- POSTS -->
+      {!-- POSTS --}
       <LiveRedirect
         class="flex flex-1 pt-4 text-base capitalize hover:bg-base-content hover:bg-opacity-10 place-content-center"
         to={"/search?facet[index_type]=Bonfire.Data.Social.Post&s=" <> e(assigns, :search, "")}

@@ -1,13 +1,13 @@
 <main class="mx-3 lg:flex lg:mx-0 lg:space-x-4">
   <section class="bg-base-100 shadow  w-center">
-        <!-- <%#=
+        {!-- <%#=
         live_component(
           @socket,
           Bonfire.Search.Web.FormLive,
           search: e(@search, ""),
           page: e(@page, 1)
         )
-          %> -->
+          %> --}
         <div class="flex items-center p-3">
           <div class="flex items-center flex-1 space-x-2 text-left">
             <Bonfire.UI.Common.BackButtonLive showing_within={@showing_within} />
@@ -29,10 +29,10 @@
     <div class="w-full h-full px-1">
       <div class="">
         <span class="text-base font-bold tracking-wide ">Search filters</span>
-        <!-- <%# <div class="">
+        {!-- <%# <div class="">
           <input name="editor-style" type="checkbox" class="editor-style switch">
           <label for="editor-style">Search this instance only</label>
-        </div> %> -->
+        </div> %> --}
 
         <div class="mt-4 mb-2 text-sm font-semibold text-base-content opacity-60">Type</div>
         <ul class="flex flex-col border rounded ">
@@ -50,19 +50,19 @@
               </LiveRedirect>
             </li>
           {/if}
-          <!-- <%= for {facet, num_matches} <- e(@facets, "index_type", []) do %>
+          {!-- <%= for {facet, num_matches} <- e(@facets, "index_type", []) do %>
             <li class="p-2 text-sm font-medium  ">
               <%= live_patch link_body(facet, num_matches),
                 to: " /search?facet[index_type]="<>facet<>"&s=" <> e(@search, ""),
                 class: if e(@selected_facets, %{})[facet], do: "bg-neutral", else: "block"
             %></li>
-          <% end %> -->
-          <!-- <%= if @selected_facets do %>
+          <% end %> --}
+          {!-- <%= if @selected_facets do %>
             <li class="p-2 text-sm font-medium  "><%= live_patch "All types",
               to: " /search?s=" <> e(@search, ""),
               class: "block"
             %></li>
-          <% end %> -->
+          <% end %> --}
         </ul>
 
         <ul class="mt-4">
@@ -78,31 +78,31 @@
               <LiveRedirect to={~p"/search?s=" <> e(@search, "")}>
                 {l "All tags"}
               </LiveRedirect>
-            <!-- <%= live_patch "All tags",
+            {!-- <%= live_patch "All tags",
               to: " /search?s=" <> e(@search, "")
-            %> -->
+            %> --}
             </li>
           {/if}
-          <!-- <%= for {tag, num_matches} <- e(@facets, "tags", []) do %>
+          {!-- <%= for {tag, num_matches} <- e(@facets, "tags", []) do %>
             <li><%= live_patch "#{num_matches} #{tag}",
               to: " /search?facet[tags]="<>tag<>"&s=" <> e(@search, ""),
               class: if e(@selected_facets, %{})[tag], do: "active", else: ""
             %></li>
-          <% end %> -->
-          <!-- <%= if e(@selected_facets, []) do %>
+          <% end %> --}
+          {!-- <%= if e(@selected_facets, []) do %>
             <li class="text-sm font-medium "><%= live_patch "All tags",
               to: " /search?s=" <> e(@search, "")
             %></li>
-          <% end %> -->
+          <% end %> --}
         </ul>
 
-        <!-- <%# <div class="">
+        {!-- <%# <div class="">
           <div class="">
             <label>Number of likes</label>
             <input type="range" min="0" max="1000" step="5"  />
           </div>
 
-        </div> %> -->
+        </div> %> --}
 
     </div>
   </aside>
