@@ -76,8 +76,9 @@ defmodule Bonfire.Search.LiveHandler do
     # TODO fetch async and use send_update to send results to ResultsLive?
     by_link_or_username =
       with {:ok, federated_object_or_character} <-
-             Bonfire.Federate.ActivityPub.AdapterUtils.get_by_url_ap_id_or_username(q,
-               fetch_collection: :async
+             Bonfire.Federate.ActivityPub.AdapterUtils.get_by_url_ap_id_or_username(
+               q
+               #  fetch_collection: :async
              )
              |> debug("got_by_url_ap_id_or_username") do
         [federated_object_or_character]
