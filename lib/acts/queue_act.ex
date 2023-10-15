@@ -41,12 +41,12 @@ defmodule Bonfire.Search.Acts.Queue do
 
           # maybe_debug(epic, act, object, "Non-formated object")
 
+          current_user = epic.assigns[:options][:current_user]
           prepared_object = prepare_object(object)
 
           if prepared_object do
             prepared_object
-            |> maybe_indexable_object()
-            |> maybe_index()
+            |> maybe_indexable_object(current_user)
 
             Epic.assign(epic, on, prepared_object)
           else
@@ -87,7 +87,11 @@ defmodule Bonfire.Search.Acts.Queue do
 
       %{id: _} ->
         # FIXME: should be done in a Social act
-        Bonfire.Social.Activities.activity_preloads(thing, :all, [])
+        Bonfire.Social.Activities.activity_preloads(
+          thing,
+          [:tags, :feed_by_creator, :with_replied],
+          []
+        )
 
       _ ->
         Logger.error("MeiliSearch.Queue: no clause match for function to_indexable/2")
@@ -97,30 +101,18 @@ defmodule Bonfire.Search.Acts.Queue do
     end
   end
 
-  def maybe_indexable_object(object) do
+  def maybe_indexable_object(object, current_user) do
     if Bonfire.Common.Extend.module_enabled?(
          Bonfire.Search.Indexer,
-         Utils.e(object, :creator, :id, nil) ||
-           Utils.e(object, :created, :creator_id, nil)
+         Utils.e(object, :created, :creator, nil) ||
+           Utils.e(object, :creator, nil) || current_user
        ),
        do:
          object
          # FIXME: should be done in a Social act
          |> Bonfire.Social.Activities.activity_under_object()
          |> Bonfire.Search.Indexer.maybe_indexable_object()
-  end
-
-  def maybe_index(object) do
-    if Bonfire.Common.Extend.module_enabled?(
-         Bonfire.Search.Indexer,
-         Utils.e(object, :creator, :id, nil) ||
-           Utils.e(object, :created, :creator_id, nil)
-       ) do
-      Bonfire.Search.Indexer.maybe_index_object(object)
-      # |> debug()
-    else
-      :ok
-    end
+         |> Bonfire.Search.Indexer.maybe_index_object()
   end
 
   def maybe_unindex(object) do
