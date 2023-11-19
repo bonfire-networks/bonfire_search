@@ -24,7 +24,7 @@ defmodule Bonfire.Search.Indexer do
       |> filter_empty(nil)
       |> debug("filtered")
 
-    if !is_nil(indexable_object) do
+    if not is_nil(indexable_object) do
       index_public_object(indexable_object)
     end
   end
