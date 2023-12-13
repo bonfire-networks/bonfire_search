@@ -1,6 +1,6 @@
 {!-- <Bonfire.UI.Common.PageTitleLive page_title={@page_title} /> --}
 <div class="">
-  <div class="flex-1 p-3 bg-base-100 tablet:hidden">
+  <div class="flex-1 p-3 bg-base-100">
     <Bonfire.Search.Web.FormLive search={@search} search_limit={@search_limit} />
   </div>
 

@@ -5,10 +5,17 @@ defmodule Bonfire.Search.Web.SearchLive do
 
   @default_limit 20
 
-  declare_extension("Search",
-    icon: "twemoji:magnifying-glass-tilted-left",
-    emoji: "🔍",
-    exclude_from_nav: true
+  # declare_extension("Search",
+  #   icon: "twemoji:magnifying-glass-tilted-left",
+  #   emoji: "🔍",
+  #   exclude_from_nav: true
+  # )
+
+  declare_nav_link(l("Search"),
+    page: "search",
+    href: "/search",
+    icon: "carbon:search",
+    icon_active: "carbon:search"
   )
 
   on_mount {LivePlugs, [Bonfire.UI.Me.LivePlugs.LoadCurrentUser]}
@@ -23,8 +30,8 @@ defmodule Bonfire.Search.Web.SearchLive do
        page: "search",
        page_title: "Search",
        selected_tab: "all",
+       no_header: true,
        search_limit: @default_limit,
-       page_header_icon: "fluent:search-24-regular",
        #  me: false,
        #  selected_facets: nil,
        nav_items: Bonfire.Common.ExtensionModule.default_nav(:bonfire_ui_social),
