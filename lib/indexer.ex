@@ -79,8 +79,8 @@ defmodule Bonfire.Search.Indexer do
     maybe_indexable_and_discoverable(creator, object)
   end
 
-  def maybe_indexable_object(%Pointers.Pointer{} = pointer) do
-    Bonfire.Common.Pointers.get(pointer)
+  def maybe_indexable_object(%Needle.Pointer{} = pointer) do
+    Bonfire.Common.Needle.get(pointer)
     |> maybe_indexable_object()
   end
 
