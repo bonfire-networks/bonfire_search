@@ -80,7 +80,7 @@ defmodule Bonfire.Search.Indexer do
   end
 
   def maybe_indexable_object(%Needle.Pointer{} = pointer) do
-    Bonfire.Common.Needle.get(pointer)
+    Bonfire.Common.Needles.get(pointer)
     |> maybe_indexable_object()
   end
 
