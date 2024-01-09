@@ -1,13 +1,12 @@
-<!-- phx-change={if @__context__[:current_view] == Bonfire.Search.Web.SearchLive,
-      do: "Bonfire.Search:search",
-      else: "Bonfire.Search:go_search"} -->
+<!--  -->
 <div class="relative">
   <form
     class="w-full"
     role="search"
-    phx-submit={if @__context__[:current_view] == Bonfire.Search.Web.SearchLive,
-      do: "Bonfire.Search:search",
-      else: "Bonfire.Search:go_search"}
+    phx-change={if @__context__[:current_view] == Bonfire.Search.Web.SearchLive,
+      do: "Bonfire.Search:search"}
+    phx-submit={if @__context__[:current_view] != Bonfire.Search.Web.SearchLive,
+      do: "Bonfire.Search:go_search"}
     action="/search"
     method="GET"
   >

@@ -15,10 +15,7 @@ defmodule Bonfire.Search.LiveHandler do
         params,
         %{assigns: %{search_limit: search_limit}} = socket
       ) do
-    debug(search: params)
-    # debug(socket)
-
-    live_search(params["s"], search_limit || @default_limit, nil, socket)
+    live_search(params["s"], search_limit || @default_limit, params["facet"], socket)
   end
 
   def handle_event(
@@ -26,20 +23,16 @@ defmodule Bonfire.Search.LiveHandler do
         params,
         %{assigns: %{__context__: %{search_limit: search_limit}}} = socket
       ) do
-    debug(search: params)
     # debug(socket)
 
-    live_search(params["s"], search_limit || @default_limit, nil, socket)
+    live_search(params["s"], search_limit || @default_limit, params["facet"], socket)
   end
 
   def handle_event("search", params, %{assigns: _assigns} = socket) do
-    debug(search: params)
-    # debug(socket)
-
     live_search(
       params["s"],
       params["search_limit"] || @default_limit,
-      nil,
+      params["facet"],
       socket
     )
   end
@@ -53,23 +46,22 @@ defmodule Bonfire.Search.LiveHandler do
 
   def live_search(q, search_limit, facet_filters, socket)
       when is_binary(search_limit) and search_limit != "" do
-    # debug(search_limit)
     search_limit = String.to_integer(search_limit) || @default_limit
     live_search(q, search_limit, facet_filters, socket)
   end
 
   def live_search(q, search_limit, facet_filters, socket)
-      when search_limit == "" do
+      when search_limit == "" or is_nil(search_limit) do
     live_search(q, @default_limit, facet_filters, socket)
   end
 
   def live_search(q, search_limit, facet_filters, socket)
       when is_binary(q) and q != "" and is_integer(search_limit) do
-    # debug(q, "SEARCH")
-    debug(facet_filters, "TAB")
+    debug(q, "SEARCHING")
+    debug(facet_filters, "FACET")
 
     q = String.trim(q)
-    opts = %{limit: search_limit}
+    opts = %{limit: search_limit, current_user: current_user(socket)}
 
     # TODO: make this a non-blocking operation? (ie. show the other results first and then inject the result of this lookup when ready)
     # FIXME: use maybe_apply
@@ -88,12 +80,14 @@ defmodule Bonfire.Search.LiveHandler do
           []
       end
 
-    {num_hits, hits, facets} = do_search(q, facet_filters, opts)
+    {num_hits, hits, facets} =
+      do_search(q, facet_filters, opts)
+      |> debug("did_search1")
 
     {:noreply,
      assign_global(socket,
        selected_facets: facet_filters,
-       hits: (by_link_or_username ++ hits) |> Enum.uniq_by(&%{id: &1.id}),
+       hits: (by_link_or_username ++ hits) |> Enum.uniq_by(&Enums.id/1),
        facets: facets || e(socket.assigns, :facets, nil),
        num_hits: num_hits,
        search: q
@@ -107,8 +101,11 @@ defmodule Bonfire.Search.LiveHandler do
   end
 
   defp do_search(q, facet_filters, opts) do
-    search = Bonfire.Search.Fuzzy.search(q, opts, ["index_type"], facet_filters)
-    # |> debug()
+    facet_filters = facet_filters || %{}
+
+    search =
+      Bonfire.Search.search(q, opts, Map.keys(facet_filters), Map.values(facet_filters))
+      |> debug("did_search1")
 
     hits =
       if(
@@ -122,6 +119,8 @@ defmodule Bonfire.Search.LiveHandler do
             |> input_to_atoms()
             |> maybe_to_structs())
         )
+      else
+        if is_list(search), do: search
       end
 
     # note we only get proper facets when not already faceting
@@ -130,6 +129,6 @@ defmodule Bonfire.Search.LiveHandler do
         e(search, "facetDistribution", nil)
       end
 
-    {e(search, "nbHits", 0), hits || [], facets}
+    {e(search, "nbHits", 0) || length(hits), hits || [], facets}
   end
 end

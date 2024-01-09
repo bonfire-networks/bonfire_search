@@ -131,14 +131,15 @@ defmodule Bonfire.Search.Indexer do
   defp index_objects(objects, index_name, init_index_first)
        when is_list(objects) do
     # IO.inspect(objects)
+    adapter = adapter()
 
-    if !Bonfire.Common.Config.get_ext(:bonfire_search, :disable_indexing) do
+    if module_enabled?(__MODULE__) and module_enabled?(adapter) do
       # FIXME - should create the index only once
-      if init_index_first, do: init_index(index_name, true)
+      if init_index_first, do: init_index(index_name, true, adapter)
 
       objects
       # |> debug("filtered")
-      |> adapter().put(index_name <> "/documents")
+      |> adapter.put(index_name <> "/documents")
       |> debug("result of PUT")
     end
   end
@@ -150,18 +151,22 @@ defmodule Bonfire.Search.Indexer do
   end
 
   # create a new index
-  def init_index(index_name \\ "public", fail_silently \\ false)
+  def init_index(index_name \\ "public", fail_silently \\ false, adapter \\ adapter())
 
-  def init_index("public" = index_name, fail_silently) do
-    adapter().create_index(index_name, fail_silently)
+  def init_index("public" = index_name, fail_silently, adapter) do
+    if adapter do
+      adapter.create_index(index_name, fail_silently)
 
-    # define facets to be used for filtering main search index
-    adapter().set_facets(index_name, @public_facets)
-    adapter().set_searchable_fields(index_name, @public_searcheable_fields)
+      # define facets to be used for filtering main search index
+      adapter.set_facets(index_name, @public_facets)
+      adapter.set_searchable_fields(index_name, @public_searcheable_fields)
+    end
   end
 
-  def init_index(index_name, fail_silently) do
-    adapter().create_index(index_name, fail_silently)
+  def init_index(index_name, fail_silently, adapter) do
+    if adapter do
+      adapter.create_index(index_name, fail_silently)
+    end
   end
 
   def maybe_delete_object(object, index_name \\ "public") do

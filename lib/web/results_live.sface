@@ -14,15 +14,15 @@
             showing_within={:search}
             activity={activity}
             object={Map.drop(hit, [:activity])}
-            check_object_boundary
+            check_object_boundary={not is_nil(Bonfire.Search.adapter())}
           />
-        {#match hit}
+        {#match %{id: id} = hit}
           <StatefulComponent
             module={maybe_component(Bonfire.UI.Social.ActivityLive)}
-            id={e(hit, :index_type, "so-") <> (id(hit) || Text.random_string())}
+            id={e(hit, :index_type, "so-") <> (id || Text.random_string())}
             showing_within={:search}
             object={hit}
-            check_object_boundary
+            check_object_boundary={not is_nil(Bonfire.Search.adapter())}
           />
       {/case}
     </div>

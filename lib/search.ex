@@ -6,124 +6,80 @@ defmodule Bonfire.Search do
   import Untangle
   use Bonfire.Common.Utils
 
-  def adapter, do: Bonfire.Common.Config.get_ext!(:bonfire_search, :adapter)
+  def adapter, do: Bonfire.Common.Config.get_ext(:bonfire_search, :adapter)
 
-  def public_index(),
-    do: Bonfire.Common.Config.get_ext(:bonfire_search, :public_index, "public")
+  def search_by_type(tag_search, facets \\ nil, opts \\ []) do
+    adapter = adapter()
 
-  def search_by_type(tag_search, facets \\ nil) do
-    if Bonfire.Common.Config.get_ext(:bonfire_search, :disable_for_autocompletes) do
-      debug("disable_for_autocompletes set, so skip searching ")
-      nil
+    if is_nil(adapter) or !module_enabled?(adapter) or
+         Bonfire.Common.Config.get_ext(:bonfire_search, :disable_for_autocompletes) do
+      do_search_db(tag_search, facets, to_options(opts))
     else
-      facets = search_facets(facets)
-      debug("search: #{inspect(tag_search)} with facets #{inspect(facets)}")
-      search = search(tag_search, %{}, false, facets)
-
-      # IO.inspect(searched: search)
-
-      if(is_map(search) and Map.has_key?(search, "hits") and length(search["hits"])) do
-        search["hits"]
-        |> Enums.filter_empty([])
-
-        # |> IO.inspect(label: "search results")
-      end
+      adapter.search_by_type(tag_search, facets)
     end
   end
 
-  defp search_facets(facets) when is_list(facets) or not is_nil(facets) do
-    %{
-      "index_type" => List.wrap(facets)
-
-      # |> search_prefix()
-    }
+  defp none(e, _) do
+    debug(e)
+    []
   end
 
-  defp search_facets(nil) do
-    nil
+  defp do_search_db(search, types, opts) when is_list(types) do
+    types
+    |> Enum.flat_map(fn type ->
+      do_search_db(search, type, opts)
+    end)
   end
 
-  def search(string, opts \\ %{}, calculate_facets, filter_facets)
+  defp do_search_db(search, type, opts) when is_binary(type) do
+    case Types.maybe_to_module(type) do
+      nil ->
+        debug(type, "not a module")
+        []
 
-  def search(string, opts, calculate_facets, filter_facets)
-      when is_map(filter_facets) do
-    search(
-      string,
-      opts,
-      calculate_facets,
-      Enum.map(filter_facets, &facet_from_map/1)
-    )
+      mod ->
+        do_search_db(search, mod, opts)
+    end
   end
 
-  def search(string, opts, calculate_facets, filter_facets)
-      when is_list(filter_facets) do
-    opts =
-      Map.merge(opts, %{
-        filter: List.flatten(filter_facets)
-      })
+  defp do_search_db(search, type, opts) do
+    if is_atom(type) do
+      debug(" try searching in DB ")
 
-    do_search(string, opts, calculate_facets)
+      # Bonfire.Common.QueryModule.maybe_query_module(type) || 
+      (Bonfire.Common.ContextModule.maybe_context_module(type) ||
+         type)
+      |> maybe_apply([:search_db, :search], [search, opts], &none/2)
+    else
+      debug("no module, so skip searching ")
+      []
+    end
   end
 
-  def search(string, opts, calculate_facets, _) do
-    do_search(string, opts, calculate_facets)
+  def search(string, opts \\ %{}, calculate_facets, filter_facets) do
+    adapter = adapter()
+
+    if is_nil(adapter) or !module_enabled?(adapter) do
+      opts = to_options(opts)
+      do_search_db(string, e(filter_facets, nil) || default_types(opts), opts)
+    else
+      maybe_apply(adapter, :search, [string, opts, calculate_facets, filter_facets])
+    end
   end
 
-  defp do_search(string, opts, calculate_facets)
-       when not is_nil(calculate_facets) do
-    # opts = Map.merge(%{
-    #   facetDistribution: ["*"]
-    # }, opts)
+  def search(string, opts_or_index \\ nil) do
+    adapter = adapter()
 
-    search(string, opts)
+    if is_nil(adapter) or !module_enabled?(adapter) do
+      opts = to_options(opts_or_index)
+      do_search_db(string, default_types(opts), opts)
+    else
+      maybe_apply(adapter, :search, [string, opts_or_index])
+    end
   end
 
-  defp do_search(string, opts, _) do
-    search(string, opts)
-  end
-
-  def search(string, opts_or_index \\ nil)
-
-  def search(string, index) when is_binary(string) and is_binary(index) do
-    # deprecate
-    object = %{
-      q: string
-    }
-
-    search(object, index)
-  end
-
-  def search(string, %{index: index} = opts)
-      when is_binary(string) and is_map(opts) do
-    %{
-      q: string
-    }
-    |> Map.merge(opts)
-    |> Map.drop([:index])
-    |> search(index)
-  end
-
-  def search(string, opts) when is_binary(string) and is_map(opts) do
-    %{
-      q: string
-    }
-    |> Map.merge(opts)
-    |> search(public_index())
-  end
-
-  def search(object, index) when is_map(object) and is_binary(index) do
-    adapter().search(object, index)
-  end
-
-  def search(object, _) when is_map(object) do
-    search(object, public_index())
-  end
-
-  def facet_from_map({key, values}) when is_list(values) do
-    Enum.map(values, &facet_from_map({key, &1}))
-  end
-
-  def facet_from_map({key, value}) when is_binary(value) or is_atom(value) do
-    "#{key} = #{value}"
+  def default_types(_opts) do
+    # TODO: make default types generated/configurable
+    [Bonfire.Data.Identity.User, Bonfire.Data.Social.Post]
   end
 end
