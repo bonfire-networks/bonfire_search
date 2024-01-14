@@ -62,6 +62,14 @@ defmodule Bonfire.Search.Web.SearchLive do
   #   ]
   # end
 
+  def maybe_handle_params(params, _url, socket) do
+    if socket_connected?(socket) do
+      do_handle_params(params, nil, socket)
+    else
+      socket
+    end
+  end
+
   def do_handle_params(%{"s" => s, "facet" => facets} = _params, _url, socket)
       when s != "" do
     index_type = e(facets, :index_type, nil)
@@ -173,7 +181,7 @@ defmodule Bonfire.Search.Web.SearchLive do
         uri,
         socket,
         __MODULE__,
-        &do_handle_params/3
+        &maybe_handle_params/3
       )
 
   def handle_info(info, socket),
