@@ -80,14 +80,37 @@ defmodule Bonfire.Search.LiveHandler do
           []
       end
 
+    # tagged =
+    #   with hashtags when is_list(hashtags) <-
+    #          Bonfire.Tag.Tags.search_hashtag(
+    #            q
+    #            #  fetch_collection: :async
+    #          )
+    #          |> debug("got_hashtags") do
+    #     hashtags
+    #     # {:noreply, socket |> redirect_to(path(federated_object_or_character))}
+    #   else
+    #     _ ->
+    #       []
+    #   end
+
     {num_hits, hits, facets} =
       do_search(q, facet_filters, opts)
       |> debug("did_search1")
 
+    # + length(tagged)
+    num_hits = (num_hits || 0) + length(by_link_or_username)
+
+    # ++ tagged 
+    hits =
+      (by_link_or_username ++ hits)
+      |> Enum.uniq_by(&Enums.id/1)
+      |> debug("search2 merged")
+
     {:noreply,
      assign_global(socket,
        selected_facets: facet_filters,
-       hits: (by_link_or_username ++ hits) |> Enum.uniq_by(&Enums.id/1),
+       hits: hits,
        facets: facets || e(socket.assigns, :facets, nil),
        num_hits: num_hits,
        search: q

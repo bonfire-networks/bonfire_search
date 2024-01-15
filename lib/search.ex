@@ -22,13 +22,15 @@ defmodule Bonfire.Search do
 
   defp none(e, _) do
     debug(e)
-    []
+    nil
   end
 
   def run_search_db(search, types, opts) do
     limit = opts[:limit] || 20
 
     do_search_db(opts[:query] || base_query(), search, types, opts ++ [skip_boundary_check: true])
+    |> debug()
+    # |> Bonfire.Tag.Tags.search_hashtagged_query(search, opts) # TODO: use do_search_db like other types
     |> where([p], is_nil(p.deleted_at))
     # |> limit(^limit)
     |> debug()
@@ -68,10 +70,12 @@ defmodule Bonfire.Search do
   defp maybe_order_override(query, text, _several) do
     query
     |> Ecto.Query.exclude(:order_by)
-    |> order_by([post_content: pc, profile: p, character: c], [
+    |> order_by([named: n, post_content: pc, profile: p, character: c], [
       {:desc,
        fragment(
-         "(? <% ?)::int + (? <% ?)::int + (? <% ?)::int + (? <% ?)::int",
+         "(? <% ?)::int + (? <% ?)::int + (? <% ?)::int + (? <% ?)::int + (? <% ?)::int + (? <% ?)::int",
+         ^text,
+         n.name,
          ^text,
          pc.name,
          ^text,
@@ -79,7 +83,9 @@ defmodule Bonfire.Search do
          ^text,
          c.username,
          ^text,
-         p.name
+         p.name,
+         ^text,
+         p.summary
        )}
     ])
   end
@@ -99,7 +105,7 @@ defmodule Bonfire.Search do
     case Types.maybe_to_module(type) do
       nil ->
         debug(type, "not a module")
-        []
+        query
 
       mod ->
         do_search_db(query, search, mod, opts)
@@ -117,10 +123,10 @@ defmodule Bonfire.Search do
         [:search_query, :search],
         [search, Keyword.put(opts, :query, query)],
         &none/2
-      )
+      ) || query
     else
       debug("no module, so skip searching ")
-      []
+      query
     end
   end
 
@@ -148,6 +154,6 @@ defmodule Bonfire.Search do
 
   def default_types(_opts) do
     # TODO: make default types generated/configurable
-    [Bonfire.Data.Identity.User, Bonfire.Data.Social.Post]
+    [Bonfire.Data.Identity.User, Bonfire.Data.Social.Post, Bonfire.Tag.Tagged]
   end
 end

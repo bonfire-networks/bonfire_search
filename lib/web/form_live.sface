@@ -3,13 +3,15 @@
   <form
     class="w-full"
     role="search"
-    phx-change={if @__context__[:current_view] == Bonfire.Search.Web.SearchLive,
-      do: "Bonfire.Search:search"}
     phx-submit={if @__context__[:current_view] != Bonfire.Search.Web.SearchLive,
-      do: "Bonfire.Search:go_search"}
+      do: "Bonfire.Search:go_search",
+      else: "Bonfire.Search:search"}
     action="/search"
     method="GET"
   >
+    <!-- phx-change={if @__context__[:current_view] == Bonfire.Search.Web.SearchLive,
+      do: "Bonfire.Search:search"} -->
+
     <span class="sr-only">{e(@search_placeholder, l("Search"))}</span>
     <div class="relative w-full rounded">
       <input type="hidden" name="search_limit" value={e(@search_limit, "")}>
