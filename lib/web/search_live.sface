@@ -21,7 +21,7 @@
       >
         <div class={
           "text-base-content/70 text-sm pb-3 border-b-2 border-transparent",
-          "font-semibold border-primary text-primary": @selected_tab == "all"
+          "font-semibold !border-primary text-primary": @selected_tab == "all"
         }>
           {l("All types")}
         </div>
@@ -33,7 +33,7 @@
       >
         <div class={
           "text-base-content/70 text-sm pb-3 border-b-2 border-transparent",
-          "font-semibold border-primary text-primary": @selected_tab == "Bonfire.Data.Identity.User"
+          "font-semibold !border-primary text-primary": @selected_tab == "Bonfire.Data.Identity.User"
         }>
           {l("Users")}
         </div>
