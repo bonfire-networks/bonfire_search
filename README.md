@@ -7,6 +7,7 @@ An extension for [Bonfire](https://bonfire.cafe/) to handle:
 - LiveView search UI
 
 You can implement adapters for your prefered search backend. Currently adapters are included for:
+- Database
 - [Meili Search](https://www.meilisearch.com/) 
 
 
