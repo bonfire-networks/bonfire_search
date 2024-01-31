@@ -59,7 +59,7 @@ defmodule Bonfire.Search do
     # (opts[:query] || base_query())
     |> join(:inner, [fp], ^subquery, on: [id: fp.id])
     |> Bonfire.Common.Needles.pointer_query(
-      opts ++ [preload: [:post_content, :creator, :profile_info]]
+      opts ++ [preload: [:with_content, :with_creator, :profile_info]]
     )
     # |> Bonfire.Social.Objects.as_permitted_for(opts)
     |> debug("query with deferred join")
