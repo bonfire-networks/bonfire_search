@@ -3,5 +3,5 @@ defmodule Bonfire.UI.Coordination.FiltersSearchLive do
 
   prop filters, :any, default: %{}
   prop search, :string, default: nil
-  prop selected_tab, :string, default: "All"
+  prop selected_tab, :any, default: "All"
 end
