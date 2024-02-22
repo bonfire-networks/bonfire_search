@@ -38,16 +38,16 @@
         <ul class="flex flex-col border rounded ">
           {#for {facet, num_matches} <- e(@facets, "index_type", [])}
             <li class="p-2 text-sm font-medium  ">
-              <LiveRedirect to={~p"/search?facet[index_type]="<>facet<>"&s=" <> e(@search, "")}>
+              <LinkLive to={~p"/search?facet[index_type]="<>facet<>"&s=" <> e(@search, "")}>
                 {link_body(facet, num_matches)}
-              </LiveRedirect>
+              </LinkLive>
             </li>
           {/for}
           {#if @selected_facets}
             <li class="p-2 text-sm font-medium  ">
-              <LiveRedirect to={~p"/search?s=" <> e(@search, "")}>
+              <LinkLive to={~p"/search?s=" <> e(@search, "")}>
                 {l "All types"}
-              </LiveRedirect>
+              </LinkLive>
             </li>
           {/if}
           {!-- <%= for {facet, num_matches} <- e(@facets, "index_type", []) do %>
@@ -68,16 +68,16 @@
         <ul class="mt-4">
           {#for {tag, num_matches} <- e(@facets, "tags", [])}
             <li>
-              <LiveRedirect class={"/search?facet[tags]="<>tag<>"&s=" <> e(@search, "")}>
+              <LinkLive class={"/search?facet[tags]="<>tag<>"&s=" <> e(@search, "")}>
                 {"#{num_matches} #{tag}"}
-              </LiveRedirect>
+              </LinkLive>
             </li>
           {/for}
           {#if e(@selected_facets, [])}
             <li class="text-sm font-medium ">
-              <LiveRedirect to={~p"/search?s=" <> e(@search, "")}>
+              <LinkLive to={~p"/search?s=" <> e(@search, "")}>
                 {l "All tags"}
-              </LiveRedirect>
+              </LinkLive>
             {!-- <%= live_patch "All tags",
               to: " /search?s=" <> e(@search, "")
             %> --}

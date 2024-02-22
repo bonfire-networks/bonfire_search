@@ -15,7 +15,7 @@
       aria-label="Switch between search filter tabs"
     >
       {!-- ALL TYPES --}
-      <LiveRedirect
+      <LinkLive
         class="flex flex-1 pt-4 text-base capitalize hover:bg-base-content hover:bg-opacity-10 place-content-center"
         to={"/search?s=" <> e(assigns, :search, "")}
       >
@@ -25,9 +25,9 @@
         }>
           {l("All types")}
         </div>
-      </LiveRedirect>
+      </LinkLive>
       {!-- USERS --}
-      <LiveRedirect
+      <LinkLive
         class="flex flex-1 pt-4 text-base capitalize hover:bg-base-content hover:bg-opacity-10 place-content-center"
         to={"/search?facet[index_type]=Bonfire.Data.Identity.User&s=" <> e(assigns, :search, "")}
       >
@@ -37,9 +37,9 @@
         }>
           {l("Users")}
         </div>
-      </LiveRedirect>
+      </LinkLive>
       {!-- POSTS --}
-      <!-- <LiveRedirect
+      <!-- <LinkLive
         class="flex flex-1 pt-4 text-base capitalize hover:bg-base-content hover:bg-opacity-10 place-content-center"
         to={"/search?facet[index_type]=Bonfire.Data.Social.Post&s=" <> e(assigns, :search, "")}
       >
@@ -49,7 +49,7 @@
         }>
           {l("Posts")}
         </div>
-      </LiveRedirect> -->
+      </LinkLive> -->
     </nav>
     <Bonfire.Search.Web.ResultsLive hits={e(@hits, [])} />
   </div>
