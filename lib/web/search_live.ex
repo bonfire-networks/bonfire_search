@@ -62,15 +62,15 @@ defmodule Bonfire.Search.Web.SearchLive do
   #   ]
   # end
 
-  def maybe_handle_params(params, _url, socket) do
+  def handle_params(params, _url, socket) do
     if socket_connected?(socket) do
-      do_handle_params(params, nil, socket)
+      handle_search_params(params, nil, socket)
     else
       socket
     end
   end
 
-  def do_handle_params(%{"s" => s, "facet" => facets} = _params, _url, socket)
+  def handle_search_params(%{"s" => s, "facet" => facets} = _params, _url, socket)
       when s != "" do
     index_type = e(facets, :index_type, nil)
 
@@ -87,7 +87,7 @@ defmodule Bonfire.Search.Web.SearchLive do
     )
   end
 
-  def do_handle_params(%{"s" => s} = _params, _url, socket) when s != "" do
+  def handle_search_params(%{"s" => s} = _params, _url, socket) when s != "" do
     Bonfire.Search.LiveHandler.live_search(
       s,
       socket
@@ -96,7 +96,7 @@ defmodule Bonfire.Search.Web.SearchLive do
     )
   end
 
-  def do_handle_params(%{"hashtag_search" => s} = _params, _url, socket)
+  def handle_search_params(%{"hashtag_search" => s} = _params, _url, socket)
       when s != "" do
     Bonfire.Search.LiveHandler.live_search(
       "##{s}",
@@ -104,7 +104,7 @@ defmodule Bonfire.Search.Web.SearchLive do
     )
   end
 
-  def do_handle_params(_params, _url, socket) do
+  def handle_search_params(_params, _url, socket) do
     {:noreply, assign_global(socket, search_more: true)}
   end
 
@@ -159,31 +159,4 @@ defmodule Bonfire.Search.Web.SearchLive do
 
     {:noreply, patch_to(socket, "/search?s=" <> params["s"])}
   end
-
-  def handle_event(
-        action,
-        attrs,
-        socket
-      ),
-      do:
-        Bonfire.UI.Common.LiveHandlers.handle_event(
-          action,
-          attrs,
-          socket,
-          __MODULE__
-          # &do_handle_event/3
-        )
-
-  def handle_params(params, uri, socket),
-    do:
-      Bonfire.UI.Common.LiveHandlers.handle_params(
-        params,
-        uri,
-        socket,
-        __MODULE__,
-        &maybe_handle_params/3
-      )
-
-  def handle_info(info, socket),
-    do: Bonfire.UI.Common.LiveHandlers.handle_info(info, socket, __MODULE__)
 end
