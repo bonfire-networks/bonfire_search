@@ -5,11 +5,12 @@ defmodule Bonfire.Search.Web.SearchLive do
 
   @default_limit 20
 
-  # declare_extension("Search",
-  #   icon: "twemoji:magnifying-glass-tilted-left",
-  #   emoji: "🔍",
-  #   exclude_from_nav: true
-  # )
+  declare_extension("Search",
+    icon: "twemoji:magnifying-glass-tilted-left",
+    emoji: "🔍",
+    description: l("Search for users or content."),
+    exclude_from_nav: true
+  )
 
   declare_nav_link(l("Search"),
     page: "search",
