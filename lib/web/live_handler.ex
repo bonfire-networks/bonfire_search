@@ -66,20 +66,37 @@ defmodule Bonfire.Search.LiveHandler do
     # TODO: make this a non-blocking operation? (ie. show the other results first and then inject the result of this lookup when ready)
     # FIXME: use maybe_apply
     # TODO fetch async and use send_update to send results to ResultsLive?
-    by_link_or_username =
-      with {:ok, federated_object_or_character} <-
-             Bonfire.Federate.ActivityPub.AdapterUtils.get_by_url_ap_id_or_username(
-               q
-               #  fetch_collection: :async
-             )
-             |> debug("got_by_url_ap_id_or_username") do
-        [federated_object_or_character]
-        # {:noreply, socket |> redirect_to(path(federated_object_or_character))}
+    with {:ok, federated_object_or_character} <-
+           Bonfire.Federate.ActivityPub.AdapterUtils.get_by_url_ap_id_or_username(
+             q
+             #  fetch_collection: :async
+           )
+           |> debug("got_by_url_ap_id_or_username") do
+      if String.starts_with?(q, "http") do
+        {:noreply, socket |> redirect_to(path(federated_object_or_character))}
       else
-        _ ->
-          []
+        content_live_search(
+          q,
+          search_limit,
+          facet_filters,
+          [federated_object_or_character],
+          socket,
+          opts
+        )
       end
+    else
+      _ ->
+        content_live_search(q, search_limit, facet_filters, [], socket, opts)
+    end
+  end
 
+  def live_search(q, _search_limit, _facet_filters, socket) do
+    debug(q, "invalid search")
+    {:noreply, socket}
+  end
+
+  def content_live_search(q, search_limit, facet_filters, extra_results, socket, opts)
+      when is_binary(q) and q != "" and is_integer(search_limit) do
     # tagged =
     #   with hashtags when is_list(hashtags) <-
     #          Bonfire.Tag.Tags.search_hashtag(
@@ -99,11 +116,11 @@ defmodule Bonfire.Search.LiveHandler do
       |> debug("did_search1")
 
     # + length(tagged)
-    num_hits = (num_hits || 0) + length(by_link_or_username)
+    num_hits = (num_hits || 0) + length(extra_results)
 
     # ++ tagged 
     hits =
-      (by_link_or_username ++ hits)
+      (extra_results ++ hits)
       |> Enum.uniq_by(&Enums.id/1)
       |> debug("search2 merged")
 
@@ -116,11 +133,6 @@ defmodule Bonfire.Search.LiveHandler do
        search: q
        #  current_user: current_user(socket.assigns)
      )}
-  end
-
-  def live_search(q, _search_limit, _facet_filters, socket) do
-    debug(q, "invalid search")
-    {:noreply, socket}
   end
 
   defp do_search(q, facet_filters, opts) do
