@@ -26,7 +26,7 @@ defmodule Bonfire.Search.MixProject do
       deps:
         Mess.deps([
           {:floki, ">= 0.0.0", only: [:dev, :test]}
-          # {:activity_pub, git: "https://github.com/bonfire-networks/activitypub", branch: "develop", optional: true}
+          # {:activity_pub, git: "https://github.com/bonfire-networks/activitypub", branch: "develop", optional: true, runtime: false}
         ])
     ]
   end
