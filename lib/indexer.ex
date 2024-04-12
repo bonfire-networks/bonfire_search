@@ -133,6 +133,7 @@ defmodule Bonfire.Search.Indexer do
     # IO.inspect(objects)
     adapter = adapter()
 
+    # FIXME: should check if enabled for creator
     if module_enabled?(__MODULE__) and module_enabled?(adapter) do
       # FIXME - should create the index only once
       if init_index_first, do: init_index(index_name, true, adapter)
