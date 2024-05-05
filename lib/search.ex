@@ -3,6 +3,8 @@
 
 # SPDX-License-Identifier: AGPL-3.0-only
 defmodule Bonfire.Search do
+  @moduledoc "./README.md" |> File.stream!() |> Enum.drop(1) |> Enum.join()
+
   import Untangle
   use Bonfire.Common.Utils
   use Bonfire.Common.Repo
@@ -37,7 +39,7 @@ defmodule Bonfire.Search do
     |> paginate_and_boundarise_deferred_query(search, List.wrap(types), opts)
     |> repo().many()
 
-    # |> Bonfire.Social.Integration.many(true, opts)
+    # |> Bonfire.Social.many(true, opts)
   end
 
   defp paginate_and_boundarise_deferred_query(initial_query, search, types, opts) do
@@ -48,7 +50,7 @@ defmodule Bonfire.Search do
       |> select([:id])
       # to avoid 'cannot preload in subquery' error
       |> maybe_order_override(search, length(types))
-      |> Bonfire.Social.Integration.many(true, return: :query, multiply_limit: 2)
+      |> Bonfire.Social.many(true, return: :query, multiply_limit: 2)
       |> repo().make_subquery()
       |> debug("deferred subquery")
 
