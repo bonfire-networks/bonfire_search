@@ -31,7 +31,7 @@ defmodule Bonfire.Search.Web.SearchLive do
        page: "search",
        page_title: "Search",
        selected_tab: "all",
-       no_header: true,
+       back: true,
        search_limit: @default_limit,
        #  me: false,
        #  selected_facets: nil,
