@@ -22,7 +22,7 @@
         value={@search || e(@__context__, :current_params, "s", nil)}
         placeholder={e(@search_placeholder, l("Search..."))}
         phx-debounce="300"
-        class="w-[inherit] pr-8 text-sm rounded h-[42px] input bg-base-content/5 rounded-full text-base-content placeholder-base-content placeholder-opacity-80"
+        class="w-[inherit] pr-8 text-sm rounded h-[42px] input bg-base-100 border border-base-content/10 rounded text-base-content placeholder-base-content placeholder-opacity-80"
       />
       <button
         type="submit"
