@@ -28,7 +28,7 @@ defmodule Bonfire.Search do
   end
 
   def run_search_db(search, types, opts) do
-    limit = opts[:limit] || 20
+    # limit = opts[:limit] || 20
 
     do_search_db(opts[:query] || base_query(), search, types, opts ++ [skip_boundary_check: true])
     |> debug()
@@ -118,7 +118,7 @@ defmodule Bonfire.Search do
     if is_atom(type) do
       debug(type, "try searching in DB ")
 
-      # Bonfire.Common.QueryModule.maybe_query_module(type) || 
+      # Bonfire.Common.QueryModule.maybe_query_module(type) ||
       (Bonfire.Common.ContextModule.maybe_context_module(type) ||
          type)
       |> maybe_apply(

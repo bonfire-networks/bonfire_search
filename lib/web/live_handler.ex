@@ -4,7 +4,7 @@ defmodule Bonfire.Search.LiveHandler do
   # TODO: put in config
   @default_limit 20
 
-  def handle_event("go_search", %{"s" => s} = params, socket) do
+  def handle_event("go_search", %{"s" => s} = _params, socket) do
     # TODO: show results in a modal rather than a seperate page
 
     {:noreply, socket |> redirect_to("/search/?s=" <> s)}
@@ -118,7 +118,7 @@ defmodule Bonfire.Search.LiveHandler do
     # + length(tagged)
     num_hits = (num_hits || 0) + length(extra_results)
 
-    # ++ tagged 
+    # ++ tagged
     hits =
       (extra_results ++ hits)
       |> Enum.uniq_by(&Enums.id/1)

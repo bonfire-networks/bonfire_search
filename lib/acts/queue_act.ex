@@ -87,11 +87,18 @@ defmodule Bonfire.Search.Acts.Queue do
 
       %{id: _} ->
         # FIXME: should be done in a Social act
-        Bonfire.Social.Activities.activity_preloads(
-          thing,
-          [:tags, :feed_by_creator, :with_replied],
-          []
+        Common.Utils.maybe_apply(
+          Bonfire.Social.Activities, :activity_preloads, [
+            thing,
+            [:tags, :feed_by_creator, :with_replied],
+            []
+          ]
         )
+        # Bonfire.Social.Activities.activity_preloads(
+        #   thing,
+        #   [:tags, :feed_by_creator, :with_replied],
+        #   []
+        # )
 
       _ ->
         Logger.error("MeiliSearch.Queue: no clause match for function to_indexable/2")
