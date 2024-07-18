@@ -87,7 +87,7 @@ defmodule Bonfire.Search.Acts.Queue do
 
       %{id: _} ->
         # FIXME: should be done in a Social act
-        Common.Utils.maybe_apply(
+        Bonfire.Common.Utils.maybe_apply(
           Bonfire.Social.Activities,
           :activity_preloads,
           [

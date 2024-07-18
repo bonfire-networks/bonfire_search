@@ -14,22 +14,21 @@
 
     <span class="sr-only">{e(@search_placeholder, l("Search"))}</span>
     <div class="relative w-full rounded">
-      <input type="hidden" name="search_limit" value={e(@search_limit, "")}>
-      <input
-        type="search"
-        name="s"
-        autocomplete="off"
-        value={@search || e(@__context__, :current_params, "s", nil)}
-        placeholder={e(@search_placeholder, l("Search..."))}
-        phx-debounce="300"
-        class="w-[inherit] pr-8 text-sm rounded h-[42px] input bg-base-100 border border-base-content/10 rounded text-base-content placeholder-base-content placeholder-opacity-80"
-      />
-      <button
-        type="submit"
-        class="absolute top-[4px] right-[10px] z-30 flex items-center  cursor-pointer btn  btn-sm w-[26px] h-[26px] min-h-[26px] btn-ghost btn-circle"
-      >
-        <#Icon solid="Search" class="w-4 h-4 text-base-content text-opacity-80" />
-      </button>
+      <label class="input input-bordered flex items-center gap-2">
+        <input type="hidden" name="search_limit" value={e(@search_limit, "")}>
+        <input
+          type="search"
+          name="s"
+          autocomplete="off"
+          value={@search || e(@__context__, :current_params, "s", nil)}
+          placeholder={e(@search_placeholder, l("Search..."))}
+          phx-debounce="300"
+          class="grow"
+        />
+        <button type="submit" class="">
+          <#Icon solid="Search" class="w-4 h-4 opacity-70" />
+        </button>
+      </label>
     </div>
   </form>
   <div
