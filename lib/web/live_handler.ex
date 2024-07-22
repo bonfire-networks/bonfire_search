@@ -99,7 +99,7 @@ defmodule Bonfire.Search.LiveHandler do
       when is_binary(q) and q != "" and is_integer(search_limit) do
     # tagged =
     #   with hashtags when is_list(hashtags) <-
-    #          Bonfire.Tag.Tags.search_hashtag(
+    #          Bonfire.Tag.search_hashtag(
     #            q
     #            #  fetch_collection: :async
     #          )

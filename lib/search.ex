@@ -32,7 +32,7 @@ defmodule Bonfire.Search do
 
     do_search_db(opts[:query] || base_query(), search, types, opts ++ [skip_boundary_check: true])
     |> debug()
-    # |> Bonfire.Tag.Tags.search_hashtagged_query(search, opts) # TODO: use do_search_db like other types
+    # |> Bonfire.Tag.search_hashtagged_query(search, opts) # TODO: use do_search_db like other types
     |> where([p], is_nil(p.deleted_at))
     # |> limit(^limit)
     |> debug()
