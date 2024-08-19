@@ -41,7 +41,7 @@ defmodule Bonfire.Search.Acts.Queue do
 
           # maybe_debug(epic, act, object, "Non-formated object")
 
-          current_user = epic.assigns[:options][:current_user]
+          current_user = Bonfire.Common.Utils.current_user(epic.assigns[:options])
           prepared_object = prepare_object(object)
 
           if prepared_object do

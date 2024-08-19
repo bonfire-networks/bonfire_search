@@ -93,7 +93,8 @@ defmodule Bonfire.Search do
   end
 
   def base_query do
-    Bonfire.Common.Needles.Pointers.Queries.query_incl_deleted()
+    Bonfire.Common.Needles.Pointers.Queries.query()
+    # Bonfire.Common.Needles.Pointers.Queries.query_incl_deleted()
   end
 
   defp do_search_db(query, search, types, opts) when is_list(types) do
