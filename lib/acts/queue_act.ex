@@ -5,6 +5,7 @@ defmodule Bonfire.Search.Acts.Queue do
   import Bonfire.Epics
   use Arrows
   require Logger
+  use Bonfire.Common.E
 
   # alias Bonfire.Epics
   # alias Bonfire.Epics.Act
@@ -114,8 +115,8 @@ defmodule Bonfire.Search.Acts.Queue do
   def maybe_indexable_object(object, current_user) do
     if Bonfire.Common.Extend.module_enabled?(
          Bonfire.Search.Indexer,
-         Utils.e(object, :created, :creator, nil) ||
-           Utils.e(object, :creator, nil) || current_user
+         e(object, :created, :creator, nil) ||
+           e(object, :creator, nil) || current_user
        ),
        do:
          object
