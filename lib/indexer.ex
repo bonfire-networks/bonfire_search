@@ -171,7 +171,7 @@ defmodule Bonfire.Search.Indexer do
   end
 
   def maybe_delete_object(object, index_name \\ "public") do
-    delete_object(ulid(object), index_name)
+    delete_object(uid(object), index_name)
     :ok
   end
 
