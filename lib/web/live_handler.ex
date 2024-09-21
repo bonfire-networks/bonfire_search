@@ -128,10 +128,10 @@ defmodule Bonfire.Search.LiveHandler do
      assign_global(socket,
        selected_facets: facet_filters,
        hits: hits,
-       facets: facets || e(socket.assigns, :facets, nil),
+       facets: facets || e(assigns(socket), :facets, nil),
        num_hits: num_hits,
        search: q
-       #  current_user: current_user(socket.assigns)
+       #  current_user: current_user(assigns(socket))
      )}
   end
 
