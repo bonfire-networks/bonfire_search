@@ -10,4 +10,4 @@ tesla = "~> 1.3"
 inflex = "~> 2.1.0"
 recase = "~> 0.8"
 fast_ngram = "~> 1.0"
-# surface = "~> 0.12.0"
+# surface = "~> 0.12.0" # required if there's any JS hooks or CSS components that need to be found by Surface compiler
