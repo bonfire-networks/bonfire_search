@@ -8,7 +8,7 @@ config :bonfire_search,
   api_key: System.get_env("MEILI_MASTER_KEY", "make-sure-to-change-me")
 
 # for use by API client
-config :tesla, :adapter, {Tesla.Adapter.Finch, name: Bonfire.Finch}
+# config :tesla, :adapter, {Tesla.Adapter.Finch, name: Bonfire.Finch}
 # config :tesla, adapter: Tesla.Adapter.Hackney
 config :phoenix, :format_encoders, json: Jason
 config :phoenix, :json_library, Jason
