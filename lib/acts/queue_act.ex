@@ -43,11 +43,15 @@ defmodule Bonfire.Search.Acts.Queue do
           # maybe_debug(epic, act, object, "Non-formated object")
 
           current_user = Bonfire.Common.Utils.current_user(epic.assigns[:options])
-          prepared_object = prepare_object(object)
 
-          if prepared_object do
-            prepared_object
-            |> maybe_indexable_object(current_user)
+          if Bonfire.Common.Extend.module_enabled?(
+               Bonfire.Search.Indexer,
+               e(object, :created, :creator, nil) ||
+                 e(object, :creator, nil) || current_user
+             ) do
+            prepared_object = prepare_object(object)
+
+            if prepared_object, do: maybe_index_object(prepared_object, current_user)
 
             Epic.assign(epic, on, prepared_object)
           else
@@ -112,7 +116,7 @@ defmodule Bonfire.Search.Acts.Queue do
     end
   end
 
-  def maybe_indexable_object(object, current_user) do
+  def maybe_index_object(object, current_user) do
     if Bonfire.Common.Extend.module_enabled?(
          Bonfire.Search.Indexer,
          e(object, :created, :creator, nil) ||
