@@ -31,11 +31,10 @@ defmodule Bonfire.Search do
     # limit = opts[:limit] || 20
 
     do_search_db(opts[:query] || base_query(), search, types, opts ++ [skip_boundary_check: true])
-    |> debug()
     # |> Bonfire.Tag.search_hashtagged_query(search, opts) # TODO: use do_search_db like other types
     |> where([p], is_nil(p.deleted_at))
     # |> limit(^limit)
-    |> debug()
+    |> debug("core query")
     |> paginate_and_boundarise_deferred_query(search, List.wrap(types), opts)
     |> repo().many()
 
