@@ -113,7 +113,7 @@ defmodule Bonfire.Search.LiveHandler do
 
     {num_hits, hits, facets} =
       do_search(q, facet_filters, opts)
-      |> debug("did_search1")
+      |> debug("content_searched")
 
     # + length(tagged)
     num_hits = (num_hits || 0) + length(extra_results)
@@ -140,30 +140,31 @@ defmodule Bonfire.Search.LiveHandler do
 
     search =
       Bonfire.Search.search(q, opts, Map.keys(facet_filters), Map.values(facet_filters))
-      |> debug("did_search1")
+      |> debug("did_search")
 
-    hits =
-      if(
-        is_map(search) and Map.has_key?(search, "hits") and
-          length(search["hits"])
-      ) do
-        search["hits"]
-        # return object-like results
-        |> Enum.map(
-          &(&1
-            |> input_to_atoms()
-            |> maybe_to_structs())
-        )
-      else
-        if is_list(search), do: search
-      end
+    hits = e(search, :hits, [])
+    # if(
+    #   is_map(search) and Map.has_key?(search, "hits") and
+    #     length(search["hits"])
+    # ) do
+    #   search["hits"]
+    #   # return object-like results
+    #   |> Enum.map(
+    #     &(&1
+    #       |> input_to_atoms()
+    #       |> maybe_to_structs())
+    #   )
+    # else
+    #   if is_list(search), do: search
+    # end
 
     # note we only get proper facets when not already faceting
     facets =
-      if !facet_filters and e(search, "facetDistribution", nil) do
-        e(search, "facetDistribution", nil)
+      if !facet_filters and e(search, :facet_distribution, nil) do
+        e(search, :facet_distribution, nil)
       end
 
-    {e(search, "nbHits", 0) || length(hits), hits || [], facets}
+    {e(search, :nb_hits, 0) || e(search, :estimated_total_hits, 0) || length(hits), hits || [],
+     facets}
   end
 end

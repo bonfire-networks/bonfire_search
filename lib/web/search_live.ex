@@ -64,7 +64,7 @@ defmodule Bonfire.Search.Web.SearchLive do
   # end
 
   def handle_params(params, _url, socket) do
-    if socket_connected?(socket) do
+    if socket_connected?(socket) and params["s"] != e(assigns(socket), :search_term, nil) do
       handle_search_params(params, nil, socket)
     else
       socket
@@ -81,6 +81,7 @@ defmodule Bonfire.Search.Web.SearchLive do
       facets,
       socket
       |> assign(
+        search_term: s,
         selected_tab: index_type
         # sidebar_widgets: widget(s)
       )
@@ -92,21 +93,31 @@ defmodule Bonfire.Search.Web.SearchLive do
     Bonfire.Search.LiveHandler.live_search(
       s,
       socket
-      # |> assign(sidebar_widgets: widget(s))
+      |> assign(
+        search_term: s
+        # sidebar_widgets: widget(s)
+      )
       |> assign_global(search_more: true)
     )
   end
 
   def handle_search_params(%{"hashtag_search" => s} = _params, _url, socket)
       when s != "" do
+    s = "##{s}"
+
     Bonfire.Search.LiveHandler.live_search(
-      "##{s}",
-      assign_global(socket, search_more: true)
+      s,
+      socket
+      |> assign(search_term: s)
+      |> assign_global(search_more: true)
     )
   end
 
   def handle_search_params(_params, _url, socket) do
-    {:noreply, assign_global(socket, search_more: true)}
+    {:noreply,
+     socket
+     |> assign(search_term: nil)
+     |> assign_global(search_more: true)}
   end
 
   # defp type_name(name) do

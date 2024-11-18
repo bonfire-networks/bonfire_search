@@ -11,13 +11,65 @@ defmodule Bonfire.Search do
 
   def adapter, do: Bonfire.Common.Config.get_ext(:bonfire_search, :adapter)
 
+  def search(string, opts \\ %{}, calculate_facets, filter_facets) do
+    adapter = adapter()
+    opts = to_options(opts)
+
+    if is_nil(adapter) or !module_enabled?(adapter) do
+      debug(adapter, "No enabled search adapter, try with DB...")
+      run_search_db(string, e(filter_facets, nil) || default_types(opts), opts)
+    else
+      debug(adapter, "search using")
+
+      maybe_apply(adapter, :search, [
+        string,
+        Keyword.drop(opts, [:current_user, :context]),
+        calculate_facets,
+        filter_facets
+      ])
+    end
+  end
+
+  def search(string, opts_or_index \\ nil)
+
+  def search(string, opts) when is_list(opts) do
+    adapter = adapter()
+    opts = to_options(opts)
+
+    if is_nil(adapter) or !module_enabled?(adapter) do
+      debug(adapter, "No enabled search adapter, try with DB...")
+      run_search_db(string, default_types(opts), opts)
+    else
+      debug(adapter, "search using")
+      maybe_apply(adapter, :search, [string, Keyword.drop(opts, [:current_user, :context])])
+    end
+  end
+
+  def search(string, index) do
+    adapter = adapter()
+
+    if is_nil(adapter) or !module_enabled?(adapter) do
+      debug(adapter, "No enabled search adapter, try with DB...")
+      run_search_db(string, default_types(), [])
+    else
+      debug(adapter, "search using")
+      maybe_apply(adapter, :search, [string, index])
+    end
+  end
+
   def search_by_type(tag_search, facets \\ nil, opts \\ []) do
     adapter = adapter()
 
     if is_nil(adapter) or !module_enabled?(adapter) or
          Bonfire.Common.Config.get_ext(:bonfire_search, :disable_for_autocompletes) do
+      debug(
+        adapter,
+        "No enabled search adapter (or option disable_for_autocompletes set), try with DB..."
+      )
+
       run_search_db(tag_search, facets, to_options(opts))
     else
+      debug(adapter, "search using")
       adapter.search_by_type(tag_search, facets)
     end
   end
@@ -132,29 +184,7 @@ defmodule Bonfire.Search do
     end
   end
 
-  def search(string, opts \\ %{}, calculate_facets, filter_facets) do
-    adapter = adapter()
-
-    if is_nil(adapter) or !module_enabled?(adapter) do
-      opts = to_options(opts)
-      run_search_db(string, e(filter_facets, nil) || default_types(opts), opts)
-    else
-      maybe_apply(adapter, :search, [string, opts, calculate_facets, filter_facets])
-    end
-  end
-
-  def search(string, opts_or_index \\ nil) do
-    adapter = adapter()
-
-    if is_nil(adapter) or !module_enabled?(adapter) do
-      opts = to_options(opts_or_index)
-      run_search_db(string, default_types(opts), opts)
-    else
-      maybe_apply(adapter, :search, [string, opts_or_index])
-    end
-  end
-
-  def default_types(_opts) do
+  def default_types(opts \\ []) do
     # TODO: make default types generated/configurable
     [Bonfire.Data.Identity.User, Bonfire.Data.Social.Post, Bonfire.Tag.Tagged]
   end

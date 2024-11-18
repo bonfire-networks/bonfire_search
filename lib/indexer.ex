@@ -8,12 +8,17 @@ defmodule Bonfire.Search.Indexer do
   # TODO: put in config
   @public_facets ["index_type", "index_instance", "tags"]
   @public_searcheable_fields [
+    #  NOTE: does this mean we can avoid using the URL db-based lookup in LiveHandler
     "character.username",
+    "character.url",
     "profile.name",
+    "profile.summary",
+    "profile.website",
+    "profile.location",
     "post_content.name",
     "post_content.summary",
-    "tags",
-    "post_content.html_body"
+    "post_content.html_body",
+    "tags"
   ]
 
   use Bonfire.Common.Utils
@@ -124,10 +129,13 @@ defmodule Bonfire.Search.Indexer do
   # add to general instance search index
   def index_public_object(object) do
     # IO.inspect(search_indexing: objects)
+    # FIXME - should create the index only once
     index_objects(object, @public_index, true)
   end
 
   # index several things in an existing index
+  defp index_objects(objects, index_name, init_index_first \\ false)
+
   defp index_objects(objects, index_name, init_index_first)
        when is_list(objects) do
     # IO.inspect(objects)
@@ -135,7 +143,6 @@ defmodule Bonfire.Search.Indexer do
 
     # FIXME: should check if enabled for creator
     if module_enabled?(__MODULE__) and module_enabled?(adapter) do
-      # FIXME - should create the index only once
       if init_index_first, do: init_index(index_name, true, adapter)
 
       objects

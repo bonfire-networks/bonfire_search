@@ -50,28 +50,15 @@ defmodule Bonfire.Search.Meili do
   def search(string, opts, calculate_facets, filter_facets)
       when is_list(filter_facets) do
     opts =
-      Map.merge(opts, %{
+      Enum.into(opts, %{
         filter: List.flatten(filter_facets)
       })
 
-    do_search(string, opts, calculate_facets)
+    search_maybe_with_facets(string, opts, calculate_facets)
   end
 
   def search(string, opts, calculate_facets, _) do
-    do_search(string, opts, calculate_facets)
-  end
-
-  defp do_search(string, opts, calculate_facets)
-       when not is_nil(calculate_facets) do
-    # opts = Map.merge(%{
-    #   facetDistribution: ["*"]
-    # }, opts)
-
-    search(string, opts)
-  end
-
-  defp do_search(string, opts, _) do
-    search(string, opts)
+    search_maybe_with_facets(string, opts, calculate_facets)
   end
 
   def search(string, index) when is_binary(string) and is_binary(index) do
@@ -109,6 +96,19 @@ defmodule Bonfire.Search.Meili do
     search(object, public_index())
   end
 
+  defp search_maybe_with_facets(string, opts, calculate_facets)
+       when not is_nil(calculate_facets) do
+    # opts = Map.merge(%{
+    #   facetDistribution: ["*"]
+    # }, opts)
+
+    search(string, opts)
+  end
+
+  defp search_maybe_with_facets(string, opts, _) do
+    search(string, opts)
+  end
+
   def facet_from_map({key, values}) when is_list(values) do
     Enum.map(values, &facet_from_map({key, &1}))
   end
@@ -120,12 +120,45 @@ defmodule Bonfire.Search.Meili do
   def search_execute(%{} = params, index) when is_binary(index) do
     # IO.inspect(search_params: params)
 
-    with {:ok, %{body: results}} <- api(:post, params, index <> "/search") do
-      results
+    with {:ok, %{body: %{"hits" => hits} = result}} when is_list(hits) and hits != [] <-
+           api(:post, params, index <> "/search") do
+      result =
+        result
+        |> debug("did_meili")
+        |> Map.drop(["hits"])
+        |> input_to_atoms(to_snake: true)
+
+      hits
+      # return object-like results
+      |> Enum.map(fn hit ->
+        object = maybe_to_structs(hit)
+        id = id(object)
+
+        %Needle.Pointer{
+          id: id,
+          activity:
+            maybe_to_struct(object, Bonfire.Data.Social.Activity) |> Map.put(:object, object)
+        }
+      end)
+      |> debug("did_structs")
+      |> Bonfire.Social.Activities.activity_preloads(
+        [
+          # :with_object_posts, 
+          # :with_subject, 
+          :with_reply_to
+          # :tags
+        ],
+        skip_boundary_check: true
+      )
+      |> Map.put(result, :hits, ...)
     else
+      {:ok, %{body: result}} ->
+        debug("no hits")
+        result
+
       e ->
         warn("Could not search Meili")
-        debug(inspect(e))
+        debug(e)
         nil
     end
   end
