@@ -131,7 +131,11 @@ defmodule Bonfire.Search.Meili do
       hits
       # return object-like results
       |> Enum.map(fn hit ->
-        object = maybe_to_structs(hit)
+        object =
+          hit
+          |> input_to_atoms()
+          |> maybe_to_structs()
+
         id = id(object)
 
         %Needle.Pointer{
