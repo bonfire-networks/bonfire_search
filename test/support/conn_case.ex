@@ -25,10 +25,12 @@ defmodule Bonfire.Search.ConnCase do
 
       import Bonfire.UI.Common.Testing.Helpers
 
+      use Untangle
+
       import Phoenix.LiveViewTest
       # import Bonfire.Search.ConnCase
       import Bonfire.Search.Test.ConnHelpers
-      import Bonfire.Search.Test.FakeHelpers
+      # import Bonfire.Search.Test.FakeHelpers
       alias Bonfire.Search.Fake
       alias Bonfire.Search.Web.Router.Helpers, as: Routes
 

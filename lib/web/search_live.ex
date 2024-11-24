@@ -31,6 +31,7 @@ defmodule Bonfire.Search.Web.SearchLive do
        page: "search",
        page_title: "Search",
        selected_tab: "all",
+       index: "public",
        back: true,
        search_limit: @default_limit,
        #  me: false,
@@ -57,28 +58,31 @@ defmodule Bonfire.Search.Web.SearchLive do
   #   [
   #     users: [
   #       secondary: [
-  #         {Bonfire.UI.Coordination.FiltersSearchLive, [selected_tab: "all", search: search]}
+  #         {Bonfire.Search.UI.FiltersSearchLive, [selected_tab: "all", search: search]}
   #       ]
   #     ]
   #   ]
   # end
 
   def handle_params(params, _url, socket) do
-    if socket_connected?(socket) and params["s"] != e(assigns(socket), :search_term, nil) do
+    if socket_connected?(socket) and
+         (params["s"] != e(assigns(socket), :search_term, nil) or
+            (params["index"] || "public") != e(assigns(socket), :index, "public")) do
       handle_search_params(params, nil, socket)
     else
       socket
     end
   end
 
-  def handle_search_params(%{"s" => s, "facet" => facets} = _params, _url, socket)
+  def handle_search_params(%{"s" => s, "facet" => facets} = params, _url, socket)
       when s != "" do
-    index_type = e(facets, :index_type, nil)
+    index_type = e(facets, "index_type", nil)
 
     Bonfire.Search.LiveHandler.live_search(
       s,
       @default_limit,
       facets,
+      params["index"] || e(assigns(socket), :index, nil),
       socket
       |> assign(
         search_term: s,
@@ -89,9 +93,10 @@ defmodule Bonfire.Search.Web.SearchLive do
     )
   end
 
-  def handle_search_params(%{"s" => s} = _params, _url, socket) when s != "" do
+  def handle_search_params(%{"s" => s} = params, _url, socket) when s != "" do
     Bonfire.Search.LiveHandler.live_search(
       s,
+      params["index"] || e(assigns(socket), :index, nil),
       socket
       |> assign(
         search_term: s
@@ -101,15 +106,28 @@ defmodule Bonfire.Search.Web.SearchLive do
     )
   end
 
-  def handle_search_params(%{"hashtag_search" => s} = _params, _url, socket)
+  def handle_search_params(%{"hashtag_search" => s} = params, _url, socket)
       when s != "" do
     s = "##{s}"
 
     Bonfire.Search.LiveHandler.live_search(
       s,
+      params["index"] || e(assigns(socket), :index, nil),
       socket
       |> assign(search_term: s)
       |> assign_global(search_more: true)
+    )
+  end
+
+  def handle_search_params(%{"index" => index} = params, _url, socket) do
+    Bonfire.Search.LiveHandler.live_search(
+      e(assigns(socket), :search_term, nil),
+      index,
+      socket
+      |> assign(
+        index: index
+        # sidebar_widgets: widget(s)
+      )
     )
   end
 

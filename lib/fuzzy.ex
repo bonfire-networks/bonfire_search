@@ -49,8 +49,8 @@ defmodule Bonfire.Search.Fuzzy do
     search = Search.search(q, opts, calculate_facets, facet_filters)
 
     if(
-      is_map(search) and Map.has_key?(search, "hits") and
-        length(search["hits"]) > 0
+      is_map(search) and Map.has_key?(search, :hits) and
+        length(search[:hits]) > 0
     ) do
       throw({:break, search})
     end

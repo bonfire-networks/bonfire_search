@@ -1,0 +1,88 @@
+    
+    <Bonfire.UI.Common.WidgetBlockLive widget_title={l("Filters")}>
+  <div class="p-3">
+    <Bonfire.Search.Web.FormLive search={@search} />
+    {!-- <form action="?" phx-submit="search" method="get">
+      <fieldset>
+        <legend class="text-sm font-normal text-base-content/70">{l("Search for")}</legend>
+        <input
+          name="search_string"
+          value={e(@filters, "search_string", nil)}
+          type="search"
+          class="w-full mt-2 input input-bordered"
+          placeholder="Search..."
+        />
+      </fieldset>
+    </form> --}
+
+    <form action="?" phx-change="filter" method="get">
+      <fieldset class="mt-4">
+        <legend class="text-sm font-normal text-base-content/70">{l("Type")}</legend>
+        <div class="mt-2 border rounded-lg border-base-content/20 bg-base-100">
+        {#if maybe_module(Bonfire.Search.adapter(), @__context__)==Bonfire.Search.Meili}
+          <LinkLive to={~p"/search?s=#{@search}"} class="flex items-center p-3">
+            <input type="radio" checked class="w-5 h-5 radio">
+            <div class="block ml-3 text-sm text-base-content/70">
+              {l("Public")}
+            </div>
+          </LinkLive>
+          <LinkLive
+            to={~p"/search?index=closed&s=#{@search}"}
+            class="flex items-center p-3"
+          >
+            <input type="radio" class="w-5 h-5 radio">
+            <div class="block ml-3 text-sm text-base-content/70">
+              {l("Private")}
+            </div>
+          </LinkLive>
+
+          {#else}
+
+            <LinkLive to={~p"/search?s=#{@search}"} class="flex items-center p-3">
+            <input type="radio" checked class="w-5 h-5 radio">
+            <div class="block ml-3 text-sm text-base-content/70">
+              {l("All types")}
+            </div>
+          </LinkLive>
+          <LinkLive
+            to={~p"/search?facet[index_type]=Bonfire.Data.Identity.User&s=#{@search}"}
+            class="flex items-center p-3"
+          >
+            <input type="radio" class="w-5 h-5 radio">
+            <div class="block ml-3 text-sm text-base-content/70">
+              {l("Users")}
+            </div>
+          </LinkLive>
+          <LinkLive
+            to={~p"/search?facet[index_type]=Bonfire.Data.Social.Post&s=#{@search}"}
+            class="flex items-center p-3"
+          >
+            <input type="radio" class="w-5 h-5 radio">
+            <div class="block ml-3 text-sm text-base-content/70">
+              {l("Posts")}
+            </div>
+          </LinkLive>
+          {/if}
+        </div>
+      </fieldset>
+
+      {!-- <fieldset class="mt-4">
+        <legend class="text-sm font-normal text-base-content/70">{l("From")}</legend>
+        <div class="flex items-center mt-2 border rounded-lg border-base-content/20 bg-base-100">
+          <div class="flex items-center flex-1 p-3">
+            <input id="Local" name="from" type="radio" checked class="w-5 h-5 radio">
+            <label for="Local" class="block ml-3 text-sm text-base-content/70">
+              {l("Local")}
+            </label>
+          </div>
+          <div class="flex items-center flex-1 p-3 border-l border-base-content/20">
+            <input id="Federated" name="from" type="radio" class="w-5 h-5 radio">
+            <label for="Federated" class="block ml-3 text-sm text-base-content/70">
+              {l("Federated")}
+            </label>
+          </div>
+        </div>
+      </fieldset> --}
+    </form>
+  </div>
+</Bonfire.UI.Common.WidgetBlockLive>

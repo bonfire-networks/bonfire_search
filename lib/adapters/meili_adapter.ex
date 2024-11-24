@@ -3,9 +3,9 @@
 defmodule Bonfire.Search.Meili do
   import Untangle
   use Bonfire.Common.Utils
+  alias Bonfire.Search.Indexer
 
-  def public_index(),
-    do: Bonfire.Common.Config.get_ext(:bonfire_search, :public_index, "public")
+  @behaviour Bonfire.Search.Adapter
 
   def search_by_type(tag_search, facets \\ nil) do
     facets = search_facets(facets)
@@ -14,12 +14,10 @@ defmodule Bonfire.Search.Meili do
 
     # IO.inspect(searched: search)
 
-    if(is_map(search) and Map.has_key?(search, "hits") and length(search["hits"])) do
-      search["hits"]
-      |> Enums.filter_empty([])
+    e(search, :hits, [])
+    |> Enums.filter_empty([])
 
-      # |> IO.inspect(label: "search results")
-    end
+    # |> IO.inspect(label: "search results")
   end
 
   defp search_facets(facets) when is_list(facets) or is_binary(facets) do
@@ -50,7 +48,8 @@ defmodule Bonfire.Search.Meili do
   def search(string, opts, calculate_facets, filter_facets)
       when is_list(filter_facets) do
     opts =
-      Enum.into(opts, %{
+      opts
+      |> Enum.into(%{
         filter: List.flatten(filter_facets)
       })
 
@@ -61,7 +60,7 @@ defmodule Bonfire.Search.Meili do
     search_maybe_with_facets(string, opts, calculate_facets)
   end
 
-  def search(string, index) when is_binary(string) and is_binary(index) do
+  def search(string, index) when is_binary(string) and (is_binary(index) or is_atom(index)) do
     # deprecate
     object = %{
       q: string
@@ -71,29 +70,32 @@ defmodule Bonfire.Search.Meili do
   end
 
   def search(string, %{index: index} = opts)
-      when is_binary(string) and is_map(opts) do
-    %{
+      when is_binary(string) and (is_binary(index) or is_atom(index)) do
+    Map.drop(opts, [:current_user, :context, :index])
+    |> Enum.into(%{
       q: string
-    }
-    |> Map.merge(opts)
-    |> Map.drop([:index])
-    |> search(index)
+    })
+    |> search(index, opts)
   end
 
-  def search(string, opts) when is_binary(string) and is_map(opts) do
-    %{
+  def search(string, opts) when is_binary(string) and (is_map(opts) or is_list(opts)) do
+    Enums.fun(opts, :drop, [[:current_user, :context, :index]])
+    |> Enum.into(%{
       q: string
-    }
-    |> Map.merge(opts)
-    |> search(public_index())
+    })
+    |> search(opts[:index], opts)
   end
 
   def search(object, index) when is_map(object) and is_binary(index) do
-    search_execute(object, index)
+    search_execute(object, index, [])
   end
 
-  def search(object, _) when is_map(object) do
-    search(object, public_index())
+  def search(object, opts) when is_map(object) do
+    search(object, opts[:index], opts)
+  end
+
+  def search(object, index, opts) when is_map(object) and (is_binary(index) or is_atom(index)) do
+    search_execute(object, index, opts)
   end
 
   defp search_maybe_with_facets(string, opts, calculate_facets)
@@ -117,11 +119,12 @@ defmodule Bonfire.Search.Meili do
     "#{key} = #{value}"
   end
 
-  def search_execute(%{} = params, index) when is_binary(index) do
+  defp search_execute(%{} = params, index, opts) do
     # IO.inspect(search_params: params)
+    opts = to_options(opts)
 
     with {:ok, %{body: %{"hits" => hits} = result}} when is_list(hits) and hits != [] <-
-           api(:post, params, index <> "/search") do
+           api(:post, params, Indexer.index_name(index || :public) <> "/search") do
       result =
         result
         |> debug("did_meili")
@@ -141,7 +144,9 @@ defmodule Bonfire.Search.Meili do
         %Needle.Pointer{
           id: id,
           activity:
-            maybe_to_struct(object, Bonfire.Data.Social.Activity) |> Map.put(:object, object)
+            object
+            |> Map.merge(%{object: object, object_id: id})
+            |> maybe_to_struct(Bonfire.Data.Social.Activity)
         }
       end)
       |> debug("did_structs")
@@ -152,18 +157,18 @@ defmodule Bonfire.Search.Meili do
           :with_reply_to
           # :tags
         ],
-        skip_boundary_check: true
+        opts
       )
       |> Map.put(result, :hits, ...)
     else
       {:ok, %{body: result}} ->
         debug("no hits")
+
         result
+        |> input_to_atoms(to_snake: true)
 
       e ->
-        warn("Could not search Meili")
-        debug(e)
-        nil
+        error(e, "Could not search Meili")
     end
   end
 
@@ -180,8 +185,8 @@ defmodule Bonfire.Search.Meili do
     post(%{uid: index_name}, "", fail_silently)
   end
 
-  def list_facets(index_name \\ "public") do
-    get(nil, index_name <> "/settings/filterable-attributes")
+  def list_facets(index \\ nil) do
+    get(nil, Indexer.index_name(index || :public) <> "/settings/filterable-attributes")
   end
 
   def set_facets(index_name, facets) when is_list(facets) do
@@ -226,7 +231,16 @@ defmodule Bonfire.Search.Meili do
 
   def delete(object, index_path \\ "", fail_silently \\ false) do
     # |> IO.inspect
-    api(:delete, object, index_path, fail_silently)
+    if is_binary(object) do
+      api(:delete, nil, "#{index_path}/documents/#{object}", fail_silently)
+      # api(:delete, %{id: object}, index_path, fail_silently)
+    else
+      if object == :all do
+        api(:delete, nil, "#{index_path}/documents", fail_silently)
+      else
+        api(:delete, object, index_path, fail_silently)
+      end
+    end
   end
 
   def settings(object, index) do
@@ -234,10 +248,17 @@ defmodule Bonfire.Search.Meili do
   end
 
   def api(http_method, object, index_path, fail_silently \\ false) do
+    url =
+      "/indexes/#{index_path}"
+      |> debug()
+
+    do_api(http_method, object, url, fail_silently)
+  end
+
+  defp do_api(http_method, object, url, fail_silently \\ false) do
     search_instance = Bonfire.Common.Config.get_ext!(:bonfire_search, :instance)
     api_key = Bonfire.Common.Config.get_ext!(:bonfire_search, :api_key)
-
-    url = "#{search_instance}/indexes/" <> index_path
+    url = "#{search_instance}#{url}"
 
     # if api_key do
     headers = [
@@ -292,6 +313,32 @@ defmodule Bonfire.Search.Meili do
           object,
           url
         )
+    end
+  end
+
+  def wait_for_task(taskUid, backoff \\ 500)
+
+  def wait_for_task(%{body: %{"taskUid" => taskUid}}, backoff),
+    do: wait_for_task(taskUid, backoff)
+
+  def wait_for_task(taskUid, backoff) do
+    case do_api(:get, nil, "/tasks/#{taskUid}") do
+      {:error, error} ->
+        {:error, error}
+
+      {:ok, %{body: %{"status" => "succeeded"}}} ->
+        :succeeded
+
+      {:ok, %{body: %{"status" => "failed"}}} ->
+        :failed
+
+      {:ok, %{body: %{"status" => "canceled"}}} ->
+        :canceled
+
+      {:ok, task} ->
+        debug(task, "Wait for Meili")
+        Process.sleep(backoff)
+        wait_for_task(taskUid, backoff * 2)
     end
   end
 end

@@ -1,7 +1,8 @@
-defmodule Bonfire.UI.Coordination.FiltersSearchLive do
+defmodule Bonfire.Search.UI.FiltersSearchLive do
   use Bonfire.UI.Common.Web, :stateless_component
 
   prop filters, :any, default: %{}
   prop search, :string, default: nil
-  prop selected_tab, :any, default: "All"
+  prop index, :string, default: "public"
+  prop selected_tab, :any, default: "all"
 end

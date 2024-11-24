@@ -10,8 +10,8 @@ defmodule Bonfire.Search.HTTP do
     http_adapter = http_adapter()
 
     if(http_method == :get) do
-      query_str = URI.encode_query(object)
-      url = url <> "?" <> query_str
+      query_str = if object, do: URI.encode_query(object)
+      url = "#{url}?#{query_str}"
       apply(http_adapter, http_method, [url, headers])
     else
       json =
@@ -43,7 +43,7 @@ defmodule Bonfire.Search.HTTP do
 
     :test ->
       def http_error(_, http_method, message, _object, url) do
-        debug("Search - Could not #{http_method} objects on #{url}: #{inspect(message)}")
+        warn(message, "Search - Could not #{http_method} objects on #{url}")
 
         {:error, message}
       end

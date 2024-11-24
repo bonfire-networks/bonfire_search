@@ -4,10 +4,9 @@ defmodule Bonfire.Search.Indexer do
   import Untangle
   import Bonfire.Search, only: [adapter: 0]
 
-  @public_index "public"
   # TODO: put in config
-  @public_facets ["index_type", "index_instance", "tags"]
-  @public_searcheable_fields [
+  @main_facets ["index_type", "index_instance", "tags"]
+  @main_searcheable_fields [
     #  NOTE: does this mean we can avoid using the URL db-based lookup in LiveHandler
     "character.username",
     "character.url",
@@ -23,14 +22,20 @@ defmodule Bonfire.Search.Indexer do
 
   use Bonfire.Common.Utils
 
-  def maybe_index_object(object) do
+  def index_name(name), do: "#{Config.env()}_#{name}"
+
+  def maybe_index_object(object, index \\ nil) do
     indexable_object =
       maybe_indexable_object(object)
       |> filter_empty(nil)
       |> debug("filtered")
 
     if not is_nil(indexable_object) do
-      index_public_object(indexable_object)
+      if index do
+        do_index_object(indexable_object, index)
+      else
+        do_index_object(indexable_object, :public)
+      end
     end
   end
 
@@ -97,6 +102,10 @@ defmodule Bonfire.Search.Indexer do
     do_indexable_object(object)
   end
 
+  def maybe_indexable_object(objects) when is_list(objects) do
+    Enum.map(objects, &maybe_indexable_object/1)
+  end
+
   def maybe_indexable_object(obj) do
     warn(
       obj,
@@ -127,23 +136,22 @@ defmodule Bonfire.Search.Indexer do
   end
 
   # add to general instance search index
-  def index_public_object(object) do
+  defp do_index_object(object, index) do
     # IO.inspect(search_indexing: objects)
     # FIXME - should create the index only once
-    index_objects(object, @public_index, true)
+    index_objects(object, index, index_name(index), true)
   end
 
   # index several things in an existing index
-  defp index_objects(objects, index_name, init_index_first \\ false)
+  defp index_objects(objects, index, index_name, init_index_first \\ false)
 
-  defp index_objects(objects, index_name, init_index_first)
+  defp index_objects(objects, index, index_name, init_index_first)
        when is_list(objects) do
-    # IO.inspect(objects)
     adapter = adapter()
 
     # FIXME: should check if enabled for creator
     if module_enabled?(__MODULE__) and module_enabled?(adapter) do
-      if init_index_first, do: init_index(index_name, true, adapter)
+      if init_index_first, do: init_index(index, index_name, true, adapter)
 
       objects
       # |> debug("filtered")
@@ -153,33 +161,46 @@ defmodule Bonfire.Search.Indexer do
   end
 
   # index something in an existing index
-  defp index_objects(object, index_name, init_index_first) do
-    # IO.inspect(object)
-    index_objects([object], index_name, init_index_first)
+  defp index_objects(object, index, index_name, init_index_first) do
+    adapter = adapter()
+
+    if init_index_first, do: init_index(index, index_name, true, adapter)
+
+    index_objects([object], index, index_name, false)
   end
 
   # create a new index
-  def init_index(index_name \\ "public", fail_silently \\ false, adapter \\ adapter())
+  def init_index(index \\ nil, index_name \\ nil, fail_silently \\ false, adapter \\ adapter())
 
-  def init_index("public" = index_name, fail_silently, adapter) do
+  def init_index(index, index_name, fail_silently, adapter)
+      when index in [:public, :private, "public", "private", nil] do
     if adapter do
+      index_name = index_name || index_name(index) || index_name(:public)
+
       adapter.create_index(index_name, fail_silently)
 
       # define facets to be used for filtering main search index
-      adapter.set_facets(index_name, @public_facets)
-      adapter.set_searchable_fields(index_name, @public_searcheable_fields)
+      adapter.set_facets(index_name, @main_facets)
+      adapter.set_searchable_fields(index_name, @main_searcheable_fields)
     end
   end
 
-  def init_index(index_name, fail_silently, adapter) do
+  def init_index(index, index_name, fail_silently, adapter) do
     if adapter do
-      adapter.create_index(index_name, fail_silently)
+      adapter.create_index(index_name || index_name(index), fail_silently)
     end
   end
 
-  def maybe_delete_object(object, index_name \\ "public") do
-    delete_object(uid(object), index_name)
-    :ok
+  def maybe_delete_object(object, index \\ nil)
+
+  def maybe_delete_object(object, nil) do
+    object = uid(object)
+    delete_object(object, index_name(:private))
+    delete_object(object, index_name(:public))
+  end
+
+  def maybe_delete_object(object, index) do
+    delete_object(uid(object), index_name(index || :public))
   end
 
   defp delete_object(nil, _) do
