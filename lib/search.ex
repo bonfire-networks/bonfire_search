@@ -13,13 +13,16 @@ defmodule Bonfire.Search do
   Returns the configured search adapter module.
   Defaults to DB Adapter if no adapter configured or if adapter is disabled.
   """
-  def adapter do
+  def adapter() do
+    # fallback = Bonfire.Search.DB
+    fallback = nil
+
     case Bonfire.Common.Config.get_ext(:bonfire_search, :adapter) do
       nil ->
-        Bonfire.Search.DB
+        fallback
 
       adapter when not is_nil(adapter) ->
-        if module_enabled?(adapter), do: adapter, else: Bonfire.Search.DB
+        if module_enabled?(adapter), do: adapter, else: fallback
     end
     |> debug()
   end
@@ -30,6 +33,7 @@ defmodule Bonfire.Search do
   def search(string, opts \\ %{}, calculate_facets, filter_facets) do
     adapter = adapter()
     debug(adapter, "search using")
+    debug(opts, "opts")
 
     adapter.search(string, to_options(opts), calculate_facets, filter_facets)
   end
@@ -39,18 +43,12 @@ defmodule Bonfire.Search do
   """
   def search(string, opts \\ [])
 
-  def search(string, opts) when is_list(opts) or is_map(opts) do
+  def search(string, index_or_opts) do
     adapter = adapter()
     debug(adapter, "search using")
+    debug(index_or_opts, "opts")
 
-    adapter.search(string, opts)
-  end
-
-  def search(string, index) when is_binary(index) or is_atom(index) do
-    adapter = adapter()
-    debug(adapter, "search using")
-
-    adapter.search(string, index)
+    adapter.search(string, index_or_opts)
   end
 
   @doc """

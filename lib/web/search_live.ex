@@ -82,7 +82,7 @@ defmodule Bonfire.Search.Web.SearchLive do
       s,
       @default_limit,
       facets,
-      params["index"] || e(assigns(socket), :index, nil),
+      params["index"] || e(assigns(socket), :index, "nil"),
       socket
       |> assign(
         search_term: s,

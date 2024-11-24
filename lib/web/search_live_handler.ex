@@ -19,7 +19,7 @@ defmodule Bonfire.Search.LiveHandler do
       params["s"],
       search_limit || @default_limit,
       params["facet"],
-      params["index"],
+      params["index"] || e(assigns(socket), :index, nil),
       socket
     )
   end
@@ -35,7 +35,7 @@ defmodule Bonfire.Search.LiveHandler do
       params["s"],
       search_limit || @default_limit,
       params["facet"],
-      params["index"],
+      params["index"] || e(assigns(socket), :index, nil),
       socket
     )
   end
@@ -45,7 +45,7 @@ defmodule Bonfire.Search.LiveHandler do
       params["s"],
       params["search_limit"] || @default_limit,
       params["facet"],
-      params["index"],
+      params["index"] || e(assigns(socket), :index, nil),
       socket
     )
   end
@@ -139,7 +139,7 @@ defmodule Bonfire.Search.LiveHandler do
       |> debug("search2 merged")
 
     {:noreply,
-     assign_global(socket,
+     assign(socket,
        index: opts[:index],
        selected_facets: facet_filters,
        hits: hits,

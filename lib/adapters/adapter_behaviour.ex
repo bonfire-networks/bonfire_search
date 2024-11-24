@@ -20,14 +20,14 @@ defmodule Bonfire.Search.Adapter do
   @callback set_facets(binary(), list() | binary()) :: {:ok, map()} | {:error, term()}
   @callback set_searchable_fields(binary(), list()) :: {:ok, map()} | {:error, term()}
 
-  @callback put(object(), binary()) :: {:ok, map()} | {:error, term()}
+  @callback put_documents(object(), binary()) :: {:ok, map()} | {:error, term()}
   @callback delete(binary(), binary()) :: {:ok, map()} | {:error, term()}
 
   @callback index_exists(binary()) :: boolean()
 
   @optional_callbacks [
     index_exists: 1,
-    put: 2,
+    put_documents: 2,
     delete: 2,
     set_facets: 2,
     set_searchable_fields: 2,

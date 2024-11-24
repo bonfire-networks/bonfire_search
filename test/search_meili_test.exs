@@ -11,18 +11,20 @@ defmodule Bonfire.Search.MeiliTest do
 
   alias Bonfire.Search
   alias Bonfire.Search.Indexer
-  alias Bonfire.Search.Meili
   alias Bonfire.Data.Identity.User
   alias Bonfire.Data.Social.Post
 
+  # @adapter Bonfire.Search.DB
+  # @adapter Bonfire.Search.Meili
+  @adapter Bonfire.Search.MeiliLib
+
   setup do
-    Bonfire.Common.Config.put(:adapter, Bonfire.Search.Meili, :bonfire_search)
+    Bonfire.Common.Config.put(:adapter, @adapter, :bonfire_search)
     Bonfire.Common.Config.put(:adapter, {Tesla.Adapter.Finch, name: Bonfire.Finch}, :tesla)
 
     # clear the index
-    Meili.delete(:all, "test_public")
-    |> IO.inspect()
-    ~> Meili.wait_for_task()
+    @adapter.delete(:all, "test_public")
+    ~> @adapter.wait_for_task()
 
     :ok
   end
@@ -46,7 +48,7 @@ defmodule Bonfire.Search.MeiliTest do
 
       assert :succeeded =
                Indexer.maybe_index_object(user)
-               ~> Meili.wait_for_task()
+               ~> @adapter.wait_for_task()
 
       post = %{
         "id" => "01JDFM2DD9HWFB1JSP4ZAYTXTN",
@@ -61,7 +63,7 @@ defmodule Bonfire.Search.MeiliTest do
 
       assert :succeeded =
                Indexer.maybe_index_object(post)
-               ~> Meili.wait_for_task()
+               ~> @adapter.wait_for_task()
 
       # Test searching by various fields
       assert %{hits: hits} = Search.search("test")
@@ -75,8 +77,9 @@ defmodule Bonfire.Search.MeiliTest do
       assert Enums.id(hit) == Enums.id(post)
     end
 
-    @tag :todo
     test "search_by_type filters results by type" do
+      Bonfire.Common.Config.put(:disable_for_autocompletes, false, :bonfire_search)
+
       # Create and index test data of different types
       user = %User{
         id: uid(User),
@@ -86,7 +89,7 @@ defmodule Bonfire.Search.MeiliTest do
 
       assert :succeeded =
                Indexer.maybe_index_object(user)
-               ~> Meili.wait_for_task()
+               ~> @adapter.wait_for_task()
 
       post = %Post{
         id: uid(Post),
@@ -99,10 +102,11 @@ defmodule Bonfire.Search.MeiliTest do
 
       :succeeded =
         Indexer.maybe_index_object(post)
-        ~> Meili.wait_for_task()
+        ~> @adapter.wait_for_task()
 
       # Search with type filter
-      results = Search.search_by_type("another", [Post])
+      results = Search.search_by_type("another", Post)
+      # |> debug()
       assert length(results) == 1
       [hit] = results
       assert Enums.id(hit) == Enums.id(post)
@@ -127,7 +131,7 @@ defmodule Bonfire.Search.MeiliTest do
 
       assert :succeeded =
                Indexer.maybe_index_object(post)
-               ~> Meili.wait_for_task()
+               ~> @adapter.wait_for_task()
 
       # Verify the object is searchable
       assert %{hits: [hit]} = Search.search("Unique Post Title")
@@ -150,7 +154,7 @@ defmodule Bonfire.Search.MeiliTest do
 
       assert :succeeded =
                Indexer.maybe_index_object(post)
-               ~> Meili.wait_for_task()
+               ~> @adapter.wait_for_task()
 
       # Verify it's indexed
       assert %{hits: [_hit]} = Search.search("Delete Me Post")
@@ -159,7 +163,7 @@ defmodule Bonfire.Search.MeiliTest do
       assert :succeeded =
                Indexer.maybe_delete_object(Enums.id(post))
                |> debug()
-               ~> Meili.wait_for_task()
+               ~> @adapter.wait_for_task()
 
       # Verify it's no longer found
       assert %{hits: []} = Search.search("Delete Me Post")
@@ -188,11 +192,11 @@ defmodule Bonfire.Search.MeiliTest do
 
       assert :succeeded =
                Indexer.maybe_index_object(user1)
-               ~> Meili.wait_for_task()
+               ~> @adapter.wait_for_task()
 
       assert :succeeded =
                Indexer.maybe_index_object(user2)
-               ~> Meili.wait_for_task()
+               ~> @adapter.wait_for_task()
 
       # Search with facets
       results = Search.search("facet", %{}, true, %{"index_type" => Types.module_to_str(User)})
@@ -214,7 +218,7 @@ defmodule Bonfire.Search.MeiliTest do
         }
       end
       |> Indexer.maybe_index_object()
-      ~> Meili.wait_for_task()
+      ~> @adapter.wait_for_task()
 
       # Test with different page sizes
       results = Search.search("Pagination", %{limit: 2})

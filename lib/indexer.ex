@@ -155,7 +155,8 @@ defmodule Bonfire.Search.Indexer do
 
       objects
       # |> debug("filtered")
-      |> adapter.put(index_name <> "/documents")
+      |> adapter.put_documents(index_name)
+      # |> adapter.put(index_name <> "/documents")
       |> debug("result of PUT")
     end
   end
@@ -173,7 +174,7 @@ defmodule Bonfire.Search.Indexer do
   def init_index(index \\ nil, index_name \\ nil, fail_silently \\ false, adapter \\ adapter())
 
   def init_index(index, index_name, fail_silently, adapter)
-      when index in [:public, :private, "public", "private", nil] do
+      when index in [:public, :closed, "public", "closed", nil] do
     if adapter do
       index_name = index_name || index_name(index) || index_name(:public)
 
@@ -195,7 +196,7 @@ defmodule Bonfire.Search.Indexer do
 
   def maybe_delete_object(object, nil) do
     object = uid(object)
-    delete_object(object, index_name(:private))
+    delete_object(object, index_name(:closed))
     delete_object(object, index_name(:public))
   end
 

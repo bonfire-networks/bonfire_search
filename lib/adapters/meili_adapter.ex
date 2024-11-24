@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Bonfire.Search.Meili do
+  #  NOTE: deprecated in favour of MeiliLib adapter
+  @moduledoc false
   import Untangle
   use Bonfire.Common.Utils
   alias Bonfire.Search.Indexer
@@ -9,7 +11,7 @@ defmodule Bonfire.Search.Meili do
 
   def search_by_type(tag_search, facets \\ nil) do
     facets = search_facets(facets)
-    debug("search: #{inspect(tag_search)} with facets #{inspect(facets)}")
+    debug(facets, "search: #{inspect(tag_search)} with facets")
     search = search(tag_search, %{}, false, facets)
 
     # IO.inspect(searched: search)
@@ -22,13 +24,13 @@ defmodule Bonfire.Search.Meili do
 
   defp search_facets(facets) when is_list(facets) or is_binary(facets) do
     %{
-      "index_type" => List.wrap(facets)
+      "index_type" => List.wrap(facets) |> Enum.map(&Types.module_to_str/1)
       # |> search_prefix()
     }
   end
 
   defp search_facets(facet) when is_atom(facet) and not is_nil(facet) do
-    search_facets(Types.module_to_str(facet))
+    search_facets([facet])
   end
 
   defp search_facets(nil) do
@@ -217,6 +219,10 @@ defmodule Bonfire.Search.Meili do
 
   def post(object, index_path \\ "", fail_silently \\ false) do
     api(:post, object, index_path, fail_silently)
+  end
+
+  def put_documents(object, index_name \\ "") do
+    put(object, index_name <> "/documents")
   end
 
   def put(object, index_path \\ "", fail_silently \\ false) do

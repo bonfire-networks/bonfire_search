@@ -3,67 +3,67 @@
   class="flex justify-between w-full mb-2 border-b bg-base-100 tabs border-base-content border-opacity-10"
   aria-label="Switch between search filter tabs"
 >
-  {#if maybe_module(Bonfire.Search.adapter(), @__context__) == Bonfire.Search.Meili}
-    {!-- public --}
-    <LinkLive
-      class="flex flex-1 pt-4 text-base capitalize hover:bg-base-content hover:bg-opacity-10 place-content-center"
-      to={"/search?index=public&s=#{@search}"}
-    >
-      <div class={
-        "text-base-content/70 text-sm pb-3 border-b-2 border-transparent",
-        "font-semibold !border-primary text-primary": @index == "public"
-      }>
-        {l("Public")}
-      </div>
-    </LinkLive>
-    {!-- private --}
-    <LinkLive
-      class="flex flex-1 pt-4 text-base capitalize hover:bg-base-content hover:bg-opacity-10 place-content-center"
-      to={"/search?index=closed&s=#{@search}"}
-    >
-      <div class={
-        "text-base-content/70 text-sm pb-3 border-b-2 border-transparent",
-        "font-semibold !border-primary text-primary": @index == "closed"
-      }>
-        {l("Private")}
-      </div>
-    </LinkLive>
-  {#else}
-    {!-- ALL TYPES --}
-    <LinkLive
-      class="flex flex-1 pt-4 text-base capitalize hover:bg-base-content hover:bg-opacity-10 place-content-center"
-      to={"/search?s=#{@search}"}
-    >
-      <div class={
-        "text-base-content/70 text-sm pb-3 border-b-2 border-transparent",
-        "font-semibold !border-primary text-primary": @selected_tab == "all"
-      }>
-        {l("All types")}
-      </div>
-    </LinkLive>
-    {!-- USERS --}
-    <LinkLive
-      class="flex flex-1 pt-4 text-base capitalize hover:bg-base-content hover:bg-opacity-10 place-content-center"
-      to={"/search?facet[index_type]=Bonfire.Data.Identity.User&s=#{@search}"}
-    >
-      <div class={
-        "text-base-content/70 text-sm pb-3 border-b-2 border-transparent",
-        "font-semibold !border-primary text-primary": @selected_tab == "Bonfire.Data.Identity.User"
-      }>
-        {l("Users")}
-      </div>
-    </LinkLive>
-    {!-- POSTS --}
-    <!-- <LinkLive
-        class="flex flex-1 pt-4 text-base capitalize hover:bg-base-content hover:bg-opacity-10 place-content-center"
-        to={"/search?facet[index_type]=Bonfire.Data.Social.Post&s=" <> e(assigns, :search, "")}
-      >
-        <div class={
-          "text-base-content/70 text-sm pb-3 border-b-2 border-transparent",
-          "font-semibold border-primary text-primary": @selected_tab == "Bonfire.Data.Social.Post"
-        }>
-          {l("Posts")}
-        </div>
-      </LinkLive> -->
-  {/if}
+  <!-- {#if maybe_module(Bonfire.Search.adapter(), @__context__) == Bonfire.Search.Meili} -->
+  {!-- public --}
+  <LinkLive
+    class="flex flex-1 pt-4 text-base capitalize hover:bg-base-content hover:bg-opacity-10 place-content-center"
+    to={"/search?index=public&facet[index_type]=#{@selected_tab}&s=#{@search}"}
+  >
+    <div class={
+      "text-base-content/70 text-sm pb-3 border-b-2 border-transparent",
+      "font-semibold !border-primary text-primary": @index == "public"
+    }>
+      {l("Public")}
+    </div>
+  </LinkLive>
+  {!-- private --}
+  <LinkLive
+    class="flex flex-1 pt-4 text-base capitalize hover:bg-base-content hover:bg-opacity-10 place-content-center"
+    to={"/search?index=closed&facet[index_type]=#{@selected_tab}&s=#{@search}"}
+  >
+    <div class={
+      "text-base-content/70 text-sm pb-3 border-b-2 border-transparent",
+      "font-semibold !border-primary text-primary": @index == "closed"
+    }>
+      {l("Private")}
+    </div>
+  </LinkLive>
+  <!-- {#else} -->
+  {!-- ALL TYPES --}
+  <LinkLive
+    class="flex flex-1 pt-4 text-base capitalize hover:bg-base-content hover:bg-opacity-10 place-content-center"
+    to={"/search?index=#{@index}&s=#{@search}"}
+  >
+    <div class={
+      "text-base-content/70 text-sm pb-3 border-b-2 border-transparent",
+      "font-semibold !border-primary text-primary": @selected_tab == "all"
+    }>
+      {l("All types")}
+    </div>
+  </LinkLive>
+  {!-- USERS --}
+  <LinkLive
+    class="flex flex-1 pt-4 text-base capitalize hover:bg-base-content hover:bg-opacity-10 place-content-center"
+    to={"/search?facet[index_type]=Bonfire.Data.Identity.User&index=#{@index}&s=#{@search}"}
+  >
+    <div class={
+      "text-base-content/70 text-sm pb-3 border-b-2 border-transparent",
+      "font-semibold !border-primary text-primary": @selected_tab == "Bonfire.Data.Identity.User"
+    }>
+      {l("Users")}
+    </div>
+  </LinkLive>
+  {!-- POSTS --}
+  <LinkLive
+    class="flex flex-1 pt-4 text-base capitalize hover:bg-base-content hover:bg-opacity-10 place-content-center"
+    to={"/search?facet[index_type]=Bonfire.Data.Social.Post&index=#{@index}&s=" <> e(assigns, :search, "")}
+  >
+    <div class={
+      "text-base-content/70 text-sm pb-3 border-b-2 border-transparent",
+      "font-semibold !border-primary text-primary": @selected_tab == "Bonfire.Data.Social.Post"
+    }>
+      {l("Posts")}
+    </div>
+  </LinkLive>
+  <!-- {/if} -->
 </nav>
