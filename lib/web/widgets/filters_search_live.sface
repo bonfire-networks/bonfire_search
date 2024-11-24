@@ -3,7 +3,7 @@
   class="flex justify-between w-full mb-2 border-b bg-base-100 tabs border-base-content border-opacity-10"
   aria-label="Switch between search filter tabs"
 >
-  <!-- {#if maybe_module(Bonfire.Search.adapter(), @__context__) == Bonfire.Search.Meili} -->
+  <!-- {#if maybe_module(Bonfire.Search.adapter(), @__context__) == Bonfire.Search.MeiliLib} -->
   {!-- public --}
   <LinkLive
     class="flex flex-1 pt-4 text-base capitalize hover:bg-base-content hover:bg-opacity-10 place-content-center"

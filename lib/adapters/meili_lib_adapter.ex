@@ -110,7 +110,8 @@ defmodule Bonfire.Search.MeiliLib do
   defp search_execute(params, index, opts) do
     opts = to_options(opts)
     client = get_client()
-    index_name = Indexer.index_name(index || :public)
+    index = index || :public
+    index_name = Indexer.index_name(index)
 
     case Meilisearch.Search.search(client, index_name, Keyword.new(params) |> debug("params")) do
       {:ok, %{hits: hits} = result} when is_list(hits) and hits != [] ->
@@ -123,6 +124,7 @@ defmodule Bonfire.Search.MeiliLib do
 
         processed_hits =
           hits
+          |> maybe_boundarise(index, opts)
           |> Enum.map(fn hit ->
             object =
               hit
@@ -155,6 +157,28 @@ defmodule Bonfire.Search.MeiliLib do
         error(error, "Could not search Meili")
         nil
     end
+  end
+
+  defp maybe_boundarise(hits, :public, _), do: hits
+
+  defp maybe_boundarise(hits, _closed, opts) do
+    # WIP: filter by boundaries for closed index
+    list_of_ids =
+      Enums.ids(hits)
+      |> debug()
+
+    my_visible_ids =
+      if current_user = current_user(opts),
+        do:
+          Bonfire.Boundaries.load_pointers(list_of_ids,
+            current_user: current_user,
+            verbs: e(opts, :verbs, [:see, :read]),
+            ids_only: true
+          )
+          |> Enums.ids(),
+        else: []
+
+    Enum.filter(hits, &(Enums.id(&1) in my_visible_ids))
   end
 
   def index_exists(index_name) do

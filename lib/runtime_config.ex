@@ -12,7 +12,7 @@ defmodule Bonfire.Search.RuntimeConfig do
         String.to_existing_atom(System.get_env("SEARCH_HTTP_ADAPTER", "nil")) ||
           Bonfire.Common.HTTP,
       disable_for_autocompletes: System.get_env("SEARCH_AUTOCOMPLETES_DISABLED") in ["true", "1"],
-      adapter: if(adapter == "meili", do: Bonfire.Search.Meili),
+      adapter: if(adapter == "meili", do: Bonfire.Search.MeiliLib),
       # protocol, hostname and port
       instance: System.get_env("SEARCH_MEILI_INSTANCE", "http://search:7700"),
       # secret key
@@ -22,7 +22,7 @@ defmodule Bonfire.Search.RuntimeConfig do
       modularity:
         if(System.get_env("SEARCH_INDEXING_DISABLED") in ["true", "1"] or !adapter, do: :disabled)
 
-    config :bonfire_search, Bonfire.Search.Meili,
+    config :bonfire_search, Bonfire.Search.MeiliLib,
       modularity: if(adapter != "meili", do: :disabled)
   end
 end
