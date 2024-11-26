@@ -150,7 +150,7 @@ defmodule Bonfire.Search.Indexer do
     adapter = adapter()
 
     # FIXME: should check if enabled for creator
-    if module_enabled?(__MODULE__) and module_enabled?(adapter) do
+    if adapter && module_enabled?(__MODULE__) do
       if init_index_first, do: init_index(index, index_name, true, adapter)
 
       objects
@@ -165,17 +165,17 @@ defmodule Bonfire.Search.Indexer do
   defp index_objects(object, index, index_name, init_index_first) do
     adapter = adapter()
 
-    if init_index_first, do: init_index(index, index_name, true, adapter)
+    if init_index_first && adapter, do: init_index(index, index_name, true, adapter)
 
     index_objects([object], index, index_name, false)
   end
 
   # create a new index
-  def init_index(index \\ nil, index_name \\ nil, fail_silently \\ false, adapter \\ adapter())
+  def init_index(index \\ nil, index_name \\ nil, fail_silently \\ false, adapter \\ nil)
 
   def init_index(index, index_name, fail_silently, adapter)
       when index in [:public, :closed, "public", "closed", nil] do
-    if adapter do
+    if adapter = adapter || adapter() do
       index_name = index_name || index_name(index) || index_name(:public)
 
       adapter.create_index(index_name, fail_silently)
@@ -187,7 +187,7 @@ defmodule Bonfire.Search.Indexer do
   end
 
   def init_index(index, index_name, fail_silently, adapter) do
-    if adapter do
+    if adapter = adapter || adapter() do
       adapter.create_index(index_name || index_name(index), fail_silently)
     end
   end
@@ -209,8 +209,10 @@ defmodule Bonfire.Search.Indexer do
   end
 
   defp delete_object(object_id, index_name) do
-    adapter().delete(object_id, index_name)
-    |> debug()
+    if adapter = adapter(),
+      do:
+        adapter.delete(object_id, index_name)
+        |> debug()
   end
 
   def host(url) when is_binary(url) do

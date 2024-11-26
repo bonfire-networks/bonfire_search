@@ -35,7 +35,7 @@ defmodule Bonfire.Search do
     debug(adapter, "search using")
     debug(opts, "opts")
 
-    adapter.search(string, to_options(opts), calculate_facets, filter_facets)
+    if adapter, do: adapter.search(string, to_options(opts), calculate_facets, filter_facets)
   end
 
   @doc """
@@ -48,18 +48,20 @@ defmodule Bonfire.Search do
     debug(adapter, "search using")
     debug(index_or_opts, "opts")
 
-    adapter.search(string, index_or_opts)
+    if adapter, do: adapter.search(string, index_or_opts)
   end
 
   @doc """
   Type-specific search with optional facets
   """
   def search_by_type(tag_search, facets \\ nil, opts \\ []) do
-    if Bonfire.Common.Config.get_ext(:bonfire_search, :disable_for_autocompletes) do
+    adapter = adapter()
+
+    if Bonfire.Common.Config.get_ext(:bonfire_search, :disable_for_autocompletes) || !adapter do
       debug("Search disabled for autocompletes, using DB adapter")
       Bonfire.Search.DB.search_by_type(tag_search, facets)
     else
-      adapter().search_by_type(tag_search, facets)
+      adapter.search_by_type(tag_search, facets)
     end
   end
 end
