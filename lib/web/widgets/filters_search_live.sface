@@ -36,7 +36,7 @@
   >
     <div class={
       "text-base-content/70 text-sm pb-3 border-b-2 border-transparent",
-      "font-semibold !border-primary text-primary": @selected_tab == "all"
+      "font-semibold !border-primary text-primary": !@selected_tab
     }>
       {l("All types")}
     </div>

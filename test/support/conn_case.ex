@@ -27,7 +27,8 @@ defmodule Bonfire.Search.ConnCase do
 
       use Untangle
 
-      import Phoenix.LiveViewTest
+      # import Phoenix.LiveViewTest
+      import PhoenixTest
       # import Bonfire.Search.ConnCase
       import Bonfire.Search.Test.ConnHelpers
       # import Bonfire.Search.Test.FakeHelpers

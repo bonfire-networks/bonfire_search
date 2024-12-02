@@ -30,7 +30,7 @@ defmodule Bonfire.Search.Web.SearchLive do
        socket,
        page: "search",
        page_title: "Search",
-       selected_tab: "all",
+       selected_tab: nil,
        index: "public",
        back: true,
        search_limit: @default_limit,
@@ -58,7 +58,7 @@ defmodule Bonfire.Search.Web.SearchLive do
   #   [
   #     users: [
   #       secondary: [
-  #         {Bonfire.Search.UI.FiltersSearchLive, [selected_tab: "all", search: search]}
+  #         {Bonfire.Search.UI.FiltersSearchLive, [selected_tab: nil, search: search]}
   #       ]
   #     ]
   #   ]

@@ -5,7 +5,7 @@ defmodule Bonfire.Search.RuntimeConfig do
   def config do
     import Config
 
-    adapter = System.get_env("SEARCH_ADAPTER")
+    adapter = System.get_env("SEARCH_ADAPTER", "meili")
 
     config :bonfire_search,
       http_adapter:

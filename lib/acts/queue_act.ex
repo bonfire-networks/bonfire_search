@@ -44,6 +44,7 @@ defmodule Bonfire.Search.Acts.Queue do
 
           current_user = Bonfire.Common.Utils.current_user(epic.assigns[:options])
 
+          # check it here to avoid preparing the object if disabled
           if Bonfire.Common.Extend.module_enabled?(
                Bonfire.Search.Indexer,
                e(object, :created, :creator, nil) ||
@@ -51,7 +52,13 @@ defmodule Bonfire.Search.Acts.Queue do
              ) do
             prepared_object = prepare_object(object)
 
-            if prepared_object, do: maybe_index_object(prepared_object, current_user)
+            if prepared_object,
+              do:
+                maybe_index_object(
+                  prepared_object,
+                  epic.assigns[:options][:boundary],
+                  current_user
+                )
 
             Epic.assign(epic, on, prepared_object)
           else
@@ -116,7 +123,8 @@ defmodule Bonfire.Search.Acts.Queue do
     end
   end
 
-  def maybe_index_object(object, current_user) do
+  defp maybe_index_object(object, boundary, current_user) do
+    # check it here again in case creator is only available after the preloads in prepare_object
     if Bonfire.Common.Extend.module_enabled?(
          Bonfire.Search.Indexer,
          e(object, :created, :creator, nil) ||
@@ -127,7 +135,9 @@ defmodule Bonfire.Search.Acts.Queue do
          # FIXME: should be done in a Social act
          |> Bonfire.Social.Activities.activity_under_object()
          |> Bonfire.Search.Indexer.maybe_indexable_object()
-         |> Bonfire.Search.Indexer.maybe_index_object()
+         |> Bonfire.Search.Indexer.maybe_index_object(
+           if(boundary == "public", do: :public, else: :closed)
+         )
   end
 
   def maybe_unindex(object) do

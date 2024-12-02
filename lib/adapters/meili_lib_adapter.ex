@@ -11,7 +11,7 @@ defmodule Bonfire.Search.MeiliLib do
   @behaviour Bonfire.Search.Adapter
 
   def search_by_type(tag_search, facets \\ nil) do
-    facets = search_facets(facets)
+    facets = search_type_facets(facets)
     debug("search: #{inspect(tag_search)} with facets #{inspect(facets)}")
 
     search = search(tag_search, %{}, false, facets)
@@ -20,17 +20,17 @@ defmodule Bonfire.Search.MeiliLib do
     |> Enums.filter_empty([])
   end
 
-  defp search_facets(facets) when is_list(facets) or is_binary(facets) do
+  defp search_type_facets(facets) when is_list(facets) or is_binary(facets) do
     %{
       "index_type" => List.wrap(facets) |> Enum.map(&Types.module_to_str/1)
     }
   end
 
-  defp search_facets(facet) when is_atom(facet) and not is_nil(facet) do
-    search_facets([facet])
+  defp search_type_facets(facet) when is_atom(facet) and not is_nil(facet) do
+    search_type_facets([facet])
   end
 
-  defp search_facets(nil), do: nil
+  defp search_type_facets(nil), do: nil
 
   def search(string, opts, calculate_facets, filter_facets)
       when is_map(filter_facets) do
@@ -39,18 +39,22 @@ defmodule Bonfire.Search.MeiliLib do
       opts,
       calculate_facets,
       Enum.map(filter_facets, &facet_from_map/1)
+      |> Enum.reject(&is_nil/1)
+      |> debug("filter_facets")
     )
   end
 
   def search(string, opts, calculate_facets, filter_facets)
       when is_list(filter_facets) do
-    opts =
+    search_maybe_with_facets(
+      string,
       opts
       |> Enum.into(%{
         filter: List.flatten(filter_facets)
       })
-
-    search_maybe_with_facets(string, opts, calculate_facets)
+      |> debug("opts_with_filter"),
+      calculate_facets
+    )
   end
 
   def search(string, opts, calculate_facets, _) do
@@ -63,22 +67,24 @@ defmodule Bonfire.Search.MeiliLib do
 
   def search(string, %{index: index} = opts)
       when is_binary(string) and (is_binary(index) or is_atom(index)) do
+    # FIXME: use an allow-list instead
     search_params =
-      Map.drop(opts, [:current_user, :context, :index])
+      Map.drop(opts, [:current_user, :context, :index, :skip_boundary_check])
       |> Enum.into(%{q: string})
 
     search(search_params, index, opts)
   end
 
   def search(string, opts) when is_binary(string) and (is_map(opts) or is_list(opts)) do
+    # FIXME: use an allow-list instead
     search_params =
-      Enums.fun(opts, :drop, [[:current_user, :context, :index]])
+      Enums.fun(opts, :drop, [[:current_user, :context, :index, :skip_boundary_check]])
       |> Enum.into(%{q: string})
 
     search(search_params, opts[:index], opts)
   end
 
-  def search(object, index) when is_map(object) and is_binary(index) do
+  def search(object, index) when is_map(object) and (is_binary(index) or is_atom(index)) do
     search_execute(object, index, [])
   end
 
@@ -92,6 +98,10 @@ defmodule Bonfire.Search.MeiliLib do
 
   defp search_maybe_with_facets(string, opts, calculate_facets)
        when not is_nil(calculate_facets) do
+    # TODO?
+    # opts = Map.merge(%{
+    #   facetDistribution: ["*"]
+    # }, opts)
     search(string, opts)
   end
 
@@ -101,6 +111,11 @@ defmodule Bonfire.Search.MeiliLib do
 
   def facet_from_map({key, values}) when is_list(values) do
     Enum.map(values, &facet_from_map({key, &1}))
+    |> Enum.reject(&is_nil/1)
+  end
+
+  def facet_from_map({_key, ""}) do
+    nil
   end
 
   def facet_from_map({key, value}) when is_binary(value) or is_atom(value) do
@@ -124,7 +139,7 @@ defmodule Bonfire.Search.MeiliLib do
 
         processed_hits =
           hits
-          |> maybe_boundarise(index, opts)
+          |> Bonfire.Search.maybe_boundarise(index, opts)
           |> Enum.map(fn hit ->
             object =
               hit
@@ -143,7 +158,7 @@ defmodule Bonfire.Search.MeiliLib do
           end)
           |> debug("did_structs")
           |> Bonfire.Social.Activities.activity_preloads(
-            [:with_reply_to],
+            [:with_reply_to, :with_media],
             opts
           )
 
@@ -154,31 +169,8 @@ defmodule Bonfire.Search.MeiliLib do
         result
 
       error ->
-        error(error, "Could not search Meili")
-        nil
+        error(error, "There was an error when searching the Meili index")
     end
-  end
-
-  defp maybe_boundarise(hits, :public, _), do: hits
-
-  defp maybe_boundarise(hits, _closed, opts) do
-    # WIP: filter by boundaries for closed index
-    list_of_ids =
-      Enums.ids(hits)
-      |> debug()
-
-    my_visible_ids =
-      if current_user = current_user(opts),
-        do:
-          Bonfire.Boundaries.load_pointers(list_of_ids,
-            current_user: current_user,
-            verbs: e(opts, :verbs, [:see, :read]),
-            ids_only: true
-          )
-          |> Enums.ids(),
-        else: []
-
-    Enum.filter(hits, &(Enums.id(&1) in my_visible_ids))
   end
 
   def index_exists(index_name) do
@@ -252,6 +244,8 @@ defmodule Bonfire.Search.MeiliLib do
 
   def wait_for_task(client \\ nil, taskUid, backoff \\ 500)
 
+  def wait_for_task(_client, %{status: :succeeded} = task, _backoff), do: {:ok, task}
+
   def wait_for_task(client, %{taskUid: taskUid}, backoff),
     do: wait_for_task(client, taskUid, backoff)
 
@@ -260,14 +254,14 @@ defmodule Bonfire.Search.MeiliLib do
       {:error, error} ->
         {:error, error}
 
-      {:ok, %Meilisearch.Task{status: :succeeded}} ->
-        :succeeded
+      {:ok, %Meilisearch.Task{status: :succeeded} = task} ->
+        {:ok, task}
 
-      {:ok, %Meilisearch.Task{status: :failed}} ->
-        :failed
+      {:ok, %Meilisearch.Task{status: :failed} = task} ->
+        error("Meilisearch task failed", task)
 
-      {:ok, %Meilisearch.Task{status: :canceled}} ->
-        :canceled
+      {:ok, %Meilisearch.Task{status: :canceled} = task} ->
+        error("Meilisearch task was canceled", task)
 
       {:ok, _task} ->
         Process.sleep(backoff)

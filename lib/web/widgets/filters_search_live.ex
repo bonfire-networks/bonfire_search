@@ -4,5 +4,5 @@ defmodule Bonfire.Search.UI.FiltersSearchLive do
   prop filters, :any, default: %{}
   prop search, :string, default: nil
   prop index, :string, default: "public"
-  prop selected_tab, :any, default: "all"
+  prop selected_tab, :any, default: nil
 end

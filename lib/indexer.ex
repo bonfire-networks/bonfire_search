@@ -139,35 +139,45 @@ defmodule Bonfire.Search.Indexer do
   defp do_index_object(object, index) do
     # IO.inspect(search_indexing: objects)
     # FIXME - should create the index only once
-    index_objects(object, index, index_name(index), true)
+    if adapter = adapter() do
+      with {:ok, task} <-
+             index_objects(object, index, index_name(index), true, adapter) |> debug("indexed?") do
+        if Bonfire.Common.Config.get_ext(:bonfire_search, :wait_for_indexing)
+           |> debug("wait_for_indexing?") do
+          adapter.wait_for_task(task)
+        else
+          {:ok, task}
+        end
+      end
+    end
   end
 
   # index several things in an existing index
-  defp index_objects(objects, index, index_name, init_index_first \\ false)
+  defp index_objects(objects, index, index_name, init_index_first \\ false, adapter \\ nil)
 
-  defp index_objects(objects, index, index_name, init_index_first)
+  defp index_objects(objects, index, index_name, init_index_first, adapter)
        when is_list(objects) do
-    adapter = adapter()
+    if adapter = adapter || adapter() do
+      # FIXME: should check if enabled for creator
+      if module_enabled?(__MODULE__) do
+        if init_index_first, do: init_index(index, index_name, true, adapter)
 
-    # FIXME: should check if enabled for creator
-    if adapter && module_enabled?(__MODULE__) do
-      if init_index_first, do: init_index(index, index_name, true, adapter)
-
-      objects
-      # |> debug("filtered")
-      |> adapter.put_documents(index_name)
-      # |> adapter.put(index_name <> "/documents")
-      |> debug("result of PUT")
+        objects
+        # |> debug("filtered")
+        |> adapter.put_documents(index_name)
+        # |> adapter.put(index_name <> "/documents")
+        |> debug("result of PUT")
+      end
     end
   end
 
   # index something in an existing index
-  defp index_objects(object, index, index_name, init_index_first) do
-    adapter = adapter()
+  defp index_objects(object, index, index_name, init_index_first, adapter) do
+    if adapter = adapter || adapter() do
+      if init_index_first, do: init_index(index, index_name, true, adapter)
 
-    if init_index_first && adapter, do: init_index(index, index_name, true, adapter)
-
-    index_objects([object], index, index_name, false)
+      index_objects([object], index, index_name, false)
+    end
   end
 
   # create a new index

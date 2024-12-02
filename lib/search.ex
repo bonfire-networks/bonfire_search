@@ -33,7 +33,7 @@ defmodule Bonfire.Search do
   def search(string, opts \\ %{}, calculate_facets, filter_facets) do
     adapter = adapter()
     debug(adapter, "search using")
-    debug(opts, "opts")
+    # debug(opts, "opts")
 
     if adapter, do: adapter.search(string, to_options(opts), calculate_facets, filter_facets)
   end
@@ -62,6 +62,34 @@ defmodule Bonfire.Search do
       Bonfire.Search.DB.search_by_type(tag_search, facets)
     else
       adapter.search_by_type(tag_search, facets)
+    end
+  end
+
+  def maybe_boundarise(hits, :public, _), do: hits
+
+  def maybe_boundarise(hits, _closed, opts) do
+    opts = to_options(opts)
+
+    if Bonfire.Boundaries.Queries.skip_boundary_check?(opts) do
+      hits
+    else
+      # WIP: filter by boundaries for closed index
+      list_of_ids =
+        Enums.ids(hits)
+        |> debug()
+
+      my_visible_ids =
+        if current_user = current_user(opts),
+          do:
+            Bonfire.Boundaries.load_pointers(list_of_ids,
+              current_user: current_user,
+              verbs: e(opts, :verbs, [:see, :read]),
+              ids_only: true
+            )
+            |> Enums.ids(),
+          else: []
+
+      Enum.filter(hits, &(Enums.id(&1) in my_visible_ids))
     end
   end
 end

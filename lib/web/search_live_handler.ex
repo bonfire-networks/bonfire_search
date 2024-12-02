@@ -154,7 +154,7 @@ defmodule Bonfire.Search.LiveHandler do
     facet_filters = facet_filters || %{}
 
     search =
-      Bonfire.Search.search(q, opts, Map.keys(facet_filters), Map.values(facet_filters))
+      Bonfire.Search.search(q, opts, Map.keys(facet_filters), facet_filters)
       |> debug("did_search")
 
     hits = e(search, :hits, [])

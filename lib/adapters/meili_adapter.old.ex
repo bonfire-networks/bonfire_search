@@ -332,14 +332,14 @@ defmodule Bonfire.Search.Meili do
       {:error, error} ->
         {:error, error}
 
-      {:ok, %{body: %{"status" => "succeeded"}}} ->
-        :succeeded
+      {:ok, %{body: %{"status" => "succeeded"} = task}} ->
+        {:ok, task}
 
-      {:ok, %{body: %{"status" => "failed"}}} ->
-        :failed
+      {:ok, %{body: %{"status" => "failed"} = task}} ->
+        error("Meilisearch task failed", task)
 
-      {:ok, %{body: %{"status" => "canceled"}}} ->
-        :canceled
+      {:ok, %{body: %{"status" => "canceled"} = task}} ->
+        error("Meilisearch task was canceled", task)
 
       {:ok, task} ->
         debug(task, "Wait for Meili")

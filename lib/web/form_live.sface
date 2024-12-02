@@ -27,6 +27,7 @@
         />
         <button type="submit" class="">
           <#Icon solid="Search" class="w-4 h-4 opacity-70" />
+          <span class="sr-only">Search</span>
         </button>
       </label>
     </div>
