@@ -235,7 +235,7 @@ defmodule Bonfire.Search.MeiliLib do
     Settings.update(client, index, object)
   end
 
-  defp get_client do
+  def get_client do
     search_instance = Bonfire.Common.Config.get_ext!(:bonfire_search, :instance)
     api_key = Bonfire.Common.Config.get_ext!(:bonfire_search, :api_key)
 
