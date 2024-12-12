@@ -5,7 +5,7 @@
 >
   <!-- {#if maybe_module(Bonfire.Search.adapter(), @__context__) == Bonfire.Search.MeiliLib} -->
   {!-- public --}
-  <LinkLive
+  <!-- <LinkLive
     class="flex flex-1 pt-4 text-base capitalize hover:bg-base-content hover:bg-opacity-10 place-content-center"
     to={"/search?index=public&facet[index_type]=#{@selected_tab}&s=#{@search}"}
   >
@@ -27,7 +27,20 @@
     }>
       {l("Private")}
     </div>
-  </LinkLive>
+  </LinkLive> -->
+
+   <div class="form-control px-3 pb-1">
+  <label class="label gap-2 cursor-pointer">
+    <input 
+      type="checkbox" 
+      class="toggle toggle-primary" 
+      checked={@index == "closed"}
+      phx-click="toggle_index"
+      phx-value-index={if @index == "public", do: "closed", else: "public"}
+    />
+    <span class="label-text text-base-content/70">{l "Include private"}</span>
+  </label>
+</div>
   <!-- {#else} -->
   {!-- ALL TYPES --}
   <LinkLive

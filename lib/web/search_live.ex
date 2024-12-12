@@ -64,6 +64,7 @@ defmodule Bonfire.Search.Web.SearchLive do
   #   ]
   # end
 
+
   def handle_params(params, _url, socket) do
     if socket_connected?(socket) and
          (params["s"] != e(assigns(socket), :search_term, nil) or
@@ -151,6 +152,11 @@ defmodule Bonfire.Search.Web.SearchLive do
   #   type_name = type_name(name) |> Inflex.pluralize()
   #   "#{num} #{type_name}"
   # end
+
+  def handle_event("toggle_index", %{"index" => new_index}, socket) do
+    url = "/search?index=#{new_index}&facet[index_type]=#{socket.assigns.selected_tab}&s=#{socket.assigns.search}"
+    {:noreply, push_patch(socket, to: url)}
+  end
 
   def handle_event(
         "Bonfire.Search:search",
