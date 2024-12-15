@@ -64,11 +64,11 @@ defmodule Bonfire.Search.Web.SearchLive do
   #   ]
   # end
 
-
   def handle_params(params, _url, socket) do
-    if socket_connected?(socket) and
-         (params["s"] != e(assigns(socket), :search_term, nil) or
-            (params["index"] || "public") != e(assigns(socket), :index, "public")) do
+    # and
+    if socket_connected?(socket) do
+      # (params["s"] != e(assigns(socket), :search_term, nil) or
+      #    (params["index"] || "public") != e(assigns(socket), :index, "public")) do
       handle_search_params(params, nil, socket)
     else
       socket
@@ -77,16 +77,21 @@ defmodule Bonfire.Search.Web.SearchLive do
 
   def handle_search_params(%{"s" => s, "facet" => facets} = params, _url, socket)
       when s != "" do
-    index_type = e(facets, "index_type", nil)
+    index = params["index"] || e(assigns(socket), :index, "nil")
+
+    index_type =
+      e(facets, "index_type", nil)
+      |> debug("selected_tabsss")
 
     Bonfire.Search.LiveHandler.live_search(
       s,
       @default_limit,
       facets,
-      params["index"] || e(assigns(socket), :index, "nil"),
+      index,
       socket
       |> assign(
         search_term: s,
+        index: index,
         selected_tab: index_type
         # sidebar_widgets: widget(s)
       )
@@ -95,12 +100,15 @@ defmodule Bonfire.Search.Web.SearchLive do
   end
 
   def handle_search_params(%{"s" => s} = params, _url, socket) when s != "" do
+    index = params["index"] || e(assigns(socket), :index, "nil")
+
     Bonfire.Search.LiveHandler.live_search(
       s,
-      params["index"] || e(assigns(socket), :index, nil),
+      index,
       socket
       |> assign(
-        search_term: s
+        search_term: s,
+        index: index
         # sidebar_widgets: widget(s)
       )
       |> assign_global(search_more: true)
@@ -110,12 +118,35 @@ defmodule Bonfire.Search.Web.SearchLive do
   def handle_search_params(%{"hashtag_search" => s} = params, _url, socket)
       when s != "" do
     s = "##{s}"
+    index = params["index"] || e(assigns(socket), :index, "nil")
 
     Bonfire.Search.LiveHandler.live_search(
       s,
-      params["index"] || e(assigns(socket), :index, nil),
+      index,
       socket
-      |> assign(search_term: s)
+      |> assign(search_term: s, index: index)
+      |> assign_global(search_more: true)
+    )
+  end
+
+  def handle_search_params(%{"facet" => facets} = params, _url, socket) do
+    index = params["index"] || e(assigns(socket), :index, "nil")
+
+    index_type =
+      e(facets, "index_type", nil)
+      |> debug("selected_tabsss")
+
+    Bonfire.Search.LiveHandler.live_search(
+      e(assigns(socket), :search_term, nil),
+      @default_limit,
+      facets,
+      index,
+      socket
+      |> assign(
+        index: index,
+        selected_tab: index_type
+        # sidebar_widgets: widget(s)
+      )
       |> assign_global(search_more: true)
     )
   end
@@ -154,7 +185,9 @@ defmodule Bonfire.Search.Web.SearchLive do
   # end
 
   def handle_event("toggle_index", %{"index" => new_index}, socket) do
-    url = "/search?index=#{new_index}&facet[index_type]=#{socket.assigns.selected_tab}&s=#{socket.assigns.search}"
+    url =
+      "/search?index=#{new_index}&facet[index_type]=#{socket.assigns.selected_tab}&s=#{socket.assigns.search}"
+
     {:noreply, push_patch(socket, to: url)}
   end
 
