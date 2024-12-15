@@ -219,10 +219,16 @@ defmodule Bonfire.Search.Indexer do
   end
 
   defp delete_object(object_id, index_name) do
-    if adapter = adapter(),
-      do:
-        adapter.delete(object_id, index_name)
-        |> debug()
+    if adapter = adapter() do
+      with {:ok, task} <- adapter.delete(object_id, index_name) do
+        if Bonfire.Common.Config.get_ext(:bonfire_search, :wait_for_indexing)
+           |> debug("wait_for_indexing?") do
+          adapter.wait_for_task(task)
+        else
+          {:ok, task}
+        end
+      end
+    end
   end
 
   def host(url) when is_binary(url) do

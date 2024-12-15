@@ -32,8 +32,16 @@ defmodule Bonfire.Search.ConnCase do
       # import Bonfire.Search.ConnCase
       import Bonfire.Search.Test.ConnHelpers
       # import Bonfire.Search.Test.FakeHelpers
+
+      import Bonfire.Common.Simulation
       alias Bonfire.Search.Fake
       alias Bonfire.Search.Web.Router.Helpers, as: Routes
+
+      use Arrows
+      use Bonfire.Common.E
+      import Bonfire.Common.Utils
+      alias Bonfire.Common.Enums
+      alias Bonfire.Common.Types
 
       # The default endpoint for testing
       @endpoint Application.compile_env!(:bonfire, :endpoint_module)

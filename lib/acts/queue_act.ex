@@ -11,6 +11,7 @@ defmodule Bonfire.Search.Acts.Queue do
   # alias Bonfire.Epics.Act
   alias Bonfire.Epics.Epic
   alias Bonfire.Common.Utils
+  use Bonfire.Common.Repo
   alias Ecto.Changeset
 
   # see module documentation
@@ -124,11 +125,12 @@ defmodule Bonfire.Search.Acts.Queue do
   end
 
   defp maybe_index_object(object, boundary, current_user) do
+    creator = e(object, :created, :creator, nil) || e(object, :creator, nil) || current_user
+
     # check it here again in case creator is only available after the preloads in prepare_object
     if Bonfire.Common.Extend.module_enabled?(
          Bonfire.Search.Indexer,
-         e(object, :created, :creator, nil) ||
-           e(object, :creator, nil) || current_user
+         debug(repo().maybe_preload(creator, :settings))
        ),
        do:
          object
