@@ -154,7 +154,7 @@ defmodule Bonfire.Search.Meili do
       |> debug("did_structs")
       |> Bonfire.Social.Activities.activity_preloads(
         [
-          # :with_object_posts, 
+          # :with_post_content, 
           # :with_subject, 
           :with_reply_to
           # :tags

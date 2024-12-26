@@ -20,7 +20,11 @@ defmodule Bonfire.Search.RuntimeConfig do
 
     config :bonfire_search, Bonfire.Search.Indexer,
       modularity:
-        if(System.get_env("SEARCH_INDEXING_DISABLED") in ["true", "1"] or !adapter, do: :disabled)
+        if(
+          System.get_env("SEARCH_INDEXING_DISABLED") in ["true", "1"] or config_env() == :test or
+            !adapter,
+          do: :disabled
+        )
 
     config :bonfire_search, Bonfire.Search.MeiliLib,
       modularity: if(adapter != "meili", do: :disabled)
