@@ -1,6 +1,8 @@
 import Config
 
+# see Bonfire.Search.RuntimeConfig for env vars configured at runtime
 config :bonfire_search,
+  adapter: Bonfire.Search.MeiliLib,
   http_adapter: Bonfire.Common.HTTP,
   # protocol, hostname and port
   instance: System.get_env("SEARCH_MEILI_INSTANCE", "http://search:7700"),
