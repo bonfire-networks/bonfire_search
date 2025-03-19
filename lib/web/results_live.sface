@@ -20,7 +20,7 @@
         {#match %{id: id} = hit}
           <StatefulComponent
             module={maybe_component(Bonfire.UI.Social.ActivityLive)}
-            id={e(hit, :index_type, "so-") <> (id || random_dom_id())}
+            id={e(hit, :index_type, "so-") <> (id || deterministic_dom_id("search_result", hit[:index_type], hit[:name] || hit[:title]))}
             showing_within={:search}
             object={hit}
             check_object_boundary={false}
