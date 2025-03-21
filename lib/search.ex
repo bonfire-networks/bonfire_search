@@ -92,4 +92,73 @@ defmodule Bonfire.Search do
       Enum.filter(hits, &(Enums.id(&1) in my_visible_ids))
     end
   end
+
+  def maybe_index(object, "public", opts), do: maybe_index(object, :public, opts)
+  def maybe_index(object, ["public"], opts), do: maybe_index(object, :public, opts)
+  def maybe_index(object, true, opts), do: maybe_index(object, :public, opts)
+  def maybe_index(object, false, opts), do: maybe_index(object, :closed, opts)
+
+  def maybe_index(object, nil, opts) do
+    if maybe_apply(Bonfire.Boundaries, :object_public?, [object], fallback_return: false) do
+      maybe_index(object, :public, opts)
+    else
+      maybe_index(object, :closed, opts)
+    end
+  end
+
+  def maybe_index(object, boundary, opts) when is_binary(boundary),
+    do: maybe_index(object, :closed, opts)
+
+  def maybe_index(object, boundaries, opts) when is_list(boundaries) do
+    if "public" in boundaries do
+      maybe_index(object, :public, opts)
+    else
+      maybe_index(object, :closed, opts)
+    end
+  end
+
+  def maybe_index(object, index, opts) when is_atom(index) do
+    creator =
+      repo().maybe_preload(
+        e(object, :created, :creator, nil) || e(object, :activity, :created, :creator, nil) ||
+          e(object, :creator, nil) || current_user(opts),
+        :settings
+      )
+
+    # check it here again in case creator is only available after the preloads in prepare_object
+    if module =
+         Bonfire.Common.Extend.maybe_module(
+           Bonfire.Search.Indexer,
+           creator
+         ),
+       do:
+         object
+         # FIXME: should be done in a Social act
+         |> Bonfire.Social.Activities.activity_under_object()
+         |> module.maybe_index_object(index)
+  end
+
+  def maybe_unindex(object) do
+    creator =
+      repo().maybe_preload(
+        e(object, :created, :creator, nil) || e(object, :activity, :created, :creator, nil) ||
+          e(object, :creator, nil) || e(object, :created, :creator_id, nil) ||
+          e(object, :activity, :created, :creator_id, nil) || e(object, :creator_id, nil) ||
+          object,
+        :settings
+      )
+
+    index =
+      if maybe_apply(Bonfire.Boundaries, :object_public?, [object], fallback_return: false) do
+        :public
+      else
+        :closed
+      end
+
+    if module = Bonfire.Common.Extend.maybe_module(Bonfire.Search.Indexer, creator) do
+      module.maybe_delete_object(object, index)
+    else
+      :ok
+    end
+  end
 end

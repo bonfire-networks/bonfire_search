@@ -34,7 +34,7 @@ defmodule Bonfire.Search.Acts.Queue do
       case action do
         :delete ->
           maybe_debug(epic, act, action, "Meili queuing")
-          maybe_unindex(object)
+          Bonfire.Search.maybe_unindex(object)
           epic
 
         # :insert
@@ -55,7 +55,7 @@ defmodule Bonfire.Search.Acts.Queue do
 
             if prepared_object,
               do:
-                maybe_index_object(
+                Bonfire.Search.maybe_index(
                   prepared_object,
                   epic.assigns[:options][:boundary],
                   current_user
@@ -121,32 +121,6 @@ defmodule Bonfire.Search.Acts.Queue do
 
         IO.inspect(thing, label: "thing")
         nil
-    end
-  end
-
-  defp maybe_index_object(object, boundary, current_user) do
-    creator = e(object, :created, :creator, nil) || e(object, :creator, nil) || current_user
-
-    # check it here again in case creator is only available after the preloads in prepare_object
-    if Bonfire.Common.Extend.module_enabled?(
-         Bonfire.Search.Indexer,
-         debug(repo().maybe_preload(creator, :settings))
-       ),
-       do:
-         object
-         # FIXME: should be done in a Social act
-         |> Bonfire.Social.Activities.activity_under_object()
-         |> Bonfire.Search.Indexer.maybe_indexable_object()
-         |> Bonfire.Search.Indexer.maybe_index_object(
-           if(boundary == "public", do: :public, else: :closed)
-         )
-  end
-
-  def maybe_unindex(object) do
-    if Bonfire.Common.Extend.module_enabled?(Bonfire.Search.Indexer) do
-      Bonfire.Search.Indexer.maybe_delete_object(object)
-    else
-      :ok
     end
   end
 end
