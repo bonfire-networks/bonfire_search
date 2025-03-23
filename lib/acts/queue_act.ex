@@ -58,7 +58,7 @@ defmodule Bonfire.Search.Acts.Queue do
                 Bonfire.Search.maybe_index(
                   prepared_object,
                   epic.assigns[:options][:boundary],
-                  current_user
+                  current_user: current_user
                 )
 
             Epic.assign(epic, on, prepared_object)
