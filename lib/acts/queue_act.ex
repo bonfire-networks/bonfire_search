@@ -119,7 +119,7 @@ defmodule Bonfire.Search.Acts.Queue do
       _ ->
         Logger.error("MeiliSearch.Queue: no clause match for function to_indexable/2")
 
-        IO.inspect(thing, label: "thing")
+        debug(thing, "thing")
         nil
     end
   end
