@@ -23,9 +23,9 @@ defmodule Bonfire.Search.ConnCase do
       import Plug.Conn
       import Phoenix.ConnTest
 
-      import Bonfire.UI.Common.Testing.Helpers
+      import Bonfire.Search.DataHelpers
 
-      use Untangle
+      import Bonfire.UI.Common.Testing.Helpers
 
       # import Phoenix.LiveViewTest
       import PhoenixTest
@@ -33,6 +33,7 @@ defmodule Bonfire.Search.ConnCase do
       import Bonfire.Search.Test.ConnHelpers
       # import Bonfire.Search.Test.FakeHelpers
 
+      use Untangle
       import Bonfire.Common.Simulation
       alias Bonfire.Search.Fake
       alias Bonfire.Search.Web.Router.Helpers, as: Routes
@@ -45,6 +46,8 @@ defmodule Bonfire.Search.ConnCase do
 
       # The default endpoint for testing
       @endpoint Application.compile_env!(:bonfire, :endpoint_module)
+
+      @moduletag :ui
     end
   end
 

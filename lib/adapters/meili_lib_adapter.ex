@@ -165,7 +165,7 @@ defmodule Bonfire.Search.MeiliLib do
         Map.put(result, :hits, processed_hits)
 
       {:ok, result} ->
-        debug(result, "no hits")
+        debug(result, "no hits in `#{index_name}` index")
         result
 
       error ->

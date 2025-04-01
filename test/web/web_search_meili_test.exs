@@ -24,14 +24,9 @@ defmodule Bonfire.Search.Web.MeiliTest do
   @adapter Bonfire.Search.MeiliLib
 
   setup do
-    tesla = Bonfire.Common.Config.get(:adapter, nil, :tesla)
-    Bonfire.Common.Config.put(:adapter, @adapter, :bonfire_search)
     Bonfire.Common.Config.put(:wait_for_indexing, true, :bonfire_search)
-    Bonfire.Common.Config.put(:adapter, {Tesla.Adapter.Finch, name: Bonfire.Finch}, :tesla)
 
-    # clear the index
-    @adapter.delete(:all, "test_public")
-    ~> @adapter.wait_for_task()
+    {meili_adapter, tesla_adapter} = prepare_meili_for_tests()
 
     account = fake_account!()
     me = fake_user!(account)
@@ -45,8 +40,9 @@ defmodule Bonfire.Search.Web.MeiliTest do
     conn = conn(user: alice, account: account)
 
     on_exit(fn ->
+      reset_meili_after_tests(meili_adapter, tesla_adapter)
+
       Bonfire.Common.Config.put(:wait_for_indexing, false, :bonfire_search)
-      Bonfire.Common.Config.put(:adapter, tesla, :tesla)
     end)
 
     {:ok, conn: conn, account: account, me: me, alice: alice}

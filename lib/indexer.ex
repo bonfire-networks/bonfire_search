@@ -24,115 +24,58 @@ defmodule Bonfire.Search.Indexer do
 
   def index_name(name), do: "#{Config.env()}_#{name}"
 
+  def maybe_index_object(nil) do
+    error("object is nil, skipping indexing")
+  end
+
   def maybe_index_object(object, index \\ nil) do
     indexable_object =
-      maybe_indexable_object(object)
+      prepare_indexable_object(object)
       |> filter_empty(nil)
-      |> debug("filtered")
+      |> debug("prepared")
 
-    if not is_nil(indexable_object) do
+    if indexable_object do
       if index do
+        debug(index, "attempt indexing in")
         do_index_object(indexable_object, index)
       else
+        debug("attempt indexing in :public index")
         do_index_object(indexable_object, :public)
       end
+    else
+      error(
+        object,
+        "prepare_indexable_object didn't return an object for this input, skipping indexing"
+      )
     end
   end
 
-  def maybe_indexable_object(nil) do
-    nil
-  end
-
-  def maybe_indexable_object(%{"index_type" => index_type} = object)
-      when not is_nil(index_type) do
+  defp prepare_indexable_object(%{"index_type" => index_type} = object)
+       when not is_nil(index_type) do
     # already formatted indexable object
     object
   end
 
-  def maybe_indexable_object(%{"id" => id} = object)
-      when not is_nil(id) do
+  defp prepare_indexable_object(%{"id" => id} = object)
+       when not is_nil(id) do
     # hopefully already formatted indexable object
     object
   end
 
-  def maybe_indexable_object(%Bonfire.Data.Identity.User{} = object) do
-    maybe_indexable_and_discoverable(object, object)
-  end
-
-  def maybe_indexable_object(%{subject: %{id: _} = creator} = object) do
-    maybe_indexable_and_discoverable(creator, object)
-  end
-
-  def maybe_indexable_object(%{subject: %{character: %{id: _} = creator}} = object) do
-    maybe_indexable_and_discoverable(creator, object)
-  end
-
-  def maybe_indexable_object(%{creator: %{id: _} = creator} = object) do
-    maybe_indexable_and_discoverable(creator, object)
-  end
-
-  def maybe_indexable_object(%{created: %{creator: %{id: _} = creator}} = object) do
-    maybe_indexable_and_discoverable(creator, object)
-  end
-
-  def maybe_indexable_object(%{activity: %{created: %{creator: %{id: _} = creator}}} = object) do
-    maybe_indexable_and_discoverable(creator, object)
-  end
-
-  def maybe_indexable_object(
-        %{activity: %{object: %{created: %{creator: %{id: _} = creator}}}} = object
-      ) do
-    maybe_indexable_and_discoverable(creator, object)
-  end
-
-  def maybe_indexable_object(%{object: %{created: %{creator: %{id: _} = creator}}} = object) do
-    maybe_indexable_and_discoverable(creator, object)
-  end
-
-  def maybe_indexable_object(%Needle.Pointer{} = pointer) do
-    Bonfire.Common.Needles.get(pointer)
-    |> maybe_indexable_object()
-  end
-
-  def maybe_indexable_object(%{__struct__: _} = object) do
-    warn(
-      "Could not identify creator to determine if they allow discoverability. Indexing by default..."
-    )
-
-    do_indexable_object(object)
-  end
-
-  def maybe_indexable_object(objects) when is_list(objects) do
-    Enum.map(objects, &maybe_indexable_object/1)
-  end
-
-  def maybe_indexable_object(obj) do
-    warn(
-      obj,
-      "Could not index object (not pre-formated for indexing or not a struct)"
-    )
-
-    nil
-  end
-
-  def maybe_indexable_and_discoverable(creator, object) do
-    if Bonfire.Common.Extend.module_enabled?(
-         Bonfire.Search.Indexer,
-         creator
-       ),
-       do: do_indexable_object(object)
-
-    # !Bonfire.Common.Settings.get([Bonfire.Me.Users, :undiscoverable], false,
-    #      current_user: creator
-    #    ),
-  end
-
-  defp do_indexable_object(%{__struct__: object_type} = object) do
+  defp prepare_indexable_object(%{__struct__: object_type} = object) do
     Bonfire.Common.ContextModule.maybe_apply(
       object_type,
       :indexing_object_format,
       object
     )
+  end
+
+  defp prepare_indexable_object(objects) when is_list(objects) do
+    Enum.map(objects, &prepare_indexable_object/1)
+  end
+
+  defp prepare_indexable_object(_) do
+    nil
   end
 
   # add to general instance search index
@@ -141,14 +84,16 @@ defmodule Bonfire.Search.Indexer do
     # FIXME - should create the index only once
     if adapter = adapter() do
       with {:ok, task} <-
-             index_objects(object, index, index_name(index), true, adapter) |> debug("indexed?") do
+             index_objects(object, index, index_name(index), true, adapter) |> debug("queued?") do
         if Bonfire.Common.Config.get_ext(:bonfire_search, :wait_for_indexing)
            |> debug("wait_for_indexing?") do
-          adapter.wait_for_task(task)
+          adapter.wait_for_task(task) |> debug("indexed?")
         else
           {:ok, task}
         end
       end
+    else
+      error("No adapter configured for indexing")
     end
   end
 
@@ -158,7 +103,7 @@ defmodule Bonfire.Search.Indexer do
   defp index_objects(objects, index, index_name, init_index_first, adapter)
        when is_list(objects) do
     if adapter = adapter || adapter() do
-      # FIXME: should check if enabled for creator
+      # FIXME: should check if enabled for creator? or we already doing that in indexable_object?
       if module_enabled?(__MODULE__) do
         if init_index_first, do: init_index(index, index_name, true, adapter)
 
@@ -167,7 +112,11 @@ defmodule Bonfire.Search.Indexer do
         |> adapter.put_documents(index_name)
         # |> adapter.put(index_name <> "/documents")
         |> debug("result of PUT")
+      else
+        error(adapter, "Adapter not enabled for indexing")
       end
+    else
+      error("No adapter configured for indexing")
     end
   end
 

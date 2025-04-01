@@ -21,8 +21,8 @@ defmodule Bonfire.Search.RuntimeConfig do
     config :bonfire_search, Bonfire.Search.Indexer,
       modularity:
         if(
-          System.get_env("SEARCH_INDEXING_DISABLED") in ["true", "1"] or config_env() == :test or
-            !adapter,
+          !adapter or config_env() == :test or
+            System.get_env("SEARCH_INDEXING_DISABLED") in ["true", "1"],
           do: :disabled
         )
 

@@ -102,6 +102,7 @@ defmodule Bonfire.Search do
     if maybe_apply(Bonfire.Boundaries, :object_public?, [object], fallback_return: false) do
       maybe_index(object, :public, opts)
     else
+      debug("object_public? didn't return true, so indexing as closed")
       maybe_index(object, :closed, opts)
     end
   end
@@ -113,15 +114,19 @@ defmodule Bonfire.Search do
     if "public" in boundaries do
       maybe_index(object, :public, opts)
     else
+      debug(boundaries, "`public` was not in list of boundaries, so indexing as closed")
       maybe_index(object, :closed, opts)
     end
   end
 
   def maybe_index(object, index, opts) when is_atom(index) do
-    creator =
+    assumed_caretaker =
       repo().maybe_preload(
         e(object, :created, :creator, nil) || e(object, :activity, :created, :creator, nil) ||
-          e(object, :creator, nil) || current_user(opts),
+          e(object, :activity, :object, :created, :creator, nil) ||
+          e(object, :creator, nil) ||
+          e(object, :caretaker, :caretaker, nil) ||
+          e(object, :caretaker, nil) || e(object, :activity, :subject, nil) || current_user(opts),
         :settings
       )
 
@@ -129,13 +134,16 @@ defmodule Bonfire.Search do
     if module =
          Bonfire.Common.Extend.maybe_module(
            Bonfire.Search.Indexer,
-           creator
-         ),
-       do:
-         object
-         # FIXME: should be done in a Social act
-         |> Bonfire.Social.Activities.activity_under_object()
-         |> module.maybe_index_object(index)
+           assumed_caretaker
+         ) do
+      object
+      # FIXME: should be done in a Social act
+      |> Bonfire.Social.Activities.activity_under_object()
+      |> module.maybe_index_object(index)
+    else
+      # TODO: should we index in closed index in this case?
+      error(assumed_caretaker, "Search indexing is disabled for this user")
+    end
   end
 
   def maybe_unindex(object) do

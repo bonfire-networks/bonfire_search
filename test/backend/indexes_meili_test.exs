@@ -1,5 +1,5 @@
 defmodule Bonfire.Search.IndexesMeiliTest do
-  use Bonfire.Search.ConnCase, async: false
+  use Bonfire.Search.DataCase, async: false
   doctest Bonfire.Search
 
   alias Bonfire.Search
@@ -15,18 +15,10 @@ defmodule Bonfire.Search.IndexesMeiliTest do
   @adapter Bonfire.Search.MeiliLib
 
   setup do
-    tesla = Bonfire.Common.Config.get(:adapter, nil, :tesla)
-    Bonfire.Common.Config.put(:adapter, @adapter, :bonfire_search)
-    Bonfire.Common.Config.put(:adapter, {Tesla.Adapter.Finch, name: Bonfire.Finch}, :tesla)
-
-    # clear the index
-    @adapter.delete(:all, "test_public")
-    ~> @adapter.wait_for_task()
-
-    @adapter.delete(:all, "test_closed") ~> @adapter.wait_for_task()
+    {meili_adapter, tesla_adapter} = prepare_meili_for_tests()
 
     on_exit(fn ->
-      Bonfire.Common.Config.put(:adapter, tesla, :tesla)
+      reset_meili_after_tests(meili_adapter, tesla_adapter)
     end)
 
     :ok

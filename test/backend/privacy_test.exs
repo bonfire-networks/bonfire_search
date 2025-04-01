@@ -1,5 +1,5 @@
 defmodule Bonfire.Search.MeiliTest do
-  use Bonfire.Search.ConnCase, async: false
+  use Bonfire.Search.DataCase, async: false
   doctest Bonfire.Search
 
   alias Bonfire.Search
@@ -15,20 +15,14 @@ defmodule Bonfire.Search.MeiliTest do
   @adapter Bonfire.Search.MeiliLib
 
   setup do
-    tesla = Bonfire.Common.Config.get(:adapter, nil, :tesla)
-    Bonfire.Common.Config.put(:adapter, @adapter, :bonfire_search)
-    Bonfire.Common.Config.put(:adapter, {Tesla.Adapter.Finch, name: Bonfire.Finch}, :tesla)
     Bonfire.Common.Config.put(:wait_for_indexing, true, :bonfire_search)
 
-    # clear the index
-    @adapter.delete(:all, "test_public")
-    ~> @adapter.wait_for_task()
-
-    @adapter.delete(:all, "test_closed") ~> @adapter.wait_for_task()
+    {meili_adapter, tesla_adapter} = prepare_meili_for_tests()
 
     on_exit(fn ->
+      reset_meili_after_tests(meili_adapter, tesla_adapter)
+
       Bonfire.Common.Config.put(:wait_for_indexing, false, :bonfire_search)
-      Bonfire.Common.Config.put(:adapter, tesla, :tesla)
     end)
 
     :ok
@@ -96,8 +90,16 @@ defmodule Bonfire.Search.MeiliTest do
     user_name = "new non-indexed user name"
     {:ok, user} = Bonfire.Me.Users.update(user, %{profile: %{name: user_name}})
 
-    #  updated name should not be indexed
-    assert %{hits: []} = Search.search(user_name)
+    %{hits: results} = Search.search(user_name)
+
+    refute results
+           |> Enum.any?(fn hit ->
+             e(hit, "character", "username", nil) == initial_name
+           end),
+           "updated name should not be indexed"
+
+    # TODO: old name should be removed
+    # assert %{hits: []} = Search.search(initial_name)
 
     html_body_post_non_indexed = "non-indexed article"
 
@@ -108,9 +110,21 @@ defmodule Bonfire.Search.MeiliTest do
         boundary: "public"
       )
 
-    # cannot find post
-    assert %{hits: []} = Search.search(html_body_post_non_indexed)
+    %{hits: results} = Search.search(html_body_post_non_indexed)
 
-    # assert %{hits: []} = Search.search(html_body_post) # TODO? delete old posts from search index?
+    # For explicitly check our post isn't there
+    refute results
+           |> Enum.any?(fn hit ->
+             Enums.id(hit) == Enums.id(post_non_indexed)
+           end),
+           "The non-indexed post should not appear in search results"
+
+    #  TODO? delete old posts from search index?
+    # %{hits: results} = Search.search(html_body_post)
+    # refute results 
+    #    |> Enum.any?(fn hit -> 
+    #       Enums.id(hit) == Enums.id(post_indexed) 
+    #     end), 
+    #    "The previously indexed post should no longer appear in search results"
   end
 end

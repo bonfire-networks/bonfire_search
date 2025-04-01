@@ -21,7 +21,20 @@ defmodule Bonfire.Search.DataCase do
       import Ecto
       import Ecto.Changeset
       import Ecto.Query
-      # import Bonfire.Search.DataCase
+      import Bonfire.Search.DataHelpers
+
+      import Bonfire.Me.Fake
+
+      use Untangle
+      import Bonfire.Common.Simulation
+      alias Bonfire.Search.Fake
+      alias Bonfire.Search.Web.Router.Helpers, as: Routes
+
+      use Arrows
+      use Bonfire.Common.E
+      import Bonfire.Common.Utils
+      alias Bonfire.Common.Enums
+      alias Bonfire.Common.Types
     end
   end
 
