@@ -26,15 +26,17 @@
   </LinkLive> -->
 
   <div class="form-control px-3 pb-2 pt-0">
-    <label 
+    <label
       phx-click="toggle_index"
-      phx-value-index={if @index == "public", do: "closed", else: "public"} class="label gap-2 cursor-pointer">
+      phx-value-index={if @index == "public", do: "closed", else: "public"}
+      class="label gap-2 cursor-pointer"
+    >
       <input
         type="checkbox"
         class="checkbox checkbox-sm checkbox-primary"
-        checked={@index == "closed"}  
+        checked={@index == "closed"}
       />
-      <span class="label-text text-sm text-base-content/70">{l "Content with boundaries (eg. DMs)"}</span>
+      <span class="label-text text-sm text-base-content/70">{l("Content with boundaries (eg. DMs)")}</span>
     </label>
   </div>
 
