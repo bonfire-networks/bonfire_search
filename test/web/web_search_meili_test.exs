@@ -202,7 +202,7 @@ defmodule Bonfire.Search.Web.MeiliTest do
     |> visit("/search?s=test")
     # start filtering
     # Filter for "Users"
-    |> click_link("[role=tabpanel] a", "Users")
+    |> click_link(".tabs a", "Users")
     # |> open_browser()
     # Verify user-related content
     |> assert_has(".activity", text: user_name)
@@ -210,7 +210,7 @@ defmodule Bonfire.Search.Web.MeiliTest do
     |> refute_has(".activity", text: html_body_post)
     # filter again
     # Filter for "Posts"
-    |> click_link("[role=tabpanel] a", "Posts")
+    |> click_link(".tabs a", "Posts")
     # Verify post-related content
     |> assert_has(".activity", text: html_body_post)
     # Ensure user-related content is not shown
@@ -250,10 +250,10 @@ defmodule Bonfire.Search.Web.MeiliTest do
     # Ensure post-related content is not shown
     |> refute_has(".activity", text: html_message)
     # Click the "Private" tab
-    |> click_link("[role=tabpanel] a", "Private")
+    |> click_button(".form-control label", "Content with boundaries")
     # |> open_browser()
     # |> assert_path("/search?index=closed&s=test") # Verify the path for the "Private" tab
-    # Verify post-related content 
+    # Verify post-related content
     |> assert_has(".activity", text: html_message)
   end
 
@@ -280,20 +280,24 @@ defmodule Bonfire.Search.Web.MeiliTest do
     conn
     # load the "Private" tab
     |> visit("/search?index=closed&s=test")
-    # |> open_browser()
     # Verify post-related content
     |> assert_has(".activity", text: html_message)
 
     conn
     |> visit("/search?s=test")
-    # |> click_link("[role=tabpanel] a", "Public") # Click the "Public" tab
     # Ensure message is not there
     |> refute_has(".activity", text: html_message)
-    # |> assert_path("/search?index=public&s=test") # Verify the URL path changes
-    # Click the "Private" tab
-    |> click_link("[role=tabpanel] a", "Private")
-    # |> assert_path("/search?index=closed&s=test") # Verify the path for the "Private" tab
-    # Verify message is there 
+
+    # Click the label containing the checkbox
+    |> click_button(".form-control label", "Content with boundaries")
+
+    # Verify message is there after toggling to private index
     |> assert_has(".activity", text: html_message)
+
+    # Click again to toggle back to public
+    |> click_button(".form-control label", "Content with boundaries")
+
+    # Ensure message is not there after toggling back
+    |> refute_has(".activity", text: html_message)
   end
 end
