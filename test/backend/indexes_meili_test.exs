@@ -97,10 +97,11 @@ defmodule Bonfire.Search.IndexesMeiliTest do
 
       # Remove it from the private index
       # NOTE: without having to specify which index
-      assert {:ok, _} =
-               Indexer.maybe_delete_object(Enums.id(post))
+      assert Bonfire.Common.Enums.has_ok?(
+               Indexer.maybe_delete_object_all_indexes(Enums.id(post))
                #  Indexer.maybe_delete_object(Enums.id(post), :closed)
-               ~> @adapter.wait_for_task()
+               |> @adapter.wait_for_task()
+             )
 
       # Verify it is no longer in the private index
       assert %{hits: []} =

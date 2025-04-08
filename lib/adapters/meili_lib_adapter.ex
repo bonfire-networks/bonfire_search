@@ -261,7 +261,10 @@ defmodule Bonfire.Search.MeiliLib do
 
   def wait_for_task(client, tasks, backoff) when is_list(tasks) do
     Enum.map(tasks, &wait_for_task(client, &1, backoff))
-    |> Bonfire.Common.Enums.all_oks_or_error()
+  end
+
+  def wait_for_task(client, {:ok, task}, backoff) do
+    wait_for_task(client, task, backoff)
   end
 
   def wait_for_task(_client, %{status: :succeeded} = task, _backoff), do: {:ok, task}
