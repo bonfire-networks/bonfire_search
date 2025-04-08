@@ -157,8 +157,8 @@ defmodule Bonfire.Search.BasicMeiliTest do
       # Delete it
       assert {:ok, _} =
                Indexer.maybe_delete_object(Enums.id(post))
-               |> debug()
                ~> @adapter.wait_for_task()
+               |> debug()
 
       # Verify it's no longer found
       assert %{hits: []} = Search.search("Delete Me Post")

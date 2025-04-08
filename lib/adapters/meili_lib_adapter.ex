@@ -132,7 +132,7 @@ defmodule Bonfire.Search.MeiliLib do
       {:ok, %{hits: hits} = result} when is_list(hits) and hits != [] ->
         result =
           result
-          |> debug("did_meili")
+          |> debug("searched meili in #{index}")
           |> Map.drop([:hits])
 
         # |> input_to_atoms(to_snake: true)
@@ -156,7 +156,7 @@ defmodule Bonfire.Search.MeiliLib do
                 |> maybe_to_struct(Bonfire.Data.Social.Activity)
             }
           end)
-          |> debug("did_structs")
+          |> debug("converted results to structs")
           |> Bonfire.Social.Activities.activity_preloads(
             [:with_reply_to, :with_media],
             opts
@@ -168,8 +168,23 @@ defmodule Bonfire.Search.MeiliLib do
         debug(result, "no hits in `#{index_name}` index")
         result
 
+      {:error,
+       %Meilisearch.Error{
+         message: msg,
+         code: :index_not_found
+       } = error} ->
+        warn(error, msg)
+        %{hits: []}
+
+      {:error,
+       %Meilisearch.Error{
+         message: msg,
+         code: code
+       } = error} ->
+        error(error, msg)
+
       error ->
-        error(error, "There was an error when searching the Meili index")
+        error(error, "There was an unexpected error when searching")
     end
   end
 
@@ -244,6 +259,11 @@ defmodule Bonfire.Search.MeiliLib do
 
   def wait_for_task(client \\ nil, taskUid, backoff \\ 500)
 
+  def wait_for_task(client, tasks, backoff) when is_list(tasks) do
+    Enum.map(tasks, &wait_for_task(client, &1, backoff))
+    |> Bonfire.Common.Enums.all_oks_or_error()
+  end
+
   def wait_for_task(_client, %{status: :succeeded} = task, _backoff), do: {:ok, task}
 
   def wait_for_task(client, %{taskUid: taskUid}, backoff),
@@ -258,10 +278,10 @@ defmodule Bonfire.Search.MeiliLib do
         {:ok, task}
 
       {:ok, %Meilisearch.Task{status: :failed} = task} ->
-        error("Meilisearch task failed", task)
+        error(task, "Meilisearch task failed")
 
       {:ok, %Meilisearch.Task{status: :canceled} = task} ->
-        error("Meilisearch task was canceled", task)
+        error(task, "Meilisearch task was canceled")
 
       {:ok, _task} ->
         Process.sleep(backoff)

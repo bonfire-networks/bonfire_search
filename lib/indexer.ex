@@ -154,13 +154,16 @@ defmodule Bonfire.Search.Indexer do
   def maybe_delete_object(object, index \\ nil)
 
   def maybe_delete_object(object, nil) do
-    object = uid(object)
-    delete_object(object, index_name(:closed))
-    delete_object(object, index_name(:public))
+    Bonfire.Common.Enums.all_oks_or_error(maybe_delete_object_all_indexes(object))
   end
 
   def maybe_delete_object(object, index) do
     delete_object(uid(object), index_name(index || :public))
+  end
+
+  def maybe_delete_object_all_indexes(object) do
+    object = uid(object)
+    [delete_object(object, index_name(:closed)), delete_object(object, index_name(:public))]
   end
 
   defp delete_object(nil, _) do
