@@ -67,7 +67,7 @@ defmodule Bonfire.Search.Acts.Queue do
               epic,
               act,
               object,
-              "Meili: Skipping due to invalid object"
+              "Meili: Skipping due to disabled indexing for user"
             )
 
             epic

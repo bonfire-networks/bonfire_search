@@ -35,6 +35,8 @@ defmodule Bonfire.Search.DataCase do
       import Bonfire.Common.Utils
       alias Bonfire.Common.Enums
       alias Bonfire.Common.Types
+
+      @moduletag :backend
     end
   end
 
