@@ -24,6 +24,10 @@
       {l("Private")}
     </div>
   </LinkLive> -->
+  <!-- <div role="tablist" class="tabs tabs-border">
+    <a role="tab" class="tab">{l("Public only")}</a>
+    <a role="tab" class="tab tab-active">{"Private (eg. DMs or Content with boundaries)"}</a>
+  </div> -->
 
   <div class="form-control px-3 pb-2 pt-0">
     <label
