@@ -25,19 +25,24 @@
     </div>
   </LinkLive> -->
   <div role="tablist" class="tabs tabs-border border-b border-base-content/10">
-    <button role="tab"   
+    <button
+      role="tab"
       phx-click="toggle_index"
-      phx-value-index={"public"}
+      phx-value-index="public"
       class={
-      "tab flex-1", 
-      "tab-active": @index == "public"
-    }>{l("Public only")}</button>
-    <button role="tab" 
+        "tab flex-1",
+        "tab-active": @index == "public"
+      }
+    >{l("Public only")}</button>
+    <button
+      role="tab"
       phx-click="toggle_index"
-      phx-value-index={"closed"}
+      phx-value-index="closed"
       class={
-      "tab flex-1", 
-      "tab-active": @index !== "public"}>
+        "tab flex-1",
+        "tab-active": @index !== "public"
+      }
+    >
       {"Private (eg. DMs or custom boundaries)"}</button>
   </div>
 
