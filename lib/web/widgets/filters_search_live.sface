@@ -24,12 +24,24 @@
       {l("Private")}
     </div>
   </LinkLive> -->
-  <!-- <div role="tablist" class="tabs tabs-border">
-    <a role="tab" class="tab">{l("Public only")}</a>
-    <a role="tab" class="tab tab-active">{"Private (eg. DMs or Content with boundaries)"}</a>
-  </div> -->
+  <div role="tablist" class="tabs tabs-border border-b border-base-content/10">
+    <button role="tab"   
+      phx-click="toggle_index"
+      phx-value-index={"public"}
+      class={
+      "tab flex-1", 
+      "tab-active": @index == "public"
+    }>{l("Public only")}</button>
+    <button role="tab" 
+      phx-click="toggle_index"
+      phx-value-index={"closed"}
+      class={
+      "tab flex-1", 
+      "tab-active": @index !== "public"}>
+      {"Private (eg. DMs or custom boundaries)"}</button>
+  </div>
 
-  <div class="form-control px-3 pb-2 pt-0">
+  <!-- <div class="form-control px-3 pb-2 pt-0">
     <label
       phx-click="toggle_index"
       phx-value-index={if @index == "public", do: "closed", else: "public"}
@@ -42,7 +54,7 @@
       />
       <span class="label-text text-sm text-base-content/70">{l("Content with boundaries (eg. DMs)")}</span>
     </label>
-  </div>
+  </div> -->
 
   <div role="tablist" class="tabs tabs-box">
     {!-- ALL TYPES --}

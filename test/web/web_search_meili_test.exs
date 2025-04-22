@@ -250,7 +250,7 @@ defmodule Bonfire.Search.Web.MeiliTest do
     # Ensure post-related content is not shown
     |> refute_has(".activity", text: html_message)
     # Click the "Private" tab
-    |> click_button(".form-control label", "Content with boundaries")
+    |> click_button("Private (eg. DMs or custom boundaries)")
     # |> open_browser()
     # |> assert_path("/search?index=closed&s=test") # Verify the path for the "Private" tab
     # Verify post-related content
@@ -289,13 +289,13 @@ defmodule Bonfire.Search.Web.MeiliTest do
     |> refute_has(".activity", text: html_message)
 
     # Click the label containing the checkbox
-    |> click_button(".form-control label", "Content with boundaries")
+    |> click_button("Private (eg. DMs or custom boundaries)")
 
     # Verify message is there after toggling to private index
     |> assert_has(".activity", text: html_message)
 
     # Click again to toggle back to public
-    |> click_button(".form-control label", "Content with boundaries")
+    |> click_button("Public only")
 
     # Ensure message is not there after toggling back
     |> refute_has(".activity", text: html_message)
