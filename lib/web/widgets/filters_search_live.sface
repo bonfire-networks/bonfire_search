@@ -61,7 +61,7 @@
     </label>
   </div> -->
 
-  <div role="tablist" class="tabs tabs-box">
+  <div role="tablist" class="tabs tabs-box m-2 p-2 border border-base-content/5">
     {!-- ALL TYPES --}
     <LinkLive class={"tab", "tab-active": !@selected_tab} to={"/search?index=#{@index}&s=#{@search}"}>
       {l("All types")}
