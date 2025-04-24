@@ -77,35 +77,59 @@ defmodule Bonfire.Search.LiveHandler do
     q = String.trim(q)
     opts = %{limit: search_limit, current_user: current_user(socket), index: index}
 
-    # TODO: make this a non-blocking operation? (ie. show the other results first and then inject the result of this lookup when ready)
-    # FIXME: use maybe_apply
-    # TODO fetch async and use send_update to send results to ResultsLive?
-    with {:ok, federated_object_or_character} <-
-           Bonfire.Federate.ActivityPub.AdapterUtils.get_by_url_ap_id_or_username(
-             q
-             #  fetch_collection: :async
-           )
-           |> debug("got_by_url_ap_id_or_username") do
-      if String.starts_with?(q, "http") do
-        {:noreply, socket |> redirect_to(path(federated_object_or_character))}
-      else
-        content_live_search(
-          q,
-          search_limit,
-          facet_filters,
-          [federated_object_or_character],
-          socket,
-          opts
-        )
-      end
+    # First perform the regular search immediately
+    {:noreply, socket} =
+      result = content_live_search(q, search_limit, facet_filters, [], socket, opts)
+
+    # Start the async direct lookup if socket is connected
+    if socket_connected?(socket) do
+      {:noreply,
+       socket
+       |> start_async(:direct_lookup, fn ->
+         Bonfire.Federate.ActivityPub.AdapterUtils.get_by_url_ap_id_or_username(q)
+         |> debug("got_by_url_ap_id_or_username")
+       end)}
     else
-      _ ->
-        content_live_search(q, search_limit, facet_filters, [], socket, opts)
+      result
     end
   end
 
   def live_search(q, _search_limit, _facet_filters, _index, socket) do
     debug(q, "invalid search")
+    {:noreply, socket}
+  end
+
+  # Handle the federated lookup result
+  def handle_async(:direct_lookup, {:ok, {:ok, federated_object_or_character}}, socket) do
+    q = socket.assigns.search
+
+    if String.starts_with?(q, "http") and e(assigns(socket), :hits, []) == [] do
+      # Handle URL case when there are no other hits - redirect to the federated object's page
+      {:noreply, socket |> redirect_to(path(federated_object_or_character))}
+    else
+      # Handle username case - add result to search results
+      %{assigns: %{hits: current_hits, num_hits: current_num_hits}} = socket
+
+      # Add federated result to existing hits
+      updated_hits =
+        [federated_object_or_character | current_hits]
+        |> Enum.uniq_by(&Enums.id/1)
+        |> debug("search merged with federated result")
+
+      {:noreply, assign(socket, hits: updated_hits, num_hits: length(updated_hits))}
+    end
+  end
+
+  # Handle case where no federated result is found
+
+  # Handle errors in the federated lookup (just log, don't affect UI)
+  def handle_async(:direct_lookup, {:exit, reason}, socket) do
+    warn(reason, "Federated lookup failed")
+    {:noreply, socket}
+  end
+
+  def handle_async(:direct_lookup, _, socket) do
+    # No changes needed when no result is found
     {:noreply, socket}
   end
 
