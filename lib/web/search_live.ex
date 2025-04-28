@@ -77,9 +77,10 @@ defmodule Bonfire.Search.Web.SearchLive do
 
   def handle_search_params(%{"s" => s, "facet" => facets} = params, _url, socket)
       when s != "" do
-    if s != e(assigns(socket), :search_term, nil) do
-      index = params["index"] || e(assigns(socket), :index, "nil")
+    previous_index = e(assigns(socket), :index, "nil")
+    index = params["index"] || previous_index
 
+    if s != e(assigns(socket), :search_term, nil) or index != previous_index do
       index_type =
         e(facets, "index_type", nil)
         |> debug("selected_tabsss")
@@ -104,9 +105,10 @@ defmodule Bonfire.Search.Web.SearchLive do
   end
 
   def handle_search_params(%{"s" => s} = params, _url, socket) when s != "" do
-    if s != e(assigns(socket), :search_term, nil) do
-      index = params["index"] || e(assigns(socket), :index, "nil")
+    previous_index = e(assigns(socket), :index, "nil")
+    index = params["index"] || previous_index
 
+    if s != e(assigns(socket), :search_term, nil) or index != previous_index do
       Bonfire.Search.LiveHandler.live_search(
         s,
         index,
@@ -126,10 +128,10 @@ defmodule Bonfire.Search.Web.SearchLive do
   def handle_search_params(%{"hashtag_search" => s} = params, _url, socket)
       when s != "" do
     s = "##{s}"
+    previous_index = e(assigns(socket), :index, "nil")
+    index = params["index"] || previous_index
 
-    if s != e(assigns(socket), :search_term, nil) do
-      index = params["index"] || e(assigns(socket), :index, "nil")
-
+    if s != e(assigns(socket), :search_term, nil) or index != previous_index do
       Bonfire.Search.LiveHandler.live_search(
         s,
         index,
