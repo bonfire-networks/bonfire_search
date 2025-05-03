@@ -1,6 +1,6 @@
 defmodule Bonfire.Search.MeiliTest do
   use Bonfire.Search.DataCase, async: false
-  doctest Bonfire.Search
+  use Bonfire.Common.Settings
 
   alias Bonfire.Search
   alias Bonfire.Search.Indexer
@@ -27,6 +27,8 @@ defmodule Bonfire.Search.MeiliTest do
 
     :ok
   end
+
+  doctest Bonfire.Search
 
   test "respects user's discoverability privacy settings" do
     user = fake_user!()

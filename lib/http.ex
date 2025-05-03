@@ -2,6 +2,7 @@
 
 defmodule Bonfire.Search.HTTP do
   import Untangle
+  use Bonfire.Common.Config
 
   def http_adapter(),
     do: Bonfire.Common.Config.get_ext!(:bonfire_search, :http_adapter)

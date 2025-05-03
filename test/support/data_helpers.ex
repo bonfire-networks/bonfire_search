@@ -1,5 +1,6 @@
 defmodule Bonfire.Search.DataHelpers do
   use Arrows
+  use Bonfire.Common.Config
 
   def prepare_meili_for_tests do
     adapter = Bonfire.Search.MeiliLib
