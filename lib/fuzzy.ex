@@ -1,20 +1,34 @@
 defmodule Bonfire.Search.Fuzzy do
   alias Bonfire.Search
   import Untangle
+  use Bonfire.Common.Localise
 
-  # TODO: put in config
   @default_limit 20
-  @default_opts %{limit: @default_limit}
-  @default_calc_facets ["index_type"]
+
+  defp limit,
+    do:
+      Bonfire.Common.Config.get([__MODULE__, :limit], @default_limit,
+        name: l("Fuzzy search"),
+        description: l("Number of results to include")
+      )
+
+  defp facets,
+    do:
+      Bonfire.Common.Config.get([__MODULE__, :facets], ["index_type"],
+        name: l("Fuzzy search"),
+        description: l("Facets to include")
+      )
+
+  defp default_opts, do: %{limit: limit()}
 
   def search_filtered(q, facet_filters) do
-    search(q, @default_opts, @default_calc_facets, facet_filters)
+    search(q, default_opts(), facets(), facet_filters)
   end
 
   def search(
         q,
-        opts \\ @default_opts,
-        calculate_facets \\ @default_calc_facets,
+        opts \\ default_opts(),
+        calculate_facets \\ facets(),
         facet_filters \\ nil
       ) do
     try do

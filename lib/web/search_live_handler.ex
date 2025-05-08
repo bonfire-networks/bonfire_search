@@ -1,8 +1,12 @@
 defmodule Bonfire.Search.LiveHandler do
   use Bonfire.UI.Common.Web, :live_handler
 
-  # TODO: put in config
-  @default_limit 20
+  def default_limit,
+    do:
+      Bonfire.Common.Config.get([__MODULE__, :default_limit], 20,
+        name: l("Search"),
+        description: l("Default number of search results to include")
+      )
 
   def handle_event("go_search", %{"s" => s} = _params, socket) do
     # TODO: show results in a modal rather than a seperate page

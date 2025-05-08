@@ -3,22 +3,37 @@
 defmodule Bonfire.Search.Indexer do
   import Untangle
   import Bonfire.Search, only: [adapter: 0]
+  use Bonfire.Common.Localise
 
-  # TODO: put in config
-  @main_facets ["index_type", "index_instance", "tags"]
-  @main_searcheable_fields [
-    #  NOTE: does this mean we can avoid using the URL db-based lookup in LiveHandler
-    "character.username",
-    "character.url",
-    "profile.name",
-    "profile.summary",
-    "profile.website",
-    "profile.location",
-    "post_content.name",
-    "post_content.summary",
-    "post_content.html_body",
-    "tags"
-  ]
+  def main_facets,
+    do:
+      Bonfire.Common.Config.get(
+        [__MODULE__, :main_facets],
+        ["index_type", "index_instance", "tags"],
+        name: l("Search indexing"),
+        description: l("Facets")
+      )
+
+  def main_searcheable_fields,
+    do:
+      Bonfire.Common.Config.get(
+        [__MODULE__, :main_searcheable_fields],
+        [
+          #  NOTE: does this mean we can avoid using the URL db-based lookup in LiveHandler
+          "character.username",
+          "character.url",
+          "profile.name",
+          "profile.summary",
+          "profile.website",
+          "profile.location",
+          "post_content.name",
+          "post_content.summary",
+          "post_content.html_body",
+          "tags"
+        ],
+        name: l("Search indexing"),
+        description: l("Default searchable fields")
+      )
 
   use Bonfire.Common.Utils
 
@@ -140,8 +155,8 @@ defmodule Bonfire.Search.Indexer do
       adapter.create_index(index_name, fail_silently)
 
       # define facets to be used for filtering main search index
-      adapter.set_facets(index_name, @main_facets)
-      adapter.set_searchable_fields(index_name, @main_searcheable_fields)
+      adapter.set_facets(index_name, main_facets())
+      adapter.set_searchable_fields(index_name, main_searcheable_fields())
     end
   end
 
