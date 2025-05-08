@@ -4,6 +4,7 @@ defmodule Bonfire.Search.Indexer do
   import Untangle
   import Bonfire.Search, only: [adapter: 0]
   use Bonfire.Common.Localise
+  use Bonfire.Common.Config
 
   def main_facets,
     do:

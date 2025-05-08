@@ -8,6 +8,7 @@ defmodule Bonfire.Search do
   import Untangle
   use Bonfire.Common.Utils
   use Bonfire.Common.Repo
+  use Bonfire.Common.Config
 
   @doc """
   Returns the configured search adapter module.

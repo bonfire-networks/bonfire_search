@@ -2,6 +2,7 @@ defmodule Bonfire.Search.Fuzzy do
   alias Bonfire.Search
   import Untangle
   use Bonfire.Common.Localise
+  use Bonfire.Common.Config
 
   @default_limit 20
 
