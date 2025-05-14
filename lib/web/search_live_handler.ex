@@ -21,7 +21,7 @@ defmodule Bonfire.Search.LiveHandler do
       ) do
     live_search(
       params["s"],
-      search_limit || @default_limit,
+      search_limit || default_limit(),
       params["facet"],
       params["index"] || e(assigns(socket), :index, nil),
       socket
@@ -37,7 +37,7 @@ defmodule Bonfire.Search.LiveHandler do
 
     live_search(
       params["s"],
-      search_limit || @default_limit,
+      search_limit || default_limit(),
       params["facet"],
       params["index"] || e(assigns(socket), :index, nil),
       socket
@@ -47,7 +47,7 @@ defmodule Bonfire.Search.LiveHandler do
   def handle_event("search", params, %{assigns: _assigns} = socket) do
     live_search(
       params["s"],
-      params["search_limit"] || @default_limit,
+      params["search_limit"] || default_limit(),
       params["facet"],
       params["index"] || e(assigns(socket), :index, nil),
       socket
@@ -56,7 +56,7 @@ defmodule Bonfire.Search.LiveHandler do
 
   def live_search(
         q,
-        search_limit \\ @default_limit,
+        search_limit \\ default_limit(),
         facet_filters \\ nil,
         index,
         socket
@@ -64,13 +64,13 @@ defmodule Bonfire.Search.LiveHandler do
 
   def live_search(q, search_limit, facet_filters, index, socket)
       when is_binary(search_limit) and search_limit != "" do
-    search_limit = String.to_integer(search_limit) || @default_limit
+    search_limit = String.to_integer(search_limit) || default_limit()
     live_search(q, search_limit, facet_filters, index, socket)
   end
 
   def live_search(q, search_limit, facet_filters, index, socket)
       when search_limit == "" or is_nil(search_limit) do
-    live_search(q, @default_limit, facet_filters, index, socket)
+    live_search(q, default_limit(), facet_filters, index, socket)
   end
 
   def live_search(q, search_limit, facet_filters, index, socket)
