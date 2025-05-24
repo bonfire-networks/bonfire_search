@@ -77,6 +77,7 @@ defmodule Bonfire.Search.LiveHandler do
         error in [ArgumentError] ->
           error(error, "Invalid pagination parameters")
           {:noreply, assign_flash(socket, :error, l("Invalid pagination parameters"))}
+
         error ->
           error(error, "Failed to load more search results")
           {:noreply, assign_flash(socket, :error, l("Could not load more results"))}
@@ -116,16 +117,19 @@ defmodule Bonfire.Search.LiveHandler do
     debug(opts, "OPTS")
 
     q = String.trim(q)
-    
+
     # Handle pagination - extract offset from cursor or default to 0
-    offset = case opts[:pagination] do
-      %{after: cursor} when is_binary(cursor) -> 
-        case Integer.parse(cursor) do
-          {offset_val, ""} -> offset_val
-          _ -> 0
-        end
-      _ -> 0
-    end
+    offset =
+      case opts[:pagination] do
+        %{after: cursor} when is_binary(cursor) ->
+          case Integer.parse(cursor) do
+            {offset_val, ""} -> offset_val
+            _ -> 0
+          end
+
+        _ ->
+          0
+      end
 
     search_opts = %{
       limit: search_limit,
@@ -190,7 +194,15 @@ defmodule Bonfire.Search.LiveHandler do
     {:noreply, socket}
   end
 
-  defp content_live_search(q, search_limit, facet_filters, extra_results, socket, search_opts, live_opts)
+  defp content_live_search(
+         q,
+         search_limit,
+         facet_filters,
+         extra_results,
+         socket,
+         search_opts,
+         live_opts
+       )
        when is_binary(q) and q != "" and is_integer(search_limit) do
     # tagged =
     #   with hashtags when is_list(hashtags) <-
@@ -220,11 +232,12 @@ defmodule Bonfire.Search.LiveHandler do
       |> debug("search2 merged")
 
     # Handle pagination state
-    current_hits = if live_opts[:append] && is_list(e(assigns(socket), :hits, nil)) do
-      e(assigns(socket), :hits, []) ++ new_hits
-    else
-      new_hits
-    end
+    current_hits =
+      if live_opts[:append] && is_list(e(assigns(socket), :hits, nil)) do
+        e(assigns(socket), :hits, []) ++ new_hits
+      else
+        new_hits
+      end
 
     {:noreply,
      assign(socket,
@@ -246,7 +259,7 @@ defmodule Bonfire.Search.LiveHandler do
     search =
       Bonfire.Search.search(q, opts, Map.keys(facet_filters), facet_filters)
       |> debug("did_search")
-    
+
     hits = e(search, :hits, [])
     # if(
     #   is_map(search) and Map.has_key?(search, "hits") and
@@ -276,19 +289,20 @@ defmodule Bonfire.Search.LiveHandler do
 
     # Build page_info similar to feed pagination
     # Check if there are more results by comparing total hits with current position
-    has_more = total_hits > (offset + limit)
-    
-    page_info = if has_more do
-      %{
-        has_next_page: true,
-        end_cursor: to_string(offset + limit)
-      }
-    else
-      %{
-        has_next_page: false,
-        end_cursor: nil
-      }
-    end
+    has_more = total_hits > offset + limit
+
+    page_info =
+      if has_more do
+        %{
+          has_next_page: true,
+          end_cursor: to_string(offset + limit)
+        }
+      else
+        %{
+          has_next_page: false,
+          end_cursor: nil
+        }
+      end
 
     {total_hits, hits || [], facets, page_info}
   end

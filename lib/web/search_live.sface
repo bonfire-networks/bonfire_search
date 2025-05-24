@@ -16,8 +16,8 @@
       selected_tab={@selected_tab}
     />
 
-    <Bonfire.Search.Web.ResultsLive 
-      hits={e(@hits, [])} 
+    <Bonfire.Search.Web.ResultsLive
+      hits={e(@hits, [])}
       page_info={@page_info}
       search={@search}
       search_limit={@search_limit}

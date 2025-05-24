@@ -93,7 +93,6 @@ defmodule Bonfire.Search.Web.MeiliTest do
         Bonfire.Common.Config.put(:default_pagination_limit, original_limit)
       end)
 
-
       # Create multiple public post to test search functionality
       html_body = "test post"
       attrs = %{post_content: %{html_body: html_body}}
