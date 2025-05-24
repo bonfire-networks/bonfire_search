@@ -5,6 +5,7 @@ defmodule Bonfire.Search.Web.MeiliTest do
   use Arrows
   import Bonfire.Common.Simulation
   import Tesla.Mock
+  use Bonfire.Common.Config
 
   use Bonfire.Common.E
   alias Bonfire.Common.Enums
@@ -78,6 +79,59 @@ defmodule Bonfire.Search.Web.MeiliTest do
       |> submit()
       # Check if the result is displayed
       |> assert_has(".activity", text: html_body)
+    end
+
+    test "Search results paginate correctly", %{
+      alice: alice,
+      me: me,
+      conn: conn
+    } do
+      original_limit = Bonfire.Common.Config.get(:default_pagination_limit)
+      Bonfire.Common.Config.put(:default_pagination_limit, 2)
+
+      on_exit(fn ->
+        Bonfire.Common.Config.put(:default_pagination_limit, original_limit)
+      end)
+
+
+      # Create multiple public post to test search functionality
+      html_body = "test post"
+      attrs = %{post_content: %{html_body: html_body}}
+      {:ok, _post} = Posts.publish(current_user: me, post_attrs: attrs, boundary: "public")
+
+      html_body = "test2 post"
+      attrs = %{post_content: %{html_body: html_body}}
+      {:ok, _post} = Posts.publish(current_user: me, post_attrs: attrs, boundary: "public")
+
+      html_body = "test3 post"
+      attrs = %{post_content: %{html_body: html_body}}
+      {:ok, _post} = Posts.publish(current_user: me, post_attrs: attrs, boundary: "public")
+
+      html_body = "test4 post"
+      attrs = %{post_content: %{html_body: html_body}}
+      {:ok, _post} = Posts.publish(current_user: me, post_attrs: attrs, boundary: "public")
+
+      # Wait a bit for indexing to complete
+      Process.sleep(100)
+
+      conn
+      |> visit("/search")
+      # Fill in the search term
+      |> fill_in("[name=s]", "Search", with: "test")
+      # Submit the form by clocking button
+      |> click_button("Search")
+      # Ensure the results section exists
+      |> assert_has("#the_search_results")
+      |> PhoenixTest.open_browser()
+      # Should only show 2 activities initially due to pagination limit
+      |> assert_has(".activity", count: 2)
+      # Should have a load more button (debug first if missing)
+      |> PhoenixTest.open_browser()
+      |> assert_has("[data-id=load_more]")
+      # Click load more to get the remaining results
+      |> click_button("[data-id=load_more]", "Load more")
+      # Should now show all 4 activities
+      |> assert_has(".activity", count: 4)
     end
 
     test "search results display test post with title", %{

@@ -9,4 +9,5 @@ defmodule Bonfire.Search.Web.ResultsLive do
   prop show_more_link, :boolean, default: true
   prop num_hits, :integer, default: nil
   prop hits, :list, default: []
+  prop page_info, :any, default: nil
 end

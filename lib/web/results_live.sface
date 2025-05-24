@@ -36,11 +36,16 @@
     />
   {/for}
 
-  {!-- <div :if={e(@has_next_page, []) } class="flex justify-center w-full p-3 mx-auto border-t cursor-pointer border-base-200 place-items-center">
-    <button
-      class="relative items-center w-full px-4 py-2 text-sm font-medium text-center rounded text-base-content bg-base-200 hover:bg-base-300"
-      phx-click="Bonfire.Search:paginate">
-      {l "Load more"}
-     </button>
-  </div> --}
+  <Bonfire.UI.Common.LoadMoreLive
+    :if={@page_info}
+    page_info={@page_info}
+    live_handler="Bonfire.Search.LiveHandler"
+    context="search"
+    hide_guest_fallback={false}
+    hide_if_no_more
+  >
+    <:if_no_more>
+      <p class="text-center text-base-content/70 py-4">{l("That's all the search results!")}</p>
+    </:if_no_more>
+  </Bonfire.UI.Common.LoadMoreLive>
 </div>

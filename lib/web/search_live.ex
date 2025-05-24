@@ -3,7 +3,7 @@ defmodule Bonfire.Search.Web.SearchLive do
 
   # alias Bonfire.Search.Web.ResultsLive
 
-  @default_limit 20
+  # Use dynamic limit from config instead of hardcoded value
 
   declare_extension("Search",
     icon: "heroicons-solid:search",
@@ -33,12 +33,13 @@ defmodule Bonfire.Search.Web.SearchLive do
        selected_tab: nil,
        index: "public",
        back: true,
-       search_limit: @default_limit,
+       search_limit: Bonfire.Search.LiveHandler.default_limit(),
        #  me: false,
        #  selected_facets: nil,
        nav_items: Bonfire.Common.ExtensionModule.default_nav(),
        search: nil,
        hits: [],
+       page_info: nil,
        sidebar_widgets: [
          users: [
            secondary: [
@@ -87,7 +88,7 @@ defmodule Bonfire.Search.Web.SearchLive do
 
       Bonfire.Search.LiveHandler.live_search(
         s,
-        @default_limit,
+        Bonfire.Search.LiveHandler.default_limit(),
         facets,
         index,
         socket
@@ -153,7 +154,7 @@ defmodule Bonfire.Search.Web.SearchLive do
 
     Bonfire.Search.LiveHandler.live_search(
       e(assigns(socket), :search_term, nil),
-      @default_limit,
+      Bonfire.Search.LiveHandler.default_limit(),
       facets,
       index,
       socket
