@@ -249,7 +249,7 @@ defmodule Bonfire.Search.LiveHandler do
        search: q,
        search_term: q,
        page_info: page_info
-       #  current_user: current_user(assigns(socket))
+       #  current_user: current_user(socket)
      )}
   end
 
