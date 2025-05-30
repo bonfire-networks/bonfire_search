@@ -121,11 +121,11 @@ defmodule Bonfire.Search.Web.MeiliTest do
       |> click_button("Search")
       # Ensure the results section exists
       |> assert_has("#the_search_results")
-      |> PhoenixTest.open_browser()
+      # |> PhoenixTest.open_browser()
       # Should only show 2 activities initially due to pagination limit
       |> assert_has(".activity", count: 2)
       # Should have a load more button (debug first if missing)
-      |> PhoenixTest.open_browser()
+      # |> PhoenixTest.open_browser()
       |> assert_has("[data-id=load_more]")
       # Click load more to get the remaining results
       |> click_button("[data-id=load_more]", "Load more")
