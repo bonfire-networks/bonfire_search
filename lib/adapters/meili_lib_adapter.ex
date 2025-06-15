@@ -135,34 +135,9 @@ defmodule Bonfire.Search.MeiliLib do
           |> debug("searched meili in #{index}")
           |> Map.drop([:hits])
 
-        # |> input_to_atoms(to_snake: true)
+        # |> input_to_atoms(to_snake: true)          
 
-        processed_hits =
-          hits
-          |> Bonfire.Search.maybe_boundarise(index, opts)
-          |> Enum.map(fn hit ->
-            object =
-              hit
-              |> input_to_atoms()
-              |> maybe_to_structs()
-
-            id = id(object)
-
-            %Needle.Pointer{
-              id: id,
-              activity:
-                object
-                |> Map.merge(%{object: object, object_id: id})
-                |> maybe_to_struct(Bonfire.Data.Social.Activity)
-            }
-          end)
-          |> debug("converted results to structs")
-          |> Bonfire.Social.Activities.activity_preloads(
-            [:with_reply_to, :with_media],
-            opts
-          )
-
-        Map.put(result, :hits, processed_hits)
+        Map.put(result, :hits, Bonfire.Search.prepare_hits(hits, index, opts))
 
       {:ok, result} ->
         debug(result, "no hits in `#{index_name}` index")

@@ -66,6 +66,84 @@ defmodule Bonfire.Search do
     end
   end
 
+  def prepare_hits(hits, index, opts) do
+    hits
+    |> List.wrap()
+    |> maybe_boundarise(index, opts)
+    |> Enum.map(fn hit ->
+      if opts[:input_type] == :struct do
+        hit
+      else
+        id = id(hit)
+
+        # Create a proper structure that activity_preloads can handle
+        case hit do
+          %{__struct__: Bonfire.Data.Social.Activity} = activity ->
+            activity
+
+          %{__struct__: _, activity: %{__struct__: Bonfire.Data.Social.Activity} = activity} =
+              struct_hit ->
+            struct_hit
+            |> Map.put(
+              :activity,
+              activity
+              |> Map.merge(%{
+                object: struct_hit,
+                subject:
+                  e(struct_hit, :created, :creator, nil) || e(activity, :subject, nil) ||
+                    e(struct_hit, :caretaker, nil) || %Ecto.Association.NotLoaded{},
+                replied:
+                  e(struct_hit, :replied, nil) || e(activity, :replied, nil) ||
+                    %Ecto.Association.NotLoaded{}
+              })
+            )
+
+          # %Needle.Pointer{
+          #   id: id,
+          #   activity: %Bonfire.Data.Social.Activity{
+          #     object: struct_hit,
+          #     object_id: id,
+          #     id: id
+          #   }
+          # }
+
+          _ ->
+            # For non-struct hits, create a simpler structure
+
+            hit =
+              hit
+              |> input_to_atoms()
+              |> maybe_to_structs()
+
+            %Needle.Pointer{
+              id: id,
+              activity:
+                hit
+                |> Map.merge(%{
+                  object: hit,
+                  object_id: id,
+                  id: id,
+                  replied: %Ecto.Association.NotLoaded{}
+                })
+                |> maybe_to_struct(Bonfire.Data.Social.Activity)
+            }
+        end
+      end
+    end)
+    |> debug("converted results to structs")
+    |> hits_preloads(opts)
+  end
+
+  defp hits_preloads(objects, opts) do
+    objects
+    |> Bonfire.Social.Activities.activity_preloads(
+      [:with_reply_to, :with_media],
+      skip_follow_reply_to: true,
+      current_user: current_user(opts)
+    )
+    |> debug("processed federated result")
+  end
+
   def maybe_boundarise(hits, :public, _), do: hits
 
   def maybe_boundarise(hits, _closed, opts) do

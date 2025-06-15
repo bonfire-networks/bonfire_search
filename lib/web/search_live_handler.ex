@@ -162,18 +162,28 @@ defmodule Bonfire.Search.LiveHandler do
 
   # Handle the federated lookup result
   def handle_async(:direct_lookup, {:ok, {:ok, federated_object_or_character}}, socket) do
-    q = socket.assigns.search
+    q = e(assigns(socket), :search, nil)
+    current_hits = e(assigns(socket), :hits, [])
+    index = e(assigns(socket), :index, nil)
 
-    if String.starts_with?(q, "http") and e(assigns(socket), :hits, []) == [] do
+    if String.starts_with?(q, "http") and current_hits == [] do
       # Handle URL case when there are no other hits - redirect to the federated object's page
       {:noreply, socket |> redirect_to(path(federated_object_or_character))}
     else
       # Handle username case - add result to search results
-      %{assigns: %{hits: current_hits, num_hits: current_num_hits}} = socket
 
-      # Add federated result to existing hits
+      # Process federated result the same way as search results
+      prepared =
+        federated_object_or_character
+        |> Bonfire.Search.prepare_hits(
+          index,
+          to_options(socket) |> Keyword.put(:input_type, :structs)
+        )
+        |> debug("processed federated result")
+
+      # Add processed federated result to existing hits
       updated_hits =
-        [federated_object_or_character | current_hits]
+        ((prepared || []) ++ current_hits)
         |> Enum.uniq_by(&Enums.id/1)
         |> debug("search merged with federated result")
 
