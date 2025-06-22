@@ -43,7 +43,7 @@
         "tab-active": @index !== "public"
       }
     >
-      {"Private (eg. DMs or custom boundaries)"}</button>
+      {l("Private (eg. DMs or custom boundaries)")}</button>
   </div>
 
   <!-- <div class="form-control px-3 pb-2 pt-0">
