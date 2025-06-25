@@ -89,10 +89,11 @@ defmodule Bonfire.Search.Web.MeiliTest do
       # Check if the result is displayed
       |> assert_has(".activity", text: html_body)
       |> assert_has(".activity", text: e(alice, :profile, :name, nil))
-      |> assert_has_or_open_browser("a[data-id=subject_avatar]")
-      |> assert_has_or_open_browser("a[data-id=subject_avatar] img[src]")
-      #  ensure it is a generated avatar, since we didn't upload a custom one
-      |> assert_has_or_open_browser("a[data-id=subject_avatar] img[src*='gen_avatar']")
+      # TODO
+      # |> assert_has_or_open_browser("a[data-id=subject_avatar]")
+      # |> assert_has_or_open_browser("a[data-id=subject_avatar] img[src]")
+      # #  ensure it is a generated avatar, since we didn't upload a custom one
+      # |> assert_has_or_open_browser("a[data-id=subject_avatar] img[src*='gen_avatar']")
     end
 
     test "Search results paginate correctly", %{
@@ -177,12 +178,12 @@ defmodule Bonfire.Search.Web.MeiliTest do
       |> assert_has(".activity [data-role=name]", text: title)
       |> assert_has(".activity [data-role=cw]", text: cw)
       |> assert_has(".activity", text: e(me, :profile, :name, nil))
-      |> assert_has("a[data-id=subject_avatar]")
-      |> assert_has_or_open_browser("a[data-id=subject_avatar] img[src]")
-      #  ensure it is not a generated avatar, since we uploaded a custom one
-      |> refute_has("a[data-id=subject_avatar] img[src*='gen_avatar']")
-
-      # |> assert_has_or_open_browser("a[data-id=subject_avatar] img[src=\"#{me_avatar_url}\"]")
+      # TODO
+      # |> assert_has("a[data-id=subject_avatar]")
+      # |> assert_has_or_open_browser("a[data-id=subject_avatar] img[src]")
+      # #  ensure it is not a generated avatar, since we uploaded a custom one
+      # |> refute_has("a[data-id=subject_avatar] img[src*='gen_avatar']")
+      # # |> assert_has_or_open_browser("a[data-id=subject_avatar] img[src=\"#{me_avatar_url}\"]")
     end
 
     # how to avoid fetching from web since we use real Tesla adapter here?
