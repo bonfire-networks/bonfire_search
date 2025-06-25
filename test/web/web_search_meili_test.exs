@@ -4,6 +4,7 @@ defmodule Bonfire.Search.Web.MeiliTest do
 
   use Arrows
   import Bonfire.Common.Simulation
+  import Bonfire.Files.Simulation
   import Tesla.Mock
   use Bonfire.Common.Config
 
@@ -31,8 +32,11 @@ defmodule Bonfire.Search.Web.MeiliTest do
       {meili_adapter, tesla_adapter} = prepare_meili_for_tests()
 
       account = fake_account!()
-      me = fake_user!(account)
       alice = fake_user!(account)
+      me = fake_user!(account)
+
+      %{user: me, upload: upload, path: me_avatar_path, url: me_avatar_url} =
+        fake_user_with_avatar!()
 
       mock_global(fn
         %{method: :get, url: "https://developer.mozilla.org/en-US/docs/Web/API/"} ->
@@ -47,18 +51,23 @@ defmodule Bonfire.Search.Web.MeiliTest do
         Bonfire.Common.Config.put(:wait_for_indexing, false, :bonfire_search)
       end)
 
-      {:ok, conn: conn, account: account, me: me, alice: alice}
+      {:ok,
+       conn: conn,
+       account: account,
+       me: me,
+       alice: alice,
+       me_avatar_path: me_avatar_path,
+       me_avatar_url: me_avatar_url}
     end
 
     test "user can search and see results of public posts", %{
       alice: alice,
-      me: me,
       conn: conn
     } do
-      # Create a public post by 'me' to test search functionality
+      # Create a public post by 'alice' to test search functionality
       html_body = "test post"
       attrs = %{post_content: %{html_body: html_body}}
-      {:ok, _post} = Posts.publish(current_user: me, post_attrs: attrs, boundary: "public")
+      {:ok, _post} = Posts.publish(current_user: alice, post_attrs: attrs, boundary: "public")
 
       conn
       |> visit("/search")
@@ -79,6 +88,12 @@ defmodule Bonfire.Search.Web.MeiliTest do
       |> submit()
       # Check if the result is displayed
       |> assert_has(".activity", text: html_body)
+      |> assert_has(".activity", text: e(alice, :profile, :name, nil))
+      # TODO
+      # |> assert_has_or_open_browser("a[data-id=subject_avatar]")
+      # |> assert_has_or_open_browser("a[data-id=subject_avatar] img[src]")
+      # #  ensure it is a generated avatar, since we didn't upload a custom one
+      # |> assert_has_or_open_browser("a[data-id=subject_avatar] img[src*='gen_avatar']")
     end
 
     test "Search results paginate correctly", %{
@@ -111,7 +126,7 @@ defmodule Bonfire.Search.Web.MeiliTest do
       {:ok, _post} = Posts.publish(current_user: me, post_attrs: attrs, boundary: "public")
 
       # Wait a bit for indexing to complete
-      Process.sleep(100)
+      # Process.sleep(100)
 
       conn
       |> visit("/search")
@@ -133,19 +148,24 @@ defmodule Bonfire.Search.Web.MeiliTest do
       |> assert_has(".activity", count: 4)
     end
 
-    test "search results display test post with title", %{
-      alice: alice,
+    test "search results display post with title, content warning, and author's avatar", %{
       me: me,
-      conn: conn
+      conn: conn,
+      me_avatar_path: me_avatar_path,
+      me_avatar_url: me_avatar_url
     } do
       # Create a post to test search results
       html_body = "test post with title"
       title = "the post title"
+      cw = "the post CW"
 
       {:ok, _post} =
         Posts.publish(
           current_user: me,
-          post_attrs: %{post_content: %{name: title, html_body: html_body}},
+          post_attrs: %{
+            sensitive: true,
+            post_content: %{summary: cw, name: title, html_body: html_body}
+          },
           boundary: "public"
         )
 
@@ -156,30 +176,14 @@ defmodule Bonfire.Search.Web.MeiliTest do
       |> assert_has(".activity", text: html_body)
       # Verify the title is displayed
       |> assert_has(".activity [data-role=name]", text: title)
-    end
-
-    test "search results display test post with content warning", %{
-      alice: alice,
-      me: me,
-      conn: conn
-    } do
-      # Create a post to test search results
-      html_body = "test post with title"
-      cw = "the post CW"
-
-      {:ok, _post} =
-        Posts.publish(
-          current_user: me,
-          post_attrs: %{sensitive: true, post_content: %{summary: cw, html_body: html_body}},
-          boundary: "public"
-        )
-
-      conn
-      |> visit("/search?s=test")
-      # Verify the post is displayed
-      |> assert_has(".activity", text: html_body)
-      # Verify the title is displayed
       |> assert_has(".activity [data-role=cw]", text: cw)
+      |> assert_has(".activity", text: e(me, :profile, :name, nil))
+      # TODO
+      # |> assert_has("a[data-id=subject_avatar]")
+      # |> assert_has_or_open_browser("a[data-id=subject_avatar] img[src]")
+      # #  ensure it is not a generated avatar, since we uploaded a custom one
+      # |> refute_has("a[data-id=subject_avatar] img[src*='gen_avatar']")
+      # # |> assert_has_or_open_browser("a[data-id=subject_avatar] img[src=\"#{me_avatar_url}\"]")
     end
 
     # how to avoid fetching from web since we use real Tesla adapter here?
