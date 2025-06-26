@@ -27,7 +27,7 @@
         />
         <button type="submit" class="">
           <#Icon solid="Search" class="w-4 h-4" />
-          <span class="sr-only">{l "Search"}</span>
+          <span class="sr-only">{l("Search")}</span>
         </button>
       </label>
     </div>
