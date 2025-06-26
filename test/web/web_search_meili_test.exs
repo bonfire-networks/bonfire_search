@@ -89,6 +89,7 @@ defmodule Bonfire.Search.Web.MeiliTest do
       # Check if the result is displayed
       |> assert_has(".activity", text: html_body)
       |> assert_has(".activity", text: e(alice, :profile, :name, nil))
+
       # TODO
       # |> assert_has_or_open_browser("a[data-id=subject_avatar]")
       # |> assert_has_or_open_browser("a[data-id=subject_avatar] img[src]")
@@ -178,6 +179,7 @@ defmodule Bonfire.Search.Web.MeiliTest do
       |> assert_has(".activity [data-role=name]", text: title)
       |> assert_has(".activity [data-role=cw]", text: cw)
       |> assert_has(".activity", text: e(me, :profile, :name, nil))
+
       # TODO
       # |> assert_has("a[data-id=subject_avatar]")
       # |> assert_has_or_open_browser("a[data-id=subject_avatar] img[src]")
