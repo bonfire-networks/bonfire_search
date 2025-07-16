@@ -117,6 +117,9 @@ defmodule Bonfire.Search.LiveHandler do
     debug(opts, "OPTS")
 
     q = String.trim(q)
+    
+    # Set searching state to true
+    socket = assign(socket, searching: true)
 
     # Handle pagination - extract offset from cursor or default to 0
     offset =
@@ -146,6 +149,7 @@ defmodule Bonfire.Search.LiveHandler do
     if socket_connected?(socket) do
       {:noreply,
        socket
+       |> assign(searching_ap: true)
        |> start_async(:direct_lookup, fn ->
          Bonfire.Federate.ActivityPub.AdapterUtils.get_by_url_ap_id_or_username(q)
          |> debug("got_by_url_ap_id_or_username")
@@ -168,7 +172,7 @@ defmodule Bonfire.Search.LiveHandler do
 
     if String.starts_with?(q, "http") and current_hits == [] do
       # Handle URL case when there are no other hits - redirect to the federated object's page
-      {:noreply, socket |> redirect_to(path(federated_object_or_character))}
+      {:noreply, socket |> assign(searching_ap: false) |> redirect_to(path(federated_object_or_character))}
     else
       # Handle username case - add result to search results
 
@@ -187,7 +191,7 @@ defmodule Bonfire.Search.LiveHandler do
         |> Enum.uniq_by(&Enums.id/1)
         |> debug("search merged with federated result")
 
-      {:noreply, assign(socket, hits: updated_hits, num_hits: length(updated_hits))}
+      {:noreply, assign(socket, hits: updated_hits, num_hits: length(updated_hits), searching_ap: false)}
     end
   end
 
@@ -196,12 +200,12 @@ defmodule Bonfire.Search.LiveHandler do
   # Handle errors in the federated lookup (just log, don't affect UI)
   def handle_async(:direct_lookup, {:exit, reason}, socket) do
     warn(reason, "Federated lookup failed")
-    {:noreply, socket}
+    {:noreply, assign(socket, searching_ap: false)}
   end
 
   def handle_async(:direct_lookup, _, socket) do
     # No changes needed when no result is found
-    {:noreply, socket}
+    {:noreply, assign(socket, searching_ap: false)}
   end
 
   defp content_live_search(
@@ -258,7 +262,8 @@ defmodule Bonfire.Search.LiveHandler do
        num_hits: total_hits,
        search: q,
        search_term: q,
-       page_info: page_info
+       page_info: page_info,
+       searching: false
        #  current_user: current_user(socket)
      )}
   end

@@ -4,6 +4,17 @@
   data-page={e(@page, [])}
   class="divide-y divide-base-content/20"
 >
+  {#if @searching && e(@hits, []) == []}
+    <div class="flex items-center justify-center py-8">
+      <span class="loading loading-spinner loading-md" />
+    </div>
+  {#elseif @searching_ap && e(@hits, []) != []}
+    <div class="flex items-center justify-center py-2 text-sm text-base-content/70">
+      <span class="loading loading-spinner loading-xs mr-2" />
+      {l("Searching across the fediverse...")}
+    </div>
+  {/if}
+  
   {#for hit <- e(@hits, [])}
     <div class="">
       {#case hit}
