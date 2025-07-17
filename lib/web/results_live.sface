@@ -14,7 +14,7 @@
       {l("Searching across the fediverse...")}
     </div>
   {/if}
-  
+
   {#for hit <- e(@hits, [])}
     <div class="">
       {#case hit}

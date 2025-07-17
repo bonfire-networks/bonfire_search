@@ -1,7 +1,12 @@
 {!-- <Bonfire.UI.Common.PageTitleLive page_title={@page_title} /> --}
 <div class="bg-base-100 shadow rounded-xl">
   <div class="flex-1 p-3">
-    <Bonfire.Search.Web.FormLive search={@search} search_limit={@search_limit} searching={@searching} searching_ap={@searching_ap} />
+    <Bonfire.Search.Web.FormLive
+      search={@search}
+      search_limit={@search_limit}
+      searching={@searching}
+      searching_ap={@searching_ap}
+    />
   </div>
 
   <div class="">

@@ -117,7 +117,7 @@ defmodule Bonfire.Search.LiveHandler do
     debug(opts, "OPTS")
 
     q = String.trim(q)
-    
+
     # Set searching state to true
     socket = assign(socket, searching: true)
 
@@ -172,7 +172,8 @@ defmodule Bonfire.Search.LiveHandler do
 
     if String.starts_with?(q, "http") and current_hits == [] do
       # Handle URL case when there are no other hits - redirect to the federated object's page
-      {:noreply, socket |> assign(searching_ap: false) |> redirect_to(path(federated_object_or_character))}
+      {:noreply,
+       socket |> assign(searching_ap: false) |> redirect_to(path(federated_object_or_character))}
     else
       # Handle username case - add result to search results
 
@@ -191,7 +192,8 @@ defmodule Bonfire.Search.LiveHandler do
         |> Enum.uniq_by(&Enums.id/1)
         |> debug("search merged with federated result")
 
-      {:noreply, assign(socket, hits: updated_hits, num_hits: length(updated_hits), searching_ap: false)}
+      {:noreply,
+       assign(socket, hits: updated_hits, num_hits: length(updated_hits), searching_ap: false)}
     end
   end
 
