@@ -15,8 +15,8 @@ defmodule Bonfire.Search.Web.SearchLive do
   declare_nav_link(l("Search"),
     page: "search",
     href: "/search",
-    icon: "mingcute:search-2-fill",
-    icon_active: "mingcute:search-2-fill"
+    icon: "ph:magnifying-glass-duotone",
+    icon_active: "ph:magnifying-glass-duotone"
   )
 
   on_mount {LivePlugs, [Bonfire.UI.Me.LivePlugs.LoadCurrentUser]}
