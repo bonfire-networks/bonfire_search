@@ -67,6 +67,8 @@ defmodule Bonfire.Search do
   end
 
   def prepare_hits(hits, index, opts) do
+    index = normalise_index(index)
+
     hits
     |> List.wrap()
     |> maybe_boundarise(index, opts)
@@ -144,7 +146,10 @@ defmodule Bonfire.Search do
     |> debug("processed federated result")
   end
 
-  def maybe_boundarise(hits, :public, _), do: hits
+  def maybe_boundarise(hits, :public, _) do
+    debug("skip boundarising for public index")
+    hits
+  end
 
   def maybe_boundarise(hits, _closed, opts) do
     opts = to_options(opts)
@@ -171,6 +176,14 @@ defmodule Bonfire.Search do
       Enum.filter(hits, &(Enums.id(&1) in my_visible_ids))
     end
   end
+
+  def normalise_index("public"), do: :public
+  def normalise_index(["public"]), do: :public
+  def normalise_index(true), do: :public
+  def normalise_index("closed"), do: :closed
+  def normalise_index(["closed"]), do: :closed
+  def normalise_index(false), do: :closed
+  def normalise_index(index), do: index
 
   def maybe_index(object, "public", opts), do: maybe_index(object, :public, opts)
   def maybe_index(object, ["public"], opts), do: maybe_index(object, :public, opts)
