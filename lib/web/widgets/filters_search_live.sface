@@ -1,4 +1,48 @@
 <nav>
+  <div role="tablist" class="tabs tabs-box m-2 p-2 border border-base-content/5">
+    {#case @search}
+      {#match "#" <> hashtag}
+        {!-- HASHTAG TAB --}
+        <LinkLive class={"tab", "tab-active": @selected_tab == "hashtag"} to={"/search/tag/#{hashtag}"}>
+          {l("With hashtag")}
+        </LinkLive>
+
+        {!-- USERS --}
+        <LinkLive
+          class={"tab", "tab-active": @selected_tab == "Bonfire.Data.Identity.User"}
+          to={"/search?facet[index_type]=Bonfire.Data.Identity.User&index=#{@index}&s=#{hashtag}"}
+        >
+          {l("Search users")}
+        </LinkLive>
+        {!-- POSTS --}
+        <LinkLive
+          class={"tab", "tab-active": @selected_tab == "Bonfire.Data.Social.Post"}
+          to={"/search?facet[index_type]=Bonfire.Data.Social.Post&index=#{@index}&s=#{hashtag}"}
+        >
+          {l("Search posts")}
+        </LinkLive>
+      {#match _}
+        {!-- ALL TYPES --}
+        <LinkLive class={"tab", "tab-active": !@selected_tab} to={"/search?index=#{@index}&s=#{@search}"}>
+          {l("All types")}
+        </LinkLive>
+        {!-- USERS --}
+        <LinkLive
+          class={"tab", "tab-active": @selected_tab == "Bonfire.Data.Identity.User"}
+          to={"/search?facet[index_type]=Bonfire.Data.Identity.User&index=#{@index}&s=#{@search}"}
+        >
+          {l("Users")}
+        </LinkLive>
+        {!-- POSTS --}
+        <LinkLive
+          class={"tab", "tab-active": @selected_tab == "Bonfire.Data.Social.Post"}
+          to={"/search?facet[index_type]=Bonfire.Data.Social.Post&index=#{@index}&s=#{@search}"}
+        >
+          {l("Posts")}
+        </LinkLive>
+    {/case}
+  </div>
+
   <!-- {#if maybe_module(Bonfire.Search.adapter(), @__context__) == Bonfire.Search.MeiliLib} -->
   {!-- public --}
   <!-- <LinkLive
@@ -24,7 +68,11 @@
       {l("Private")}
     </div>
   </LinkLive> -->
-  <div role="tablist" class="tabs tabs-border border-b border-base-content/10">
+  <div
+    :if={@selected_tab != "hashtag"}
+    role="tablist"
+    class="tabs tabs-border border-b border-base-content/10"
+  >
     <button
       role="tab"
       phx-click="toggle_index"
@@ -60,25 +108,4 @@
       <span class="label-text text-sm text-base-content/70">{l("Content with boundaries (eg. DMs)")}</span>
     </label>
   </div> -->
-
-  <div role="tablist" class="tabs tabs-box m-2 p-2 border border-base-content/5">
-    {!-- ALL TYPES --}
-    <LinkLive class={"tab", "tab-active": !@selected_tab} to={"/search?index=#{@index}&s=#{@search}"}>
-      {l("All types")}
-    </LinkLive>
-    {!-- USERS --}
-    <LinkLive
-      class={"tab", "tab-active": @selected_tab == "Bonfire.Data.Identity.User"}
-      to={"/search?facet[index_type]=Bonfire.Data.Identity.User&index=#{@index}&s=#{@search}"}
-    >
-      {l("Users")}
-    </LinkLive>
-    {!-- POSTS --}
-    <LinkLive
-      class={"tab", "tab-active": @selected_tab == "Bonfire.Data.Social.Post"}
-      to={"/search?facet[index_type]=Bonfire.Data.Social.Post&index=#{@index}&s=" <> e(assigns, :search, "")}
-    >
-      {l("Posts")}
-    </LinkLive>
-  </div>
 </nav>

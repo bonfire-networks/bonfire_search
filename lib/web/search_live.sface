@@ -21,13 +21,26 @@
       selected_tab={@selected_tab}
     />
 
-    <Bonfire.Search.Web.ResultsLive
-      hits={e(@hits, [])}
-      page_info={@page_info}
-      search={@search}
-      search_limit={@search_limit}
-      searching={@searching}
-      searching_ap={@searching_ap}
-    />
+    {#case @selected_tab == "hashtag" && Bonfire.Tag.get_hashtag(@search)}
+      {#match {:ok, tag}}
+        <StatefulComponent
+          module={maybe_component(Bonfire.UI.Social.FeedLive, @__context__)}
+          id={ComponentID.new(Bonfire.UI.Social.FeedLive, :hashtag, __MODULE__)}
+          feed_filters={%{tags: id(tag)}}
+          feed_name={:hashtag}
+          feed_title={@search}
+          showing_within={:hashtag}
+          hide_filters={false}
+        />
+      {#match _}
+        <Bonfire.Search.Web.ResultsLive
+          hits={e(@hits, [])}
+          page_info={@page_info}
+          search={@search}
+          search_limit={@search_limit}
+          searching={@searching}
+          searching_ap={@searching_ap}
+        />
+    {/case}
   </div>
 </div>

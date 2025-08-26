@@ -67,6 +67,12 @@ defmodule Bonfire.Search.Web.SearchLive do
   #   ]
   # end
 
+  def handle_params(%{"s" => "#" <> hashtag} = params, _url, socket) do
+    {:no_reply,
+     socket
+     |> redirect_to("/search/tag/#{hashtag}")}
+  end
+
   def handle_params(params, _url, socket) do
     # and
     if socket_connected?(socket) do

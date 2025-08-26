@@ -4,8 +4,14 @@ defmodule Bonfire.Search.LiveHandler do
   def default_limit,
     do: Bonfire.Common.Config.get(:default_pagination_limit, 20)
 
+  def handle_event("go_search", %{"s" => "#" <> hashtag} = _params, socket) do
+    # TODO: show results in a modal rather than a separate page
+
+    {:noreply, socket |> redirect_to("/search/tag/#{hashtag}")}
+  end
+
   def handle_event("go_search", %{"s" => s} = _params, socket) do
-    # TODO: show results in a modal rather than a seperate page
+    # TODO: show results in a modal rather than a separate page
 
     {:noreply, socket |> redirect_to("/search/?s=" <> s)}
   end
@@ -98,6 +104,13 @@ defmodule Bonfire.Search.LiveHandler do
         socket,
         opts \\ []
       )
+
+  def live_search("#" <> hashtag = s, _, _, _, socket, _) do
+    # let the Hashtag view handle it by default
+    {:noreply,
+     socket
+     |> assign(selected_tab: "hashtag", search: s, search_term: s)}
+  end
 
   def live_search(q, search_limit, facet_filters, index, socket, opts)
       when is_binary(search_limit) and search_limit != "" do
