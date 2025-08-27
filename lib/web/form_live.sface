@@ -32,9 +32,9 @@
           class="grow"
         />
         <button type="submit" class="flex items-center">
-          <span :if={@searching || @searching_ap} class="loading loading-spinner loading-sm" />
+          <span :if={@searching || @searching_direct} class="loading loading-spinner loading-sm" />
           <#Icon
-            :if={!@searching && !@searching_ap}
+            :if={!@searching && !@searching_direct}
             iconify="ph:magnifying-glass-duotone"
             class="w-4 h-4 text-primary"
           />

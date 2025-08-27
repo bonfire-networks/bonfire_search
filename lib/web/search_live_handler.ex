@@ -160,27 +160,36 @@ defmodule Bonfire.Search.LiveHandler do
       index: index
     }
 
-    # First perform the regular search immediately
-    {:noreply, socket} =
-      result = content_live_search(q, search_limit, facet_filters, [], socket, search_opts, opts)
-
     # Start the async direct lookup if socket is connected
     if socket_connected?(socket) do
-      {:noreply,
-       socket
-       |> assign(searching_ap: true)
-       |> start_async(:direct_lookup, fn ->
-         Bonfire.Federate.ActivityPub.AdapterUtils.get_by_url_ap_id_or_username(q)
-         |> debug("got_by_url_ap_id_or_username")
-       end)}
+      socket
+      |> assign(searching_direct: true)
+      |> start_async(:direct_lookup, fn ->
+        Bonfire.Federate.ActivityPub.AdapterUtils.get_by_url_ap_id_or_username(q)
+        |> debug("got_by_url_ap_id_or_username")
+      end)
+      |> content_live_search(q, search_limit, facet_filters, [], ..., search_opts, opts)
     else
-      result
+      {:noreply, socket}
     end
   end
 
   def live_search(q, _search_limit, _facet_filters, _index, socket, _opts) do
     debug(q, "invalid search")
     {:noreply, socket}
+  end
+
+  def maybe_direct_lookup(q, socket) when is_binary(q) do
+    socket
+    |> assign(searching_direct: true)
+    |> start_async(:direct_lookup, fn ->
+      Bonfire.Federate.ActivityPub.AdapterUtils.get_by_url_ap_id_or_username(q)
+      |> debug("got_by_url_ap_id_or_username")
+    end)
+  end
+
+  def maybe_direct_lookup(q, socket) when is_binary(q) do
+    socket
   end
 
   # Handle the federated lookup result
@@ -192,7 +201,9 @@ defmodule Bonfire.Search.LiveHandler do
     if String.starts_with?(q, "http") and current_hits == [] do
       # Handle URL case when there are no other hits - redirect to the federated object's page
       {:noreply,
-       socket |> assign(searching_ap: false) |> redirect_to(path(federated_object_or_character))}
+       socket
+       |> assign(searching_direct: false)
+       |> redirect_to(path(federated_object_or_character))}
     else
       # Handle username case - add result to search results
 
@@ -212,7 +223,7 @@ defmodule Bonfire.Search.LiveHandler do
         |> debug("search merged with federated result")
 
       {:noreply,
-       assign(socket, hits: updated_hits, num_hits: length(updated_hits), searching_ap: false)}
+       assign(socket, hits: updated_hits, num_hits: length(updated_hits), searching_direct: false)}
     end
   end
 
@@ -221,12 +232,12 @@ defmodule Bonfire.Search.LiveHandler do
   # Handle errors in the federated lookup (just log, don't affect UI)
   def handle_async(:direct_lookup, {:exit, reason}, socket) do
     warn(reason, "Federated lookup failed")
-    {:noreply, assign(socket, searching_ap: false)}
+    {:noreply, assign(socket, searching_direct: false)}
   end
 
   def handle_async(:direct_lookup, _, socket) do
     # No changes needed when no result is found
-    {:noreply, assign(socket, searching_ap: false)}
+    {:noreply, assign(socket, searching_direct: false)}
   end
 
   defp content_live_search(

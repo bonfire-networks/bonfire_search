@@ -8,10 +8,12 @@
     <div class="flex items-center justify-center py-8">
       <span class="loading loading-spinner loading-md" />
     </div>
-  {#elseif @searching_ap && e(@hits, []) != []}
+  {#elseif @searching_direct && e(@hits, []) != []}
     <div class="flex items-center justify-center py-2 text-sm text-base-content/70">
       <span class="loading loading-spinner loading-xs mr-2" />
-      {l("Searching across the fediverse...")}
+      {if String.starts_with(@search, "http"),
+        do: l("Searching for a matching federated activity..."),
+        else: l("Searching for a matching federated profile...")}
     </div>
   {/if}
 

@@ -5,7 +5,7 @@
       search={@search}
       search_limit={@search_limit}
       searching={@searching}
-      searching_ap={@searching_ap}
+      searching_direct={@searching_direct}
     />
   </div>
 
@@ -39,7 +39,7 @@
           search={@search}
           search_limit={@search_limit}
           searching={@searching}
-          searching_ap={@searching_ap}
+          searching_direct={@searching_direct}
         />
     {/case}
   </div>

@@ -11,5 +11,5 @@ defmodule Bonfire.Search.Web.ResultsLive do
   prop hits, :list, default: []
   prop page_info, :any, default: nil
   prop searching, :boolean, default: false
-  prop searching_ap, :boolean, default: false
+  prop searching_direct, :boolean, default: false
 end

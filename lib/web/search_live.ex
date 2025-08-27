@@ -41,7 +41,7 @@ defmodule Bonfire.Search.Web.SearchLive do
        hits: [],
        page_info: nil,
        searching: false,
-       searching_ap: false,
+       searching_direct: false,
        sidebar_widgets: [
          users: [
            secondary: [
