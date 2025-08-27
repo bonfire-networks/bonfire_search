@@ -3,7 +3,9 @@
   <form
     class="w-full"
     role="search"
-    phx-submit="Bonfire.Search:go_search"
+    phx-submit={if @__context__[:current_view] != Bonfire.Search.Web.SearchLive,
+      do: "Bonfire.Search:go_search",
+      else: "Bonfire.Search:patch_search"}
     action="/search"
     method="GET"
   >

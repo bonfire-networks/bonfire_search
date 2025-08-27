@@ -138,6 +138,7 @@ defmodule Bonfire.Search.MeiliLib do
         # |> input_to_atoms(to_snake: true)          
 
         Map.put(result, :hits, Bonfire.Search.prepare_hits(hits, index, opts))
+        |> debug("prepared search results")
 
       {:ok, result} ->
         debug(result, "no hits in `#{index_name}` index")

@@ -67,6 +67,7 @@ defmodule Bonfire.Search do
   end
 
   def prepare_hits(hits, index, opts) do
+    # used for displaying federated objects 
     index = normalise_index(index)
 
     hits
@@ -86,14 +87,15 @@ defmodule Bonfire.Search do
           %{__struct__: _, activity: %{__struct__: Bonfire.Data.Social.Activity} = activity} =
               struct_hit ->
             struct_hit
+            |> Map.drop([:created, :subject, :replied])
             |> Map.put(
               :activity,
               activity
               |> Map.merge(%{
                 object: struct_hit,
-                subject:
-                  e(struct_hit, :created, :creator, nil) || e(activity, :subject, nil) ||
-                    e(struct_hit, :caretaker, nil) || %Ecto.Association.NotLoaded{},
+                # subject:
+                #   e(struct_hit, :created, :creator, nil) || e(activity, :subject, nil) ||
+                #     e(struct_hit, :caretaker, nil) || %Ecto.Association.NotLoaded{},
                 replied:
                   e(struct_hit, :replied, nil) || e(activity, :replied, nil) ||
                     %Ecto.Association.NotLoaded{}
@@ -110,7 +112,7 @@ defmodule Bonfire.Search do
           # }
 
           _ ->
-            # For non-struct hits, create a simpler structure
+            # For non-Activity hits, create a simpler structure
 
             hit =
               hit
@@ -139,11 +141,10 @@ defmodule Bonfire.Search do
   defp hits_preloads(objects, opts) do
     objects
     |> Bonfire.Social.Activities.activity_preloads(
-      [:with_reply_to, :with_media],
+      [:with_reply_to, :with_media, :with_creator],
       skip_follow_reply_to: true,
       current_user: current_user(opts)
     )
-    |> debug("processed federated result")
   end
 
   def maybe_boundarise(hits, :public, _) do

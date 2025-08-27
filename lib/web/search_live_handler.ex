@@ -5,15 +5,21 @@ defmodule Bonfire.Search.LiveHandler do
     do: Bonfire.Common.Config.get(:default_pagination_limit, 20)
 
   def handle_event("go_search", %{"s" => "#" <> hashtag} = _params, socket) do
-    # TODO: show results in a modal rather than a separate page
+    # TODO: show results in a modal rather than a separate page?
 
     {:noreply, socket |> redirect_to("/search/tag/#{hashtag}")}
   end
 
   def handle_event("go_search", %{"s" => s} = _params, socket) do
-    # TODO: show results in a modal rather than a separate page
-
     {:noreply, socket |> redirect_to("/search/?s=" <> s)}
+  end
+
+  def handle_event("patch_search", %{"s" => "#" <> hashtag} = _params, socket) do
+    {:noreply, socket |> patch_to("/search/tag/#{hashtag}")}
+  end
+
+  def handle_event("patch_search", %{"s" => s} = _params, socket) do
+    {:noreply, socket |> patch_to("/search/?s=" <> s)}
   end
 
   def handle_event(
@@ -197,7 +203,7 @@ defmodule Bonfire.Search.LiveHandler do
           index,
           to_options(socket) |> Keyword.put(:input_type, :structs)
         )
-        |> debug("processed federated result")
+        |> debug("prepared federated result")
 
       # Add processed federated result to existing hits
       updated_hits =
