@@ -153,10 +153,12 @@ defmodule Bonfire.Search.LiveHandler do
           0
       end
 
+    current_user = current_user(socket)
+
     search_opts = %{
       limit: search_limit,
       offset: offset,
-      current_user: current_user(socket),
+      current_user: current_user,
       index: index
     }
 
@@ -165,7 +167,9 @@ defmodule Bonfire.Search.LiveHandler do
       socket
       |> assign(searching_direct: true)
       |> start_async(:direct_lookup, fn ->
-        Bonfire.Federate.ActivityPub.AdapterUtils.get_by_url_ap_id_or_username(q)
+        Bonfire.Federate.ActivityPub.AdapterUtils.get_by_url_ap_id_or_username(q,
+          user_id: id(current_user)
+        )
         |> debug("got_by_url_ap_id_or_username")
       end)
       |> content_live_search(q, search_limit, facet_filters, [], ..., search_opts, opts)
