@@ -88,7 +88,7 @@ defmodule Bonfire.Search.Acts.Queue do
       # %{activity: %{id: _}} -> prepare_object(thing.activity, thing)
       # %Activity{object: %{id: _} = object} -> prepare_object(thing, object)
       %Changeset{} ->
-        flood("MeiliSearch.Queue: got a changeset, applying action to get the struct")
+        debug("MeiliSearch.Queue: got a changeset, applying action to get the struct")
 
         case Changeset.apply_action(thing, :insert) do
           {:ok, thing} ->
