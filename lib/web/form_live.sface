@@ -20,7 +20,7 @@
 
     <span class="sr-only">{e(@search_placeholder, l("Search"))}</span>
     <div class="relative w-full rounded">
-      <label class="input input-bordered flex items-center gap-2 w-full h-[48px] text-base rounded-lg">
+      <label class="input input-ghost bg-base-content/5 rounded-full flex items-center gap-2 w-full text-base">
         <input type="hidden" name="search_limit" value={e(@search_limit, "")}>
         <input
           type="search"

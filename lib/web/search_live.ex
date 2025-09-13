@@ -30,7 +30,7 @@ defmodule Bonfire.Search.Web.SearchLive do
        socket,
        page: "search",
        page_title: "Search",
-       selected_tab: nil,
+       selected_tab: :search,
        index: "public",
        back: true,
        search_limit: Bonfire.Search.LiveHandler.default_limit(),
