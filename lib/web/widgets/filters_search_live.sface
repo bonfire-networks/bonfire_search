@@ -94,7 +94,7 @@
       {l("Private (eg. DMs or custom boundaries)")}</button>
   </div>
 
-  <!-- <div class="form-control px-3 pb-2 pt-0">
+  {!-- <div class="form-control px-3 pb-2 pt-0">
     <label
       phx-click="toggle_index"
       phx-value-index={if @index == "public", do: "closed", else: "public"}
@@ -107,5 +107,5 @@
       />
       <span class="label-text text-sm text-base-content/70">{l("Content with boundaries (eg. DMs)")}</span>
     </label>
-  </div> -->
+  </div> --}
 </nav>
