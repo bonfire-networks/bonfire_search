@@ -19,12 +19,12 @@
 
   {#for hit <- e(@hits, [])}
     <div class="">
+    <!-- parent_id={"search-result-" <> id} -->
       {#case hit}
         {#match %{activity: %{id: id} = activity} = hit}
           <StatefulComponent
-            module={maybe_component(Bonfire.UI.Social.ActivityLive, @__context__)}
-            id={"sa-" <> id}
-            parent_id={"search-result-" <> id}
+            module={maybe_component(Bonfire.UI.Social.ActivityLive)}
+            id={deterministic_dom_id(__MODULE__, id, "search_activity", nil)}
             showing_within={:search}
             activity={activity}
             check_object_boundary={false}
