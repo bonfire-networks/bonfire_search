@@ -1,5 +1,11 @@
 <!--  -->
 <div class="relative">
+  <div
+    x-data="{ menuOpen: false, searchValue: '' }"
+    x-init="searchValue = $refs.searchInput.value"
+    x-on:click.outside="menuOpen = false"
+    class="relative w-full"
+  >
   <form
     class="w-full"
     role="search"
@@ -22,6 +28,7 @@
     <div class="relative w-full rounded">
       <label class="input input-ghost bg-base-content/5 rounded-full flex items-center gap-2 w-full text-base">
         <input type="hidden" name="search_limit" value={e(@search_limit, "")}>
+        <input type="hidden" name="facet[index_type]" value="" id="facet_index_type">
         <input
           type="search"
           name="s"
@@ -30,6 +37,9 @@
           placeholder={e(@search_placeholder, l("Search..."))}
           phx-debounce="300"
           class="grow"
+          x-on:focus="menuOpen = true"
+          x-on:input="searchValue = $event.target.value"
+          x-ref="searchInput"
         />
         <button type="submit" class="flex items-center">
           <span :if={@searching || @searching_direct} class="loading loading-spinner loading-sm" />
@@ -42,7 +52,74 @@
         </button>
       </label>
     </div>
+    {!-- Search menu --}
+    <ul
+      x-show="menuOpen"
+      x-cloak
+      x-transition:enter="transition ease-out duration-100"
+      x-transition:enter-start="transform opacity-0 scale-95"
+      x-transition:enter-end="transform opacity-100 scale-100"
+      x-transition:leave="transition ease-in duration-75"
+      x-transition:leave-start="transform opacity-100 scale-100"
+      x-transition:leave-end="transform opacity-0 scale-95"
+      tabindex="0"
+      class="tooltip z-[99999999] menu shadow-sm bg-base-200 border border-base-content/10 w-full top-[50px] absolute rounded-xl top-0 left-0"
+      role="menu"
+      aria-orientation="vertical"
+    >
+    <!-- <li class="menu-title">Quick actions</li> -->
+    <li>
+      <button
+        type="submit"
+        data-facet-type=""
+        onclick="document.getElementById('facet_index_type').value = this.dataset.facetType"
+        class="w-full flex gap-3 px-2 py-2 text-base-content items-center hover:bg-base-300 rounded-md"
+        x-on:click="menuOpen = false"
+      >
+        <#Icon iconify="ph:magnifying-glass-duotone" class="w-4 h-4 text-primary" />
+        <span x-text="searchValue || 'Search for everything'"></span>
+      </button>
+    </li>
+    <li>
+      <button
+        type="submit"
+        data-facet-type="Bonfire.Data.Identity.User"
+        onclick="document.getElementById('facet_index_type').value = this.dataset.facetType"
+        class="w-full flex gap-3 px-2 py-2 text-base-content items-center hover:bg-base-300 rounded-md"
+        x-on:click="menuOpen = false"
+      >
+        <#Icon iconify="ph:user-duotone" class="w-4 h-4 text-primary" />
+        <span x-text="searchValue || 'Search for users'"></span>
+      </button>
+    </li>
+    <li>
+      <button
+        type="submit"
+        data-facet-type="Bonfire.Data.Social.Post"
+        onclick="document.getElementById('facet_index_type').value = this.dataset.facetType"
+        class="w-full flex gap-3 px-2 py-2 text-base-content items-center hover:bg-base-300 rounded-md"
+        x-on:click="menuOpen = false"
+      >
+        <#Icon iconify="ph:note-pencil-duotone" class="w-4 h-4 text-primary" />
+        <span x-text="searchValue || 'Search for activities'"></span>
+      </button>
+    </li>
+    <li>
+      <button
+        type="submit"
+        data-facet-type="hashtag"
+        onclick="document.getElementById('facet_index_type').value = this.dataset.facetType"
+        class="w-full flex gap-3 px-2 py-2 text-base-content items-center hover:bg-base-300 rounded-md"
+        x-on:click="menuOpen = false"
+      >
+        <#Icon iconify="ph:hash-duotone" class="w-4 h-4 text-primary" />
+        <span x-text="searchValue || 'Search for hashtags'"></span>
+      </button>
+    </li>
+    </ul>
   </form>
+  </div>
+
   <div
     :if={!@search_more && @num_hits}
     class="absolute left-0 right-0 z-50 w-full rounded-lg top-[3.75rem] search_results menu bg-base-100"

@@ -10,16 +10,59 @@ defmodule Bonfire.Search.LiveHandler do
     {:noreply, socket |> redirect_to("/search/tag/#{hashtag}")}
   end
 
+  def handle_event("go_search", %{"s" => s, "facet" => facet} = _params, socket) when facet != %{} do
+    url = "/search/?facet[index_type]=#{facet["index_type"]}&s=#{s}"
+    {:noreply, socket |> redirect_to(url)}
+  end
+
   def handle_event("go_search", %{"s" => s} = _params, socket) do
-    {:noreply, socket |> redirect_to("/search/?s=" <> s)}
+    {:noreply, socket |> assign(selected_tab: nil) |> redirect_to("/search/?s=" <> s)}
   end
 
   def handle_event("patch_search", %{"s" => "#" <> hashtag} = _params, socket) do
     {:noreply, socket |> patch_to("/search/tag/#{hashtag}")}
   end
 
+  def handle_event("patch_search", %{"s" => s, "facet" => facet} = _params, socket) when facet != %{} do
+    # Use existing search term if the provided one is empty
+    search_term = if s == "" or is_nil(s) do
+      e(assigns(socket), :search_term, nil) || e(assigns(socket), :search, "")
+    else
+      s
+    end
+
+    # Only patch if we have a valid search term
+    if search_term != "" and not is_nil(search_term) do
+      # If facet index_type is empty, search everything (no facet filter)
+      encoded_search_term = URI.encode(search_term)
+      url = if facet["index_type"] == "" or is_nil(facet["index_type"]) do
+        "/search/?s=#{encoded_search_term}"
+      else
+        "/search/?s=#{encoded_search_term}&facet[index_type]=#{facet["index_type"]}"
+      end
+      {:noreply, socket |> assign(selected_tab: nil) |> patch_to(url)}
+    else
+      # If no search term available, just stay on the page
+      {:noreply, socket}
+    end
+  end
+
   def handle_event("patch_search", %{"s" => s} = _params, socket) do
-    {:noreply, socket |> patch_to("/search/?s=" <> s)}
+    # Use existing search term if the provided one is empty
+    search_term = if s == "" or is_nil(s) do
+      e(assigns(socket), :search_term, nil) || e(assigns(socket), :search, "")
+    else
+      s
+    end
+
+    # Only patch if we have a valid search term
+    if search_term != "" and not is_nil(search_term) do
+      encoded_search_term = URI.encode(search_term)
+      {:noreply, socket |> assign(selected_tab: nil) |> patch_to("/search/?s=" <> encoded_search_term)}
+    else
+      # If no search term available, just stay on the page
+      {:noreply, socket}
+    end
   end
 
   def handle_event(
@@ -115,7 +158,7 @@ defmodule Bonfire.Search.LiveHandler do
     # let the Hashtag view handle it by default
     {:noreply,
      socket
-     |> assign(selected_tab: "hashtag", search: s, search_term: s)}
+     |> assign(selected_tab: "hashtag", search: hashtag, search_term: s)}
   end
 
   def live_search(q, search_limit, facet_filters, index, socket, opts)
@@ -290,7 +333,8 @@ defmodule Bonfire.Search.LiveHandler do
       end
 
     {:noreply,
-     assign(socket,
+     socket
+     |> assign(
        index: search_opts[:index],
        selected_facets: facet_filters,
        hits: current_hits,
@@ -357,4 +401,5 @@ defmodule Bonfire.Search.LiveHandler do
 
     {total_hits, hits || [], facets, page_info}
   end
+
 end

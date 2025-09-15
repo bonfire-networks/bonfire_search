@@ -22,8 +22,9 @@
       {#case hit}
         {#match %{activity: %{id: id} = activity} = hit}
           <StatefulComponent
-            module={maybe_component(Bonfire.UI.Social.ActivityLive)}
+            module={maybe_component(Bonfire.UI.Social.ActivityLive, @__context__)}
             id={"sa-" <> id}
+            parent_id={"search-result-" <> id}
             showing_within={:search}
             activity={activity}
             check_object_boundary={false}
@@ -32,9 +33,10 @@
           <!-- object={Map.drop(hit, [:activity])} -->
         {#match %{id: id} = hit}
           <StatefulComponent
-            module={maybe_component(Bonfire.UI.Social.ActivityLive)}
+            module={maybe_component(Bonfire.UI.Social.ActivityLive, @__context__)}
             id={e(hit, :index_type, "so-") <>
               (id || deterministic_dom_id("search_result", hit[:index_type], hit[:name] || hit[:title]))}
+            parent_id={"search-obj-" <> (id || deterministic_dom_id("search_result", hit[:index_type], hit[:name] || hit[:title]))}
             showing_within={:search}
             object={hit}
             check_object_boundary={false}

@@ -68,19 +68,22 @@ defmodule Bonfire.Search.Web.SearchLive do
   # end
 
   def handle_params(%{"s" => "#" <> hashtag} = params, _url, socket) do
-    {:no_reply,
+    {:noreply,
      socket
      |> redirect_to("/search/tag/#{hashtag}")}
   end
 
   def handle_params(params, _url, socket) do
-    # and
+    # Extract nested Bonfire.Search parameters if they exist
+    search_params = case params do
+      %{"Bonfire" => %{"Search" => nested_params}} -> nested_params
+      _ -> params
+    end
+    
     if socket_connected?(socket) do
-      # (params["s"] != e(assigns(socket), :search_term, nil) or
-      #    (params["index"] || "public") != e(assigns(socket), :index, "public")) do
-      handle_search_params(params, nil, socket)
+      handle_search_params(search_params, nil, socket)
     else
-      socket
+      {:noreply, socket}
     end
   end
 
@@ -89,15 +92,28 @@ defmodule Bonfire.Search.Web.SearchLive do
     previous_index = e(assigns(socket), :index, "nil")
     index = params["index"] || previous_index
 
-    if s != e(assigns(socket), :search_term, nil) or index != previous_index do
+    # Check if facet has changed
+    new_facet_type = e(facets, "index_type", nil)
+    current_facet_type = e(assigns(socket), :selected_tab, nil)
+
+    if s != e(assigns(socket), :search_term, nil) or
+       index != previous_index or
+       new_facet_type != current_facet_type do
       index_type =
-        e(facets, "index_type", nil)
+        new_facet_type
         |> debug("selected_tabsss")
+
+      # If facet index_type is empty, treat as no facet filter
+      search_facets = if new_facet_type == "" or is_nil(new_facet_type) do
+        nil
+      else
+        facets
+      end
 
       Bonfire.Search.LiveHandler.live_search(
         s,
         Bonfire.Search.LiveHandler.default_limit(),
-        facets,
+        search_facets,
         index,
         socket
         |> assign(
@@ -120,11 +136,14 @@ defmodule Bonfire.Search.Web.SearchLive do
     if s != e(assigns(socket), :search_term, nil) or index != previous_index do
       Bonfire.Search.LiveHandler.live_search(
         s,
+        Bonfire.Search.LiveHandler.default_limit(),
+        nil,
         index,
         socket
         |> assign(
           search_term: s,
-          index: index
+          index: index,
+          selected_tab: nil
           # sidebar_widgets: widget(s)
         )
         |> assign_global(search_more: true)
@@ -136,16 +155,16 @@ defmodule Bonfire.Search.Web.SearchLive do
 
   def handle_search_params(%{"hashtag_search" => s} = params, _url, socket)
       when s != "" do
-    s = "##{s}"
+    hashtag_s = "##{s}"
     previous_index = e(assigns(socket), :index, "nil")
     index = params["index"] || previous_index
 
-    if s != e(assigns(socket), :search_term, nil) or index != previous_index do
+    if hashtag_s != e(assigns(socket), :search_term, nil) or index != previous_index do
       Bonfire.Search.LiveHandler.live_search(
-        s,
+        hashtag_s,
         index,
         socket
-        |> assign(search_term: s, index: index)
+        |> assign(search_term: s, search: s, index: index)
         |> assign_global(search_more: true)
       )
     else

@@ -172,7 +172,7 @@ defmodule Bonfire.Search.Web.MeiliTest do
 
       conn
       |> visit("/search?s=test")
-      # |> open_browser()
+      |> PhoenixTest.open_browser()
       # Verify the post is displayed
       |> assert_has(".activity", text: html_body)
       # Verify the title is displayed
