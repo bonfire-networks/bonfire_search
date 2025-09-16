@@ -268,7 +268,7 @@ defmodule Bonfire.Search.LiveHandler do
         federated_object_or_character
         |> Bonfire.Search.prepare_hits(
           index,
-          to_options(socket) |> Keyword.put(:input_type, :structs)
+          to_options(socket) |> Keyword.put(:data_input_type, :struct)
         )
         |> debug("prepared federated result")
 

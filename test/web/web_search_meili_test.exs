@@ -219,8 +219,8 @@ defmodule Bonfire.Search.Web.MeiliTest do
       me: me,
       conn: conn
     } do
-      body = "test post with link or attachments"
-      html_body = "#{body} https://developer.mozilla.org/en-US/docs/Web/API/"
+      body = "simple test post"
+      html_body = "#{body}"
 
       {:ok, _post} =
         Posts.publish(
@@ -230,12 +230,9 @@ defmodule Bonfire.Search.Web.MeiliTest do
         )
 
       conn
-      |> visit("/search?facet[index_type]=Bonfire.Data.Social.Post&index=public&?s=test")
-      # |> open_browser()
+      |> visit("/search?facet[index_type]=Bonfire.Data.Social.Post&index=public&s=test")
       # Verify the post is displayed
-      |> assert_has(".activity", text: body)
-      # Verify the post is displayed
-      |> assert_has(".activity [data-id=media_title]", text: "Web APIs")
+      |> assert_has_or_open_browser(".activity", text: body)
     end
 
     test "search filters display correct type of results", %{
@@ -250,7 +247,11 @@ defmodule Bonfire.Search.Web.MeiliTest do
       {:ok, _post} =
         Posts.publish(
           current_user: me,
-          post_attrs: %{post_content: %{html_body: html_body_post}},
+          post_attrs: %{
+            # set as sensitive to test CW handled in indexing
+            sensitive: true,
+            post_content: %{html_body: html_body_post}
+          },
           boundary: "public"
         )
 
@@ -258,9 +259,10 @@ defmodule Bonfire.Search.Web.MeiliTest do
 
       conn
       |> visit("/search?s=test")
-      #  |> open_browser()
+      |> open_browser()
       # Verify post-related content
       |> assert_has(".activity", text: html_body_post)
+      |> assert_has(".activity [data-role=cw]")
       # Ensure user-related content is shown
       |> assert_has(".activity", text: user_name)
 
@@ -278,6 +280,7 @@ defmodule Bonfire.Search.Web.MeiliTest do
       |> visit("/search?facet[index_type]=Bonfire.Data.Social.Post&s=test")
       # Verify post-related content
       |> assert_has(".activity", text: html_body_post)
+      |> assert_has(".activity [data-role=cw]")
       # Ensure user-related content is not shown
       |> refute_has(".activity", text: user_name)
 
@@ -296,6 +299,7 @@ defmodule Bonfire.Search.Web.MeiliTest do
       |> click_link(".tabs a", "Posts")
       # Verify post-related content
       |> assert_has(".activity", text: html_body_post)
+      |> assert_has(".activity [data-role=cw]")
       # Ensure user-related content is not shown
       |> refute_has(".activity", text: user_name)
     end

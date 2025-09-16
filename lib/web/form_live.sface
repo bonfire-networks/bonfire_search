@@ -28,40 +28,40 @@
     phx-change={if @__context__[:current_view] == Bonfire.Search.Web.SearchLive,
       do: "Bonfire.Search:search"} --}
 
-    <span class="sr-only">{e(@search_placeholder, l("Search"))}</span>
-    <div class="relative w-full rounded">
-      <div class="input input-ghost bg-base-content/5 rounded-full flex items-center gap-2 w-full text-base">
-        <label for="search-input" class="sr-only">{l("Search content")}</label>
-        <input type="hidden" name="search_limit" value={e(@search_limit, "")}>
-        <input type="hidden" name="facet[index_type]" value="" id="facet_index_type">
-        <input
-          type="search"
-          id="search-input"
-          name="s"
-          autocomplete="off"
-          value={@search || e(@__context__, :current_params, "s", nil)}
-          placeholder={e(@search_placeholder, l("Search..."))}
-          phx-debounce="300"
-          class="grow"
-          x-on:focus="menuOpen = true"
-          x-on:input="searchValue = $event.target.value"
-          x-on:keydown.enter="menuOpen = false"
-          x-ref="searchInput"
-        />
-        <button type="submit" class="flex items-center">
-          <span :if={@searching || @searching_direct} class="loading loading-spinner loading-sm" />
-          <#Icon
-            :if={!@searching && !@searching_direct}
-            iconify="ph:magnifying-glass-duotone"
-            class="w-4 h-4 text-primary"
+      <span class="sr-only">{e(@search_placeholder, l("Search"))}</span>
+      <div class="relative w-full rounded">
+        <div class="input input-ghost bg-base-content/5 rounded-full flex items-center gap-2 w-full text-base">
+          <label for="search-input" class="sr-only">{l("Search content")}</label>
+          <input type="hidden" name="search_limit" value={e(@search_limit, "")}>
+          <input type="hidden" name="facet[index_type]" value="" id="facet_index_type">
+          <input
+            type="search"
+            id="search-input"
+            name="s"
+            autocomplete="off"
+            value={@search || e(@__context__, :current_params, "s", nil)}
+            placeholder={e(@search_placeholder, l("Search..."))}
+            phx-debounce="300"
+            class="grow"
+            x-on:focus="menuOpen = true"
+            x-on:input="searchValue = $event.target.value"
+            x-on:keydown.enter="menuOpen = false"
+            x-ref="searchInput"
           />
-          <span class="sr-only">{l("Search")}</span>
-        </button>
+          <button type="submit" class="flex items-center">
+            <span :if={@searching || @searching_direct} class="loading loading-spinner loading-sm" />
+            <#Icon
+              :if={!@searching && !@searching_direct}
+              iconify="ph:magnifying-glass-duotone"
+              class="w-4 h-4 text-primary"
+            />
+            <span class="sr-only">{l("Search")}</span>
+          </button>
+        </div>
+        <label for="search-input" class="sr-only">{e(@search_placeholder, l("Search"))}</label>
       </div>
-    <label for="search-input" class="sr-only">{e(@search_placeholder, l("Search"))}</label>
-    </div>
-    {!-- Search menu --}
-    <!-- <ul
+      {!-- Search menu --}
+      <!-- <ul
       id="search-dropdown"
       x-show="menuOpen"
       x-cloak

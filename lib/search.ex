@@ -74,7 +74,7 @@ defmodule Bonfire.Search do
     |> List.wrap()
     |> maybe_boundarise(index, opts)
     |> Enum.map(fn hit ->
-      if opts[:input_type] == :struct do
+      if opts[:data_input_type] == :struct do
         hit
       else
         id = id(hit)
@@ -96,6 +96,8 @@ defmodule Bonfire.Search do
                 # subject:
                 #   e(struct_hit, :created, :creator, nil) || e(activity, :subject, nil) ||
                 #     e(struct_hit, :caretaker, nil) || %Ecto.Association.NotLoaded{},
+                #  set a default if not sensitive
+                sensitive: e(hit, :sensitive, nil),
                 replied:
                   e(struct_hit, :replied, nil) || e(activity, :replied, nil) ||
                     %Ecto.Association.NotLoaded{}
@@ -118,6 +120,7 @@ defmodule Bonfire.Search do
               hit
               |> input_to_atoms()
               |> maybe_to_structs()
+              |> debug("turned hit to structs")
 
             %Needle.Pointer{
               id: id,
@@ -126,11 +129,14 @@ defmodule Bonfire.Search do
                 |> Map.merge(%{
                   object: hit,
                   object_id: id,
-                  id: id,
-                  replied: %Ecto.Association.NotLoaded{}
+                  id: id
+                  # replied: %Ecto.Association.NotLoaded{}
                 })
                 |> maybe_to_struct(Bonfire.Data.Social.Activity)
+                #  set a default if not sensitive
+                |> Map.put(:sensitive, e(hit, :sensitive, nil))
             }
+            |> debug("transformed object struct")
         end
       end
     end)
