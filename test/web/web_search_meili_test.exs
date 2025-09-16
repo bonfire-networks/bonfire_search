@@ -214,6 +214,30 @@ defmodule Bonfire.Search.Web.MeiliTest do
       |> assert_has(".activity [data-id=media_title]", text: "Web APIs")
     end
 
+    test "Search filters display posts result", %{
+      alice: alice,
+      me: me,
+      conn: conn
+    } do
+      body = "test post with link or attachments"
+      html_body = "#{body} https://developer.mozilla.org/en-US/docs/Web/API/"
+
+      {:ok, _post} =
+        Posts.publish(
+          current_user: me,
+          post_attrs: %{post_content: %{html_body: html_body}},
+          boundary: "public"
+        )
+
+      conn
+      |> visit("/search?facet[index_type]=Bonfire.Data.Social.Post&index=public&?s=test")
+      # |> open_browser()
+      # Verify the post is displayed
+      |> assert_has(".activity", text: body)
+      # Verify the post is displayed
+      |> assert_has(".activity [data-id=media_title]", text: "Web APIs")
+    end
+
     test "search filters display correct type of results", %{
       alice: alice,
       me: me,
