@@ -72,7 +72,7 @@ defmodule Bonfire.Search.Web.MeiliTest do
       conn
       |> visit("/search")
       # Fill in the search term
-      |> fill_in("[name=s]", "Search", with: "test")
+      |> fill_in("[name=s]", "Search content", with: "test")
       # Submit the form by clocking button
       |> click_button("Search")
       # Ensure the results section exists
@@ -83,7 +83,7 @@ defmodule Bonfire.Search.Web.MeiliTest do
       conn
       |> visit("/search")
       # Fill in the search term
-      |> fill_in("[name=s]", "Search", with: "test")
+      |> fill_in("[name=s]", "Search content", with: "test")
       # try by submitting form instead
       |> submit()
       # Check if the result is displayed
@@ -132,7 +132,7 @@ defmodule Bonfire.Search.Web.MeiliTest do
       conn
       |> visit("/search")
       # Fill in the search term
-      |> fill_in("[name=s]", "Search", with: "test")
+      |> fill_in("[name=s]", "Search content", with: "test")
       # Submit the form by clocking button
       |> click_button("Search")
       # Ensure the results section exists
@@ -172,7 +172,6 @@ defmodule Bonfire.Search.Web.MeiliTest do
 
       conn
       |> visit("/search?s=test")
-      |> PhoenixTest.open_browser()
       # Verify the post is displayed
       |> assert_has(".activity", text: html_body)
       # Verify the title is displayed
