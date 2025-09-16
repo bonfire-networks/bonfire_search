@@ -9,9 +9,11 @@
   <form
     class="w-full"
     role="search"
-    phx-submit={if @__context__[:current_view] != Bonfire.Search.Web.SearchLive,
-      do: "Bonfire.Search:go_search",
-      else: "Bonfire.Search:patch_search"}
+    phx-submit={Phoenix.LiveView.JS.push(
+      if(@__context__[:current_view] != Bonfire.Search.Web.SearchLive,
+        do: "Bonfire.Search:go_search",
+        else: "Bonfire.Search:patch_search"
+      )) |> Phoenix.LiveView.JS.hide(to: "#search-dropdown")}
     action="/search"
     method="GET"
   >
@@ -39,6 +41,7 @@
           class="grow"
           x-on:focus="menuOpen = true"
           x-on:input="searchValue = $event.target.value"
+          x-on:keydown.enter="menuOpen = false"
           x-ref="searchInput"
         />
         <button type="submit" class="flex items-center">
@@ -53,7 +56,8 @@
       </label>
     </div>
     {!-- Search menu --}
-    <ul
+    <!-- <ul
+      id="search-dropdown"
       x-show="menuOpen"
       x-cloak
       x-transition:enter="transition ease-out duration-100"
@@ -67,7 +71,6 @@
       role="menu"
       aria-orientation="vertical"
     >
-    <!-- <li class="menu-title">Quick actions</li> -->
     <li>
       <button
         type="submit"
@@ -116,7 +119,7 @@
         <span x-text="searchValue || 'Search for hashtags'"></span>
       </button>
     </li>
-    </ul>
+    </ul> -->
   </form>
   </div>
 

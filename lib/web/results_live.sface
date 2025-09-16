@@ -17,15 +17,15 @@
     </div>
   {/if}
 
-  {#for hit <- e(@hits, [])}
+  {#for {hit, index} <- Enum.with_index(e(@hits, []))}
     <div class="">
-    <!-- parent_id={"search-result-" <> id} -->
       {#case hit}
         {#match %{activity: %{id: id} = activity} = hit}
           <StatefulComponent
             module={maybe_component(Bonfire.UI.Social.ActivityLive)}
             id={deterministic_dom_id(__MODULE__, id, "search_activity", nil)}
             showing_within={:search}
+            parent_id={"search-act-" <> id}
             activity={activity}
             check_object_boundary={false}
           />
@@ -35,8 +35,8 @@
           <StatefulComponent
             module={maybe_component(Bonfire.UI.Social.ActivityLive, @__context__)}
             id={e(hit, :index_type, "so-") <>
-              (id || deterministic_dom_id("search_result", hit[:index_type], hit[:name] || hit[:title]))}
-            parent_id={"search-obj-" <> (id || deterministic_dom_id("search_result", hit[:index_type], hit[:name] || hit[:title]))}
+              deterministic_dom_id("search_result", hit[:index_type], hit[:name] || hit[:title], index)}
+            parent_id={"search-obj-" <> deterministic_dom_id("search_result", hit[:index_type], hit[:name] || hit[:title], index)}
             showing_within={:search}
             object={hit}
             check_object_boundary={false}

@@ -96,7 +96,7 @@
       :if={@selected_tab != "hashtag"}
       data-position="bottom-end" phx-hook="Tooltip" id="search_boundary" class="relative">
       <label
-        class="tooltip-button btn-soft btn btn-sm"
+        class={"tooltip-button btn-soft btn btn-sm", "btn-warning": @index != "public"}
         tabindex="0"
         role="button"
         aria-haspopup="true"
