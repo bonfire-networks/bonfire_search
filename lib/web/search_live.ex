@@ -75,11 +75,12 @@ defmodule Bonfire.Search.Web.SearchLive do
 
   def handle_params(params, _url, socket) do
     # Extract nested Bonfire.Search parameters if they exist
-    search_params = case params do
-      %{"Bonfire" => %{"Search" => nested_params}} -> nested_params
-      _ -> params
-    end
-    
+    search_params =
+      case params do
+        %{"Bonfire" => %{"Search" => nested_params}} -> nested_params
+        _ -> params
+      end
+
     if socket_connected?(socket) do
       handle_search_params(search_params, nil, socket)
     else
@@ -97,18 +98,19 @@ defmodule Bonfire.Search.Web.SearchLive do
     current_facet_type = e(assigns(socket), :selected_tab, nil)
 
     if s != e(assigns(socket), :search_term, nil) or
-       index != previous_index or
-       new_facet_type != current_facet_type do
+         index != previous_index or
+         new_facet_type != current_facet_type do
       index_type =
         new_facet_type
         |> debug("selected_tabsss")
 
       # If facet index_type is empty, treat as no facet filter
-      search_facets = if new_facet_type == "" or is_nil(new_facet_type) do
-        nil
-      else
-        facets
-      end
+      search_facets =
+        if new_facet_type == "" or is_nil(new_facet_type) do
+          nil
+        else
+          facets
+        end
 
       Bonfire.Search.LiveHandler.live_search(
         s,

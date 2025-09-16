@@ -3,11 +3,18 @@
     {#case @search}
       {#match _}
         {!-- ALL TYPES --}
-        <LinkLive class={"tab", "tab-active": @selected_tab not in [
-          "Bonfire.Data.Identity.User",
-          "Bonfire.Data.Social.Post",
-          "hashtag"
-        ]} to={"/search?index=#{@index}&s=#{@search || ""}"}>
+        <LinkLive
+          class={
+            "tab",
+            "tab-active":
+              @selected_tab not in [
+                "Bonfire.Data.Identity.User",
+                "Bonfire.Data.Social.Post",
+                "hashtag"
+              ]
+          }
+          to={"/search?index=#{@index}&s=#{@search || ""}"}
+        >
           {l("All")}
         </LinkLive>
         {!-- USERS --}
@@ -42,7 +49,7 @@
         {/if}
     {/case}
 
-     <!-- {#match "#" <> hashtag}
+    <!-- {#match "#" <> hashtag}
         {!-- HASHTAG TAB --}
         <LinkLive class={"tab", "tab-active": @selected_tab == "hashtag"} to={"/search/tag/#{hashtag}"}>
           {l("With hashtag")}
@@ -92,9 +99,13 @@
   <div class="flex p-4 border-b border-base-content/10 py-2 items-center justify-between">
     <div class="text-sm font-semibold">{l("Results for: ")} {@search}</div>
 
-    <div 
+    <div
       :if={@selected_tab != "hashtag"}
-      data-position="bottom-end" phx-hook="Tooltip" id="search_boundary" class="relative">
+      data-position="bottom-end"
+      phx-hook="Tooltip"
+      id="search_boundary"
+      class="relative"
+    >
       <label
         class={"tooltip-button btn-soft btn btn-sm", "btn-warning": @index != "public"}
         tabindex="0"
@@ -124,12 +135,9 @@
             phx-click="toggle_index"
             phx-value-index="public"
           >{l("Public only")}
-          <div class="w-5 h-5 flex items-center justify-center border border-base-content/20 rounded-full">
-            <span
-              :if={@index == "public"}
-              class="w-[14px] h-[14px] bg-primary rounded-full"
-            />
-          </div>
+            <div class="w-5 h-5 flex items-center justify-center border border-base-content/20 rounded-full">
+              <span :if={@index == "public"} class="w-[14px] h-[14px] bg-primary rounded-full" />
+            </div>
           </button>
         </li>
         <li>
@@ -141,12 +149,9 @@
           >
             {l("Private (eg. DMs or custom boundaries)")}
             <div class="w-5 h-5 min-w-5 flex items-center justify-center border border-base-content/20 rounded-full">
-            <span
-              :if={@index != "public"}
-              class="w-[14px] h-[14px] bg-primary rounded-full"
-            />
-          </div>
-            </button>
+              <span :if={@index != "public"} class="w-[14px] h-[14px] bg-primary rounded-full" />
+            </div>
+          </button>
         </li>
         <!-- <Bonfire.UI.Common.UserMenuLinksLive page={@page} /> -->
       </ul>

@@ -6,18 +6,20 @@
     x-on:click.outside="menuOpen = false"
     class="relative w-full"
   >
-  <form
-    class="w-full"
-    role="search"
-    phx-submit={Phoenix.LiveView.JS.push(
-      if(@__context__[:current_view] != Bonfire.Search.Web.SearchLive,
-        do: "Bonfire.Search:go_search",
-        else: "Bonfire.Search:patch_search"
-      )) |> Phoenix.LiveView.JS.hide(to: "#search-dropdown")}
-    action="/search"
-    method="GET"
-  >
-    {!-- 
+    <form
+      class="w-full"
+      role="search"
+      phx-submit={Phoenix.LiveView.JS.push(
+        if(@__context__[:current_view] != Bonfire.Search.Web.SearchLive,
+          do: "Bonfire.Search:go_search",
+          else: "Bonfire.Search:patch_search"
+        )
+      )
+      |> Phoenix.LiveView.JS.hide(to: "#search-dropdown")}
+      action="/search"
+      method="GET"
+    >
+      {!-- 
     
     phx-submit={if @__context__[:current_view] != Bonfire.Search.Web.SearchLive,
       do: "Bonfire.Search:go_search",
@@ -123,7 +125,7 @@
       </button>
     </li>
     </ul> -->
-  </form>
+    </form>
   </div>
 
   <div

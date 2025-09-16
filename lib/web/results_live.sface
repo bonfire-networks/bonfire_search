@@ -36,7 +36,8 @@
             module={maybe_component(Bonfire.UI.Social.ActivityLive, @__context__)}
             id={e(hit, :index_type, "so-") <>
               deterministic_dom_id("search_result", hit[:index_type], hit[:name] || hit[:title], index)}
-            parent_id={"search-obj-" <> deterministic_dom_id("search_result", hit[:index_type], hit[:name] || hit[:title], index)}
+            parent_id={"search-obj-" <>
+              deterministic_dom_id("search_result", hit[:index_type], hit[:name] || hit[:title], index)}
             showing_within={:search}
             object={hit}
             check_object_boundary={false}
