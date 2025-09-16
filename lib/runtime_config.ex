@@ -16,7 +16,8 @@ defmodule Bonfire.Search.RuntimeConfig do
       # protocol, hostname and port
       instance: System.get_env("SEARCH_MEILI_INSTANCE", "http://search:7700"),
       # secret key
-      api_key: System.get_env("MEILI_MASTER_KEY") || File.read!(System.get_env("MEILI_MASTER_KEY_FILE"))
+      api_key:
+        System.get_env("MEILI_MASTER_KEY") || File.read!(System.get_env("MEILI_MASTER_KEY_FILE"))
 
     config :bonfire_search, Bonfire.Search.Indexer,
       modularity:
