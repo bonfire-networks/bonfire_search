@@ -103,6 +103,7 @@ defmodule Bonfire.Search do
                     %Ecto.Association.NotLoaded{}
               })
             )
+            |> debug("transformed activity struct")
 
           # %Needle.Pointer{
           #   id: id,
@@ -122,26 +123,41 @@ defmodule Bonfire.Search do
               |> maybe_to_structs()
               |> debug("turned hit to structs")
 
+            object =
+              hit
+              |> Map.merge(%{
+                id: id,
+                # NOTE: because replied gets preloaded on activity
+                replied: %Ecto.Association.NotLoaded{}
+              })
+
             %Needle.Pointer{
               id: id,
               activity:
                 hit
                 |> Map.merge(%{
-                  object: hit,
+                  subject_id: e(object, :created, :creator_id, nil) || id,
+                  object: object,
                   object_id: id,
-                  id: id
-                  # replied: %Ecto.Association.NotLoaded{}
+                  # NOTE: because created gets preloaded on object
+                  created: %Ecto.Association.NotLoaded{}
                 })
                 |> maybe_to_struct(Bonfire.Data.Social.Activity)
                 #  set a default if not sensitive
-                |> Map.put(:sensitive, e(hit, :sensitive, nil))
+                |> Map.put(
+                  :sensitive,
+                  %{is_sensitive: e(hit, :sensitive, nil)}
+                  |> maybe_to_struct(Bonfire.Data.Social.Sensitive)
+                )
             }
             |> debug("transformed object struct")
         end
       end
     end)
-    |> debug("converted results to structs")
+    # |> debug("converted results to structs")
     |> hits_preloads(opts)
+    |> Bonfire.Social.Activities.prepare_subject_and_creator(opts)
+    |> debug("preloaded structs")
   end
 
   defp hits_preloads(objects, opts) do

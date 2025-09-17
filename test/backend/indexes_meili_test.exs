@@ -24,27 +24,49 @@ defmodule Bonfire.Search.IndexesMeiliTest do
     :ok
   end
 
-  test "indexes and searches public posts" do
+  test "indexes and searches public posts, and preloads required data" do
     # Create sender 
     account = fake_account!()
     sender = fake_user!(account)
+    op = fake_user!(account)
+
+    reply_to_message = "What we will reply to"
+
+    post1_attrs = %{
+      post_content: %{html_body: reply_to_message}
+    }
+
+    {:ok, post1} = Posts.publish(current_user: op, post_attrs: post1_attrs, boundary: "public")
 
     # Content of the private post
     html_message = "This is a public post"
 
     post_attrs = %{
+      reply_to_id: post1.id,
       post_content: %{html_body: html_message}
     }
 
     # Create the post (indexes it in the private index)
-    {:ok, post} = Posts.publish(current_user: sender, post_attrs: post_attrs, boundary: "public")
+    {:ok, post2} = Posts.publish(current_user: sender, post_attrs: post_attrs, boundary: "public")
 
     # Verify it is NOT in the public index
     results =
       Search.search(html_message)
 
     assert %{hits: [hit]} = results
-    assert Enums.id(hit) == Enums.id(post)
+    assert Enums.id(hit) == Enums.id(post2)
+    assert activity = e(hit, :activity, nil)
+    assert object = e(activity, :object, nil)
+
+    assert e(activity, :replied, :reply_to_id, nil) != nil
+    assert e(activity, :replied, :reply_to, nil) != nil
+    assert e(activity, :replied, :reply_to, nil) != nil
+    assert e(activity, :replied, :reply_to, :post_content, nil) != nil
+
+    assert e(object, :created, :creator_id, nil) != nil
+    assert e(object, :created, :creator, nil) != nil
+    assert e(object, :created, :creator, :profile, nil) != nil
+    assert e(object, :created, :creator, :profile, :name, nil) != nil
   end
 
   describe "private index" do

@@ -75,10 +75,14 @@ defmodule Bonfire.Search.Web.MeiliTest do
       |> fill_in("[name=s]", "Search content", with: "test")
       # Submit the form by clocking button
       |> click_button("Search")
+      |> wait_async()
       # Ensure the results section exists
       |> assert_has("#the_search_results")
       # Check if the result is displayed
       |> assert_has(".activity", text: html_body)
+      |> assert_has_or_open_browser(".activity [data-id=subject_name]",
+        text: e(alice, :profile, :name, nil)
+      )
 
       conn
       |> visit("/search")
@@ -86,9 +90,12 @@ defmodule Bonfire.Search.Web.MeiliTest do
       |> fill_in("[name=s]", "Search content", with: "test")
       # try by submitting form instead
       |> submit()
+      |> wait_async()
       # Check if the result is displayed
-      |> assert_has(".activity", text: html_body)
-      |> assert_has(".activity", text: e(alice, :profile, :name, nil))
+      |> assert_has_or_open_browser(".activity", text: html_body)
+      |> assert_has_or_open_browser(".activity [data-id=subject_name]",
+        text: e(alice, :profile, :name, nil)
+      )
 
       # TODO
       # |> assert_has_or_open_browser("a[data-id=subject_avatar]")
@@ -149,12 +156,23 @@ defmodule Bonfire.Search.Web.MeiliTest do
       |> assert_has(".activity", count: 4)
     end
 
-    test "search results display post with title, content warning, and author's avatar", %{
-      me: me,
-      conn: conn,
-      me_avatar_path: me_avatar_path,
-      me_avatar_url: me_avatar_url
-    } do
+    test "search results display post with title, content warning, and author's avatar, along with the post being replied to",
+         %{
+           me: me,
+           conn: conn,
+           me_avatar_path: me_avatar_path,
+           me_avatar_url: me_avatar_url
+         } do
+      op = fake_user!()
+
+      reply_to_message = "Reply-to this"
+
+      post1_attrs = %{
+        post_content: %{html_body: reply_to_message}
+      }
+
+      {:ok, post1} = Posts.publish(current_user: op, post_attrs: post1_attrs, boundary: "public")
+
       # Create a post to test search results
       html_body = "test post with title"
       title = "the post title"
@@ -164,6 +182,7 @@ defmodule Bonfire.Search.Web.MeiliTest do
         Posts.publish(
           current_user: me,
           post_attrs: %{
+            reply_to_id: post1.id,
             sensitive: true,
             post_content: %{summary: cw, name: title, html_body: html_body}
           },
@@ -172,19 +191,22 @@ defmodule Bonfire.Search.Web.MeiliTest do
 
       conn
       |> visit("/search?s=test")
+      |> wait_async()
       # Verify the post is displayed
-      |> assert_has(".activity", text: html_body)
+      |> assert_has_or_open_browser(".activity", text: html_body)
+      |> assert_has_or_open_browser(".activity", text: reply_to_message)
       # Verify the title is displayed
-      |> assert_has(".activity [data-role=name]", text: title)
-      |> assert_has(".activity [data-role=cw]", text: cw)
-      |> assert_has(".activity", text: e(me, :profile, :name, nil))
+      |> assert_has_or_open_browser(".activity [data-role=name]", text: title)
+      |> assert_has_or_open_browser(".activity [data-role=cw]", text: cw)
+      |> assert_has_or_open_browser(".activity [data-id=subject_name]",
+        text: e(me, :profile, :name, nil)
+      )
+      |> assert_has_or_open_browser(".activity [data-id=subject_avatar]")
+      |> assert_has_or_open_browser(".activity [data-id=subject_avatar] img[src]")
 
-      # TODO
-      # |> assert_has("a[data-id=subject_avatar]")
-      # |> assert_has_or_open_browser("a[data-id=subject_avatar] img[src]")
-      # #  ensure it is not a generated avatar, since we uploaded a custom one
-      # |> refute_has("a[data-id=subject_avatar] img[src*='gen_avatar']")
-      # # |> assert_has_or_open_browser("a[data-id=subject_avatar] img[src=\"#{me_avatar_url}\"]")
+      # TODO: ensure it is not a generated avatar, since we uploaded a custom one
+      # |> assert_has_or_open_browser(".activity [data-id=subject_avatar] img[src*='gen_avatar']")
+      # |> assert_has_or_open_browser("[data-id=subject_avatar] img[src=\"#{me_avatar_url}\"]")
     end
 
     # how to avoid fetching from web since we use real Tesla adapter here?
@@ -259,49 +281,53 @@ defmodule Bonfire.Search.Web.MeiliTest do
 
       conn
       |> visit("/search?s=test")
-      |> open_browser()
+      |> wait_async()
       # Verify post-related content
-      |> assert_has(".activity", text: html_body_post)
-      |> assert_has(".activity [data-role=cw]")
+      |> assert_has_or_open_browser(".activity", text: html_body_post)
+      |> assert_has_or_open_browser(".activity [data-role=cw]")
       # Ensure user-related content is shown
-      |> assert_has(".activity", text: user_name)
+      |> assert_has_or_open_browser(".activity [data-id=profile_name]", text: user_name)
 
       conn
       # load the "Users" tab
       |> visit("/search?facet[index_type]=Bonfire.Data.Identity.User&s=test")
+      |> wait_async()
       #  |> open_browser()
       # Verify user-related content
-      |> assert_has(".activity", text: user_name)
+      |> assert_has_or_open_browser(".activity [data-id=profile_name]", text: user_name)
       # Ensure post-related content is not shown
       |> refute_has(".activity", text: html_body_post)
 
       conn
       # load the "Posts" tab
       |> visit("/search?facet[index_type]=Bonfire.Data.Social.Post&s=test")
+      |> wait_async()
       # Verify post-related content
-      |> assert_has(".activity", text: html_body_post)
-      |> assert_has(".activity [data-role=cw]")
+      |> assert_has_or_open_browser(".activity", text: html_body_post)
+      |> assert_has_or_open_browser(".activity [data-role=cw]")
       # Ensure user-related content is not shown
-      |> refute_has(".activity", text: user_name)
+      |> refute_has(".activity [data-id=profile_name]", text: user_name)
 
       conn
       |> visit("/search?s=test")
       # start filtering
       # Filter for "Users"
       |> click_link(".tabs a", "Users")
+      |> wait_async()
       # |> open_browser()
       # Verify user-related content
-      |> assert_has(".activity", text: user_name)
+      |> assert_has_or_open_browser(".activity [data-id=profile_name]", text: user_name)
       # Ensure post-related content is not shown
       |> refute_has(".activity", text: html_body_post)
       # filter again
       # Filter for "Posts"
       |> click_link(".tabs a", "Posts")
+      |> wait_async()
       # Verify post-related content
-      |> assert_has(".activity", text: html_body_post)
-      |> assert_has(".activity [data-role=cw]")
+      |> assert_has_or_open_browser(".activity", text: html_body_post)
+      |> assert_has_or_open_browser(".activity [data-role=cw]")
       # Ensure user-related content is not shown
-      |> refute_has(".activity", text: user_name)
+      |> refute_has(".activity [data-id=profile_name]", text: user_name)
     end
 
     test "user can switch between public/private search indexes, showing messages I sent in private one",
