@@ -7,17 +7,24 @@ defmodule Bonfire.Search.RuntimeConfig do
 
     adapter = System.get_env("SEARCH_ADAPTER", "meili")
 
+    # Determine api_key, only reading file if env var is set
+    api_key =
+      case {System.get_env("MEILI_MASTER_KEY"), System.get_env("MEILI_MASTER_KEY_FILE")} do
+        {key, _} when is_binary(key) and key != "" -> key
+        {_, file} when is_binary(file) and file != "" -> File.read!(file)
+        _ -> nil
+      end
+
     config :bonfire_search,
       http_adapter:
         String.to_existing_atom(System.get_env("SEARCH_HTTP_ADAPTER", "nil")) ||
           Bonfire.Common.HTTP,
       disable_for_autocompletes: System.get_env("SEARCH_AUTOCOMPLETES_DISABLED") in ["true", "1"],
-      adapter: if(adapter == "meili", do: Bonfire.Search.MeiliLib),
+      adapter: if(adapter == "meili" and api_key, do: Bonfire.Search.MeiliLib),
       # protocol, hostname and port
       instance: System.get_env("SEARCH_MEILI_INSTANCE", "http://search:7700"),
       # secret key
-      api_key:
-        System.get_env("MEILI_MASTER_KEY") || File.read!(System.get_env("MEILI_MASTER_KEY_FILE"))
+      api_key: api_key
 
     config :bonfire_search, Bonfire.Search.Indexer,
       modularity:
