@@ -98,10 +98,10 @@ defmodule Bonfire.Search.Web.MeiliTest do
       )
 
       # TODO
-      # |> assert_has_or_open_browser("a[data-id=subject_avatar]")
-      # |> assert_has_or_open_browser("a[data-id=subject_avatar] img[src]")
+      # |> assert_has_or_open_browser("[data-id=subject_avatar]")
+      # |> assert_has_or_open_browser("[data-id=subject_avatar] img[src]")
       # #  ensure it is a generated avatar, since we didn't upload a custom one
-      # |> assert_has_or_open_browser("a[data-id=subject_avatar] img[src*='gen_avatar']")
+      # |> assert_has_or_open_browser("[data-id=subject_avatar] img[src*='gen_avatar']")
     end
 
     test "Search results paginate correctly", %{
