@@ -157,7 +157,7 @@
       </ul>
     </div>
 
-    <!-- <div
+    {!-- <div
       :if={@selected_tab != "hashtag"}
       role="tablist"
       class="tabs tabs-border border-b border-base-content/10"
@@ -181,7 +181,7 @@
         }
       >
         {l("Private (eg. DMs or custom boundaries)")}</button>
-    </div> -->
+    </div> --}
   </div>
 
   {!-- <div class="form-control px-3 pb-2 pt-0">
