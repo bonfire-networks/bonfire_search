@@ -60,9 +60,9 @@ defmodule Bonfire.Search do
 
     if Bonfire.Common.Config.get_ext(:bonfire_search, :disable_for_autocompletes) || !adapter do
       debug("Search disabled for autocompletes, using DB adapter")
-      Bonfire.Search.DB.search_by_type(tag_search, facets)
+      Bonfire.Search.DB.search_by_type(tag_search, facets, opts)
     else
-      adapter.search_by_type(tag_search, facets)
+      adapter.search_by_type(tag_search, facets, opts)
     end
   end
 

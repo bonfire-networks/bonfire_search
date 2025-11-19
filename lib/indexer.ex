@@ -10,7 +10,7 @@ defmodule Bonfire.Search.Indexer do
     do:
       Bonfire.Common.Config.get(
         [__MODULE__, :main_facets],
-        ["index_type", "index_instance", "tags"],
+        ["index_type", "index_instance", "tags", "character.is_remote"],
         name: l("Search indexing"),
         description: l("Facets")
       )

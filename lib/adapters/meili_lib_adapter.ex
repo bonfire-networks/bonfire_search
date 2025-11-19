@@ -10,11 +10,27 @@ defmodule Bonfire.Search.MeiliLib do
 
   @behaviour Bonfire.Search.Adapter
 
-  def search_by_type(tag_search, facets \\ nil) do
+  def search_by_type(tag_search, facets \\ nil, opts \\ []) do
     facets = search_type_facets(facets)
-    debug("search: #{inspect(tag_search)} with facets #{inspect(facets)}")
 
-    search = search(tag_search, %{}, false, facets)
+    debug(
+      "search: #{inspect(tag_search)} with facets #{inspect(facets)} and opts #{inspect(opts)}"
+    )
+
+    opts =
+      case Keyword.get(opts, :local_only, false) do
+        true ->
+          opts
+          |> Keyword.update(:filter, ["character.is_remote != true"], fn filters ->
+            ["character.is_remote != true" | List.wrap(filters)]
+          end)
+
+        _ ->
+          opts
+      end
+      |> Keyword.delete(:local_only)
+
+    search = search(tag_search, opts, false, facets)
 
     e(search, :hits, [])
     |> Enums.filter_empty([])
@@ -122,7 +138,7 @@ defmodule Bonfire.Search.MeiliLib do
     "#{key} = #{value}"
   end
 
-  defp search_execute(params, index, opts) do
+  defp search_execute(params, index, opts, retried \\ false) do
     opts = to_options(opts)
     client = get_client()
     index = index || :public
@@ -130,38 +146,80 @@ defmodule Bonfire.Search.MeiliLib do
 
     case Meilisearch.Search.search(client, index_name, Keyword.new(params) |> debug("params")) do
       {:ok, %{hits: hits} = result} when is_list(hits) and hits != [] ->
-        result =
-          result
-          |> debug("searched meili in #{index}")
-          |> Map.drop([:hits])
-
-        # |> input_to_atoms(to_snake: true)          
-
-        Map.put(result, :hits, Bonfire.Search.prepare_hits(hits, index, opts))
+        result
+        |> debug("searched meili in #{index}")
+        |> Map.drop([:hits])
+        |> Map.put(:hits, Bonfire.Search.prepare_hits(hits, index, opts))
         |> debug("prepared search results")
 
       {:ok, result} ->
         debug(result, "no hits in `#{index_name}` index")
         result
 
-      {:error,
-       %Meilisearch.Error{
-         message: msg,
-         code: :index_not_found
-       } = error} ->
-        warn(error, msg)
+      error ->
+        handle_meili_error(error, client, index, index_name, params, opts, retried)
+    end
+  end
+
+  # Match 3-tuple error: {:error, error_struct, status}
+  defp handle_meili_error(
+         {:error, error, _status},
+         client,
+         index,
+         index_name,
+         params,
+         opts,
+         retried
+       ) do
+    handle_meili_error(error, client, index, index_name, params, opts, retried)
+  end
+
+  # Match 2-tuple error: {:error, error_struct}
+  defp handle_meili_error({:error, error}, client, index, index_name, params, opts, retried) do
+    handle_meili_error(error, client, index, index_name, params, opts, retried)
+  end
+
+  # Main error handler for Meilisearch.Error struct
+  defp handle_meili_error(
+         %Meilisearch.Error{code: code} = error,
+         client,
+         index,
+         index_name,
+         params,
+         opts,
+         retried
+       ) do
+    case code do
+      :invalid_search_filter ->
+        if not retried do
+          flood(error, "Index may be missing facets, attempting to create index and retry search")
+          warn(error, error.message)
+          # Wait for index update to complete before retrying
+          task =
+            Indexer.init_index(index, index_name, false, __MODULE__)
+            |> flood("queued index")
+
+          wait_for_task(client, task)
+          |> flood("recreated index")
+
+          # Retry once
+          search_execute(params, index, opts, true)
+        else
+          error(error, "Retry after index update failed")
+        end
+
+      :index_not_found ->
+        warn(error, error.message)
         %{hits: []}
 
-      {:error,
-       %Meilisearch.Error{
-         message: msg,
-         code: code
-       } = error} ->
-        error(error, msg)
-
-      error ->
-        error(error, "There was an unexpected error when searching")
+      _ ->
+        error(error, error.message)
     end
+  end
+
+  # Terminal catch-all: after retry, do not recurse further
+  defp handle_meili_error(error, _client, _index, _index_name, _params, _opts, _retried) do
+    error(error, "There was an unexpected error when searching")
   end
 
   def index_exists(index_name) do

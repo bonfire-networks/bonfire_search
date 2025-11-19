@@ -55,8 +55,8 @@ defmodule Bonfire.Search.DB do
   Type-specific search implementation
   """
   @impl true
-  def search_by_type(tag_search, facets) do
-    run_search_db(tag_search, facets, [])
+  def search_by_type(tag_search, facets, opts \\ []) do
+    run_search_db(tag_search, facets, opts)
   end
 
   # Private functions moved from Bonfire.Search
