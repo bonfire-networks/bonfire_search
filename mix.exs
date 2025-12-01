@@ -25,7 +25,11 @@ defmodule Bonfire.Search.MixProject do
       aliases: aliases(),
       deps:
         Mess.deps([
-          {:floki, ">= 0.0.0", only: [:dev, :test]}
+          {:floki, ">= 0.0.0", only: [:dev, :test]},
+          {:absinthe, "~> 1.7", optional: true},
+          {:bonfire_api_graphql,
+           git: "https://github.com/bonfire-networks/bonfire_api_graphql",
+           optional: true, runtime: false}
           # {:activity_pub, git: "https://github.com/bonfire-networks/activitypub", branch: "develop", optional: true, runtime: false}
         ])
     ]
