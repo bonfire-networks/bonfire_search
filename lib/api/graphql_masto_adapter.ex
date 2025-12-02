@@ -20,10 +20,30 @@ if Application.compile_env(:bonfire_api_graphql, :modularity) != :disabled do
       schema: Bonfire.API.GraphQL.Schema,
       action: [mode: :internal]
 
-    alias Bonfire.API.MastoCompat.{Mappers, PaginationHelpers, Fragments}
+    alias Bonfire.API.MastoCompat.{Mappers, PaginationHelpers}
 
-    # Use centralized fragment from Bonfire.API.MastoCompat.Fragments
-    @user Fragments.user_profile()
+    # User profile fragment inlined for compile-order independence
+    @user """
+      id
+      created_at: date_created
+      profile {
+        avatar: icon
+        avatar_static: icon
+        header: image
+        header_static: image
+        display_name: name
+        note: summary
+        website
+      }
+      character {
+        username
+        acct: username
+        url: canonical_uri
+        peered {
+          canonical_uri
+        }
+      }
+    """
 
     # GraphQL query for searching users/accounts
     @graphql "query ($filter: SearchFilters!) {
@@ -113,7 +133,10 @@ if Application.compile_env(:bonfire_api_graphql, :modularity) != :disabled do
           # Skip expensive stats for search results (N+1 query prevention)
           users
           |> Enum.flat_map(fn user ->
-            case Mappers.Account.from_user(user, current_user: current_user, skip_expensive_stats: true) do
+            case Mappers.Account.from_user(user,
+                   current_user: current_user,
+                   skip_expensive_stats: true
+                 ) do
               result when is_map(result) and map_size(result) > 0 ->
                 if Map.get(result, "id"), do: [result], else: []
 
