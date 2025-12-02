@@ -20,6 +20,7 @@ if Application.compile_env(:bonfire_api_graphql, :modularity) != :disabled do
       schema: Bonfire.API.GraphQL.Schema,
       action: [mode: :internal]
 
+    alias Bonfire.API.GraphQL.RestAdapter
     alias Bonfire.API.MastoCompat.{Mappers, PaginationHelpers}
 
     # User profile fragment inlined for compile-order independence
@@ -78,7 +79,7 @@ if Application.compile_env(:bonfire_api_graphql, :modularity) != :disabled do
       query = params["q"] || ""
 
       if query == "" do
-        Phoenix.Controller.json(conn, %{
+        RestAdapter.json(conn, %{
           "accounts" => [],
           "statuses" => [],
           "hashtags" => []
@@ -92,7 +93,7 @@ if Application.compile_env(:bonfire_api_graphql, :modularity) != :disabled do
 
         results = do_search(query, params["type"], search_opts, conn)
 
-        Phoenix.Controller.json(conn, results)
+        RestAdapter.json(conn, results)
       end
     end
 
