@@ -192,15 +192,15 @@ defmodule Bonfire.Search.MeiliLib do
     case code do
       :invalid_search_filter ->
         if not retried do
-          flood(error, "Index may be missing facets, attempting to create index and retry search")
+          debug(error, "Index may be missing facets, attempting to create index and retry search")
           warn(error, error.message)
           # Wait for index update to complete before retrying
           task =
             Indexer.init_index(index, index_name, false, __MODULE__)
-            |> flood("queued index")
+            |> debug("queued index")
 
           wait_for_task(client, task)
-          |> flood("recreated index")
+          |> debug("recreated index")
 
           # Retry once
           search_execute(params, index, opts, true)
