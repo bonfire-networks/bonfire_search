@@ -21,30 +21,10 @@ if Application.compile_env(:bonfire_api_graphql, :modularity) != :disabled do
       action: [mode: :internal]
 
     alias Bonfire.API.GraphQL.RestAdapter
-    alias Bonfire.API.MastoCompat.{Mappers, PaginationHelpers}
+    alias Bonfire.API.MastoCompat.{Mappers, PaginationHelpers, Fragments}
 
-    # User profile fragment inlined for compile-order independence
-    @user """
-      id
-      created_at: date_created
-      profile {
-        avatar: icon
-        avatar_static: icon
-        header: image
-        header_static: image
-        display_name: name
-        note: summary
-        website
-      }
-      character {
-        username
-        acct: username
-        url: canonical_uri
-        peered {
-          canonical_uri
-        }
-      }
-    """
+    # Use centralized fragments from bonfire_api_graphql
+    @user Fragments.user_profile()
 
     # GraphQL query for searching users/accounts
     @graphql "query ($filter: SearchFilters!) {
