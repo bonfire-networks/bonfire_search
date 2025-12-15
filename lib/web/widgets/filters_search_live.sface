@@ -97,7 +97,7 @@
     </div>
   </LinkLive> -->
   <div class="flex p-4 border-b border-base-content/10 py-2 items-center justify-between">
-    <div class="text-sm font-semibold">{l("Results for: ")} {@search}</div>
+    <div class="text-sm font-semibold">{l("Results")}</div>
 
     <div
       :if={@selected_tab != "hashtag"}
