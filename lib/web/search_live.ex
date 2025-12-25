@@ -12,12 +12,12 @@ defmodule Bonfire.Search.Web.SearchLive do
     exclude_from_nav: true
   )
 
-  declare_nav_link(l("Search"),
-    page: "search",
-    href: "/search",
-    icon: "ph:magnifying-glass-duotone",
-    icon_active: "ph:magnifying-glass-duotone"
-  )
+  # declare_nav_link(l("Search"),
+  #   page: "search",
+  #   href: "/search",
+  #   icon: "ph:magnifying-glass-duotone",
+  #   icon_active: "ph:magnifying-glass-duotone"
+  # )
 
   on_mount {LivePlugs, [Bonfire.UI.Me.LivePlugs.LoadCurrentUser]}
 
