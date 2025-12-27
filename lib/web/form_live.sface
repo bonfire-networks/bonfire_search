@@ -31,12 +31,12 @@
       <span class="sr-only">{e(@search_placeholder, l("Search"))}</span>
       <div class="relative w-full rounded">
         <div class="input input-ghost bg-base-content/5 rounded-full flex items-center gap-2 w-full text-base">
-          <label for="search-input" class="sr-only">{l("Search content")}</label>
+          <label for={@id <> "-input"} class="sr-only">{l("Search content")}</label>
           <input type="hidden" name="search_limit" value={e(@search_limit, "")}>
-          <input type="hidden" name="facet[index_type]" value="" id="facet_index_type">
+          <input type="hidden" name="facet[index_type]" value="" id={@id <> "-facet_index_type"}>
           <input
             type="search"
-            id="search-input"
+            id={@id <> "-input"}
             name="s"
             autocomplete="off"
             value={@search || e(@__context__, :current_params, "s", nil)}
@@ -58,7 +58,7 @@
             <span class="sr-only">{l("Search")}</span>
           </button>
         </div>
-        <label for="search-input" class="sr-only">{e(@search_placeholder, l("Search"))}</label>
+        <label for={@id <> "-input"} class="sr-only">{e(@search_placeholder, l("Search"))}</label>
       </div>
       {!-- Search menu --}
       <!-- <ul

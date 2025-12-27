@@ -3,6 +3,7 @@ defmodule Bonfire.Search.Web.FormLive do
 
   alias Bonfire.Search.Web.ResultsLive
 
+  prop id, :string, default: "search"
   prop search, :string, default: nil
   prop search_limit, :integer, default: nil
   prop search_placeholder, :string, default: nil
