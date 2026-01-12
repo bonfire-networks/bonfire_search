@@ -72,7 +72,7 @@
       x-transition:leave-start="transform opacity-100 scale-100"
       x-transition:leave-end="transform opacity-0 scale-95"
       tabindex="0"
-      class="tooltip z-[99999999] menu shadow-sm bg-base-200 border border-base-content/10 w-full top-[50px] absolute rounded-xl top-0 left-0"
+      class="tooltip z-[99999999] menu shadow-sm bg-base-200 border border-base-content/20 w-full top-[50px] absolute rounded-xl top-0 left-0"
       role="menu"
       aria-orientation="vertical"
     >

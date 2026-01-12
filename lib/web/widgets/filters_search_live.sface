@@ -1,5 +1,5 @@
 <nav>
-  <div role="tablist" class="tabs tabs-border border-b justify-evenly border-base-content/10">
+  <div role="tablist" class="tabs tabs-border border-b justify-evenly border-base-content/20">
     {#case @search}
       {#match _}
         {!-- ALL TYPES --}
@@ -96,7 +96,7 @@
       {l("Private")}
     </div>
   </LinkLive> -->
-  <div class="flex p-4 border-b border-base-content/10 py-2 items-center justify-between">
+  <div class="flex p-4 border-b border-base-content/20 py-2 items-center justify-between">
     <div class="text-sm font-semibold">{l("Results")}</div>
 
     <div
@@ -124,7 +124,7 @@
       </label>
       <ul
         tabindex="0"
-        class="tooltip z-[99999999] menu shadow-sm bg-base-100 border border-base-content/10 w-60 absolute rounded-xl top-0 left-0 hidden"
+        class="tooltip z-[99999999] menu shadow-sm bg-base-100 border border-base-content/20 w-60 absolute rounded-xl top-0 left-0 hidden"
         role="menu"
         aria-orientation="vertical"
       >
@@ -160,7 +160,7 @@
     {!-- <div
       :if={@selected_tab != "hashtag"}
       role="tablist"
-      class="tabs tabs-border border-b border-base-content/10"
+      class="tabs tabs-border border-b border-base-content/20"
     >
       <button
         role="tab"
