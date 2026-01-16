@@ -163,7 +163,7 @@ defmodule Bonfire.Search do
   defp hits_preloads(objects, opts) do
     objects
     |> Bonfire.Social.Activities.activity_preloads(
-      [:with_reply_to, :with_media, :with_creator],
+      [:quote_tags, :with_reply_to, :with_media, :with_creator],
       skip_follow_reply_to: true,
       current_user: current_user(opts)
     )
