@@ -124,7 +124,7 @@
       </label>
       <ul
         tabindex="0"
-        class="tooltip z-[99999999] menu shadow-sm bg-base-100 border border-base-content/20 w-60 absolute rounded-xl top-0 left-0 hidden"
+        class="tooltip z-tooltip menu shadow-sm bg-base-100 border border-base-content/20 w-60 absolute rounded-xl top-0 left-0 hidden"
         role="menu"
         id="search_boundary_content"
         phx-update="ignore"
