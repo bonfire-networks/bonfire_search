@@ -36,7 +36,7 @@ defmodule Bonfire.Search.Web.SearchLive do
        search_limit: Bonfire.Search.LiveHandler.default_limit(),
        #  me: false,
        #  selected_facets: nil,
-       nav_items: Bonfire.Common.ExtensionModule.default_nav(),
+
        search: nil,
        hits: [],
        page_info: nil,
