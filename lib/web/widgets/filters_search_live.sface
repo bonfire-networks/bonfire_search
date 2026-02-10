@@ -96,11 +96,13 @@
       {l("Private")}
     </div>
   </LinkLive> -->
-  <div class="flex p-4 border-b border-base-content/20 py-2 items-center justify-between">
+  <div
+    :if={@selected_tab == "Bonfire.Data.Social.Post"}
+    class="flex p-4 border-b border-base-content/20 py-2 items-center justify-between"
+  >
     <div class="text-sm font-semibold">{l("Results")}</div>
 
     <div
-      :if={@selected_tab != "hashtag"}
       data-position="bottom-end"
       phx-hook="Tooltip"
       id="search_boundary"

@@ -36,11 +36,14 @@
       {#match _}
         <Bonfire.Search.Web.ResultsLive
           hits={e(@hits, [])}
+          user_hits={e(@user_hits, [])}
           page_info={@page_info}
           search={@search}
           search_limit={@search_limit}
           searching={@searching}
           searching_direct={@searching_direct}
+          selected_tab={@selected_tab}
+          index={@index}
         />
     {/case}
   </div>

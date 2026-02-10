@@ -4,64 +4,140 @@
   data-page={e(@page, [])}
   class="divide-y divide-base-content/20"
 >
-  {#if @searching && e(@hits, []) == []}
+  {#if @searching && e(@hits, []) == [] && e(@user_hits, []) == []}
     <div class="flex items-center justify-center py-8">
       <span class="loading loading-spinner loading-md" />
     </div>
-  {#elseif @searching_direct && e(@hits, []) != []}
+  {#elseif @searching_direct && (e(@hits, []) != [] || e(@user_hits, []) != [])}
     <div class="flex items-center justify-center py-2 text-sm text-base-content/70">
       <span class="loading loading-spinner loading-xs mr-2" />
-      {if String.starts_with?(@search, "http"),
+      {if String.starts_with?(@search || "", "http"),
         do: l("Searching for a matching federated activity..."),
         else: l("Searching for a matching federated profile...")}
     </div>
   {/if}
 
-  {#for {hit, index} <- Enum.with_index(e(@hits, []))}
-    <div class="">
-      {#case hit}
-        {#match %{activity: %{id: id} = activity} = hit}
-          <StatefulComponent
-            module={maybe_component(Bonfire.UI.Social.ActivityLive)}
-            id={deterministic_dom_id(__MODULE__, id, "search_activity", nil)}
-            showing_within={:search}
-            parent_id={"search-act-" <> id}
-            activity={activity}
-            check_object_boundary={false}
-          />
-          <!-- check_object_boundary={not is_nil(Bonfire.Search.adapter())} -->
-          <!-- object={Map.drop(hit, [:activity])} -->
-        {#match %{id: id} = hit}
+  {#if @selected_tab in ["Bonfire.Data.Identity.User", "Bonfire.Data.Social.Post", "hashtag"]}
+    {!-- Type-specific tab: show full list with pagination --}
+
+    {#if @selected_tab == "Bonfire.Data.Identity.User"}
+      {#for user <- e(@user_hits, [])}
+        <div>
           <StatefulComponent
             module={maybe_component(Bonfire.UI.Social.ActivityLive, @__context__)}
-            id={e(hit, :index_type, "so-") <>
-              deterministic_dom_id("search_result", hit[:index_type], hit[:name] || hit[:title], index)}
-            parent_id={"search-obj-" <>
-              deterministic_dom_id("search_result", hit[:index_type], hit[:name] || hit[:title], index)}
+            id={"search-user-#{id(user)}"}
             showing_within={:search}
-            object={hit}
-            check_object_boundary={false}
+            object={user}
           />
-      {/case}
-    </div>
-  {#else}
-    {!-- no results --}
-    <Bonfire.UI.Common.EmptyFeed
-      feedback_title={l("Nothing relevant was found")}
-      feedback_message=""
-    />
-  {/for}
+        </div>
+      {#else}
+        {#if !@searching}
+          <Bonfire.UI.Common.EmptyFeed
+            feedback_title={l("No users found")}
+            feedback_message=""
+          />
+        {/if}
+      {/for}
+    {#else}
+      {#for hit <- e(@hits, [])}
+        <div>
+          <StatefulComponent
+            module={maybe_component(Bonfire.UI.Social.ActivityLive, @__context__)}
+            id={deterministic_dom_id(__MODULE__, e(hit, :activity, :id, nil) || id(hit), "search_activity", nil)}
+            showing_within={:search}
+            activity={e(hit, :activity, nil) || hit}
+          />
+        </div>
+      {#else}
+        {#if !@searching}
+          <Bonfire.UI.Common.EmptyFeed
+            feedback_title={l("No posts found")}
+            feedback_message=""
+          />
+        {/if}
+      {/for}
+    {/if}
 
-  <Bonfire.UI.Common.LoadMoreLive
-    :if={@page_info}
-    page_info={@page_info}
-    live_handler="Bonfire.Search.LiveHandler"
-    context="search"
-    hide_guest_fallback={false}
-    hide_if_no_more
-  >
-    <:if_no_more>
-      <p class="text-center text-base-content/70 py-4">{l("That's all the search results!")}</p>
-    </:if_no_more>
-  </Bonfire.UI.Common.LoadMoreLive>
+    <Bonfire.UI.Common.LoadMoreLive
+      :if={@page_info}
+      page_info={@page_info}
+      live_handler="Bonfire.Search.LiveHandler"
+      context="search"
+      hide_guest_fallback={false}
+      hide_if_no_more
+    >
+      <:if_no_more>
+        <p class="text-center text-base-content/70 py-4">{l("That's all the search results!")}</p>
+      </:if_no_more>
+    </Bonfire.UI.Common.LoadMoreLive>
+  {#else}
+    {!-- "All" tab: grouped sections with headers and "See all" links --}
+
+    {#if e(@user_hits, []) == [] && e(@hits, []) == [] && !@searching}
+      <Bonfire.UI.Common.EmptyFeed
+        feedback_title={l("Nothing relevant was found")}
+        feedback_message=""
+      />
+    {#else}
+      {!-- Profiles section --}
+      {#if e(@user_hits, []) != []}
+        <div class="flex items-center justify-between p-4 bg-base-content/10">
+        <div class="flex items-center gap-2">
+          <#Icon iconify="ph:users-duotone" class="w-5 h-5 text-primary" />
+          <h3 class="text-sm font-semibold text-base-content/70">{l("Profiles")}</h3>
+        </div>
+          {#if length(e(@user_hits, [])) > 5}
+            <LinkLive
+              to={"/search?facet[index_type]=Bonfire.Data.Identity.User&index=#{@index}&s=#{@search || ""}"}
+              class="text-sm font-medium text-primary hover:underline"
+            >
+              {l("See all")}
+            </LinkLive>
+          {/if}
+        </div>
+        <div class="divide-y divide-base-content/20">
+          {#for user <- Enum.take(e(@user_hits, []), 5)}
+            <div>
+              <StatefulComponent
+                module={maybe_component(Bonfire.UI.Social.ActivityLive, @__context__)}
+                id={"search-user-#{id(user)}"}
+                showing_within={:search}
+                object={user}
+              />
+            </div>
+          {/for}
+        </div>
+      {/if}
+
+      {!-- Posts section --}
+      {#if e(@hits, []) != []}
+        <div class="flex items-center justify-between p-4 bg-base-content/10">
+        <div class="flex items-center gap-2">
+          <#Icon iconify="ph:note-blank-duotone" class="w-5 h-5 text-primary" />
+          <h3 class="text-sm font-semibold text-base-content/70">{l("Posts")}</h3>
+        </div>
+          {#if length(e(@hits, [])) > 5}
+            <LinkLive
+              to={"/search?facet[index_type]=Bonfire.Data.Social.Post&index=#{@index}&s=#{@search || ""}"}
+              class="text-sm font-medium text-primary hover:underline"
+            >
+              {l("See all")}
+            </LinkLive>
+          {/if}
+        </div>
+        <div class="divide-y divide-base-content/20">
+          {#for hit <- Enum.take(e(@hits, []), 5)}
+            <div>
+              <StatefulComponent
+                module={maybe_component(Bonfire.UI.Social.ActivityLive, @__context__)}
+                id={deterministic_dom_id(__MODULE__, e(hit, :activity, :id, nil) || id(hit), "search_activity", nil)}
+                showing_within={:search}
+                activity={e(hit, :activity, nil) || hit}
+              />
+            </div>
+          {/for}
+        </div>
+      {/if}
+    {/if}
+  {/if}
 </div>

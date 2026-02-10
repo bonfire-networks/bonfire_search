@@ -85,7 +85,7 @@ defmodule Bonfire.Search.MeiliLib do
       when is_binary(string) and (is_binary(index) or is_atom(index)) do
     # FIXME: use an allow-list instead
     search_params =
-      Map.drop(opts, [:current_user, :context, :index, :skip_boundary_check])
+      Map.drop(opts, [:current_user, :context, :index, :skip_boundary_check, :raw])
       |> Enum.into(%{q: string})
 
     search(search_params, index, opts)
@@ -94,7 +94,7 @@ defmodule Bonfire.Search.MeiliLib do
   def search(string, opts) when is_binary(string) and (is_map(opts) or is_list(opts)) do
     # FIXME: use an allow-list instead
     search_params =
-      Enums.fun(opts, :drop, [[:current_user, :context, :index, :skip_boundary_check]])
+      Enums.fun(opts, :drop, [[:current_user, :context, :index, :skip_boundary_check, :raw]])
       |> Enum.into(%{q: string})
 
     search(search_params, opts[:index], opts)
@@ -140,17 +140,22 @@ defmodule Bonfire.Search.MeiliLib do
 
   defp search_execute(params, index, opts, retried \\ false) do
     opts = to_options(opts)
+    raw = opts[:raw]
     client = get_client()
     index = index || :public
     index_name = Indexer.index_name(index)
 
     case Meilisearch.Search.search(client, index_name, Keyword.new(params) |> debug("params")) do
       {:ok, %{hits: hits} = result} when is_list(hits) and hits != [] ->
-        result
-        |> debug("searched meili in #{index}")
-        |> Map.drop([:hits])
-        |> Map.put(:hits, Bonfire.Search.prepare_hits(hits, index, opts))
-        |> debug("prepared search results")
+        if raw do
+          result |> debug("raw meili result in #{index}")
+        else
+          result
+          |> debug("searched meili in #{index}")
+          |> Map.drop([:hits])
+          |> Map.put(:hits, Bonfire.Search.prepare_hits(hits, index, opts))
+          |> debug("prepared search results")
+        end
 
       {:ok, result} ->
         debug(result, "no hits in `#{index_name}` index")

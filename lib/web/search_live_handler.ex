@@ -124,28 +124,17 @@ defmodule Bonfire.Search.LiveHandler do
       {:noreply, assign_flash(socket, :error, l("No search term found"))}
     else
       pagination = input_to_atoms(params)
+      search_limit = e(assigns, :search_limit, default_limit())
 
-      try do
-        search_limit = e(assigns, :search_limit, default_limit())
-
-        live_search(
-          search_term,
-          search_limit,
-          e(assigns, :selected_facets, nil),
-          e(assigns, :index, nil),
-          socket,
-          pagination: pagination,
-          append: true
-        )
-      rescue
-        error in [ArgumentError] ->
-          error(error, "Invalid pagination parameters")
-          {:noreply, assign_flash(socket, :error, l("Invalid pagination parameters"))}
-
-        error ->
-          error(error, "Failed to load more search results")
-          {:noreply, assign_flash(socket, :error, l("Could not load more results"))}
-      end
+      live_search(
+        search_term,
+        search_limit,
+        e(assigns, :selected_facets, nil),
+        e(assigns, :index, nil),
+        socket,
+        pagination: pagination,
+        append: true
+      )
     end
   end
 
@@ -214,17 +203,24 @@ defmodule Bonfire.Search.LiveHandler do
       index: index
     }
 
-    # Start the async direct lookup if socket is connected
+    # Start the async direct lookup only for URLs and @mentions (not plain text searches)
     if socket_connected?(socket) do
+      socket =
+        if String.starts_with?(q, ["http://", "https://", "@"]) do
+          socket
+          |> assign(searching_direct: true)
+          |> start_async(:direct_lookup, fn ->
+            Bonfire.Federate.ActivityPub.AdapterUtils.get_by_url_ap_id_or_username(q,
+              user_id: id(current_user)
+            )
+            |> debug("got_by_url_ap_id_or_username")
+          end)
+        else
+          socket
+        end
+
       socket
-      |> assign(searching_direct: true)
-      |> start_async(:direct_lookup, fn ->
-        Bonfire.Federate.ActivityPub.AdapterUtils.get_by_url_ap_id_or_username(q,
-          user_id: id(current_user)
-        )
-        |> debug("got_by_url_ap_id_or_username")
-      end)
-      |> content_live_search(q, search_limit, facet_filters, [], ..., search_opts, opts)
+      |> content_live_search(q, search_limit, facet_filters, ..., search_opts, opts)
     else
       {:noreply, socket}
     end
@@ -235,51 +231,74 @@ defmodule Bonfire.Search.LiveHandler do
     {:noreply, socket}
   end
 
-  def maybe_direct_lookup(q, socket) when is_binary(q) do
-    socket
-    |> assign(searching_direct: true)
-    |> start_async(:direct_lookup, fn ->
-      Bonfire.Federate.ActivityPub.AdapterUtils.get_by_url_ap_id_or_username(q)
-      |> debug("got_by_url_ap_id_or_username")
-    end)
-  end
-
-  def maybe_direct_lookup(q, socket) when is_binary(q) do
-    socket
-  end
-
   # Handle the federated lookup result
   def handle_async(:direct_lookup, {:ok, {:ok, federated_object_or_character}}, socket) do
     q = e(assigns(socket), :search, nil)
     current_hits = e(assigns(socket), :hits, [])
-    index = e(assigns(socket), :index, nil)
+    current_user_hits = e(assigns(socket), :user_hits, [])
 
-    if String.starts_with?(q, "http") and current_hits == [] do
+    if String.starts_with?(q, "http") and current_hits == [] and current_user_hits == [] do
       # Handle URL case when there are no other hits - redirect to the federated object's page
       {:noreply,
        socket
        |> assign(searching_direct: false)
        |> redirect_to(path(federated_object_or_character))}
     else
-      # Handle username case - add result to search results
+      # Load the federated result through the same pipeline as search results
+      result_id = Enums.id(federated_object_or_character)
 
-      # Process federated result the same way as search results
-      prepared =
-        federated_object_or_character
-        |> Bonfire.Search.prepare_hits(
-          index,
-          to_options(socket) |> Keyword.put(:data_input_type, :struct)
-        )
-        |> debug("prepared federated result")
+      if result_id do
+        # Check if the result is a user/character type
+        result_type = Types.object_type(federated_object_or_character)
 
-      # Add processed federated result to existing hits
-      updated_hits =
-        ((prepared || []) ++ current_hits)
-        |> Enum.uniq_by(&Enums.id/1)
-        |> debug("search merged with federated result")
+        if result_type in [Bonfire.Data.Identity.User, Bonfire.Data.Identity.Character] do
+          # It's a user — add to user_hits directly
+          updated_user_hits =
+            [federated_object_or_character | current_user_hits]
+            |> Enum.uniq_by(&Enums.id/1)
 
-      {:noreply,
-       assign(socket, hits: updated_hits, num_hits: length(updated_hits), searching_direct: false)}
+          {:noreply,
+           assign(socket,
+             user_hits: updated_user_hits,
+             num_hits: length(current_hits) + length(updated_user_hits),
+             searching_direct: false
+           )}
+        else
+          # It's a post/content — load via standard feed pipeline
+          loaded =
+            Bonfire.Search.load_activities_for_search(
+              [result_id],
+              current_user: current_user(socket)
+            )
+
+          if loaded != [] do
+            updated_hits =
+              (loaded ++ current_hits)
+              |> Enum.uniq_by(&Enums.id/1)
+
+            {:noreply,
+             assign(socket,
+               hits: updated_hits,
+               num_hits: length(updated_hits) + length(current_user_hits),
+               searching_direct: false
+             )}
+          else
+            # Couldn't load as activity, add as-is to user_hits as fallback
+            updated_user_hits =
+              [federated_object_or_character | current_user_hits]
+              |> Enum.uniq_by(&Enums.id/1)
+
+            {:noreply,
+             assign(socket,
+               user_hits: updated_user_hits,
+               num_hits: length(current_hits) + length(updated_user_hits),
+               searching_direct: false
+             )}
+          end
+        end
+      else
+        {:noreply, assign(socket, searching_direct: false)}
+      end
     end
   end
 
@@ -300,114 +319,71 @@ defmodule Bonfire.Search.LiveHandler do
          q,
          search_limit,
          facet_filters,
-         extra_results,
          socket,
          search_opts,
          live_opts
        )
        when is_binary(q) and q != "" and is_integer(search_limit) do
-    # tagged =
-    #   with hashtags when is_list(hashtags) <-
-    #          Bonfire.Tag.search_hashtag(
-    #            q
-    #            #  fetch_collection: :async
-    #          )
-    #          |> debug("got_hashtags") do
-    #     hashtags
-    #     # {:noreply, socket |> redirect_to(path(federated_object_or_character))}
-    #   else
-    #     _ ->
-    #       []
-    #   end
+    try do
+      current_user = current_user(socket)
 
-    {num_hits, hits, facets, page_info} =
-      do_search(q, facet_filters, search_opts)
-      |> debug("content_searched")
+      # Get IDs from Meilisearch, categorized by type
+      search_result =
+        Bonfire.Search.search_ids(
+          q,
+          search_opts,
+          Map.keys(facet_filters || %{}),
+          facet_filters
+        )
+        |> debug("search_ids result")
 
-    # + length(tagged)
-    total_hits = (num_hits || 0) + length(extra_results)
+      # Load activities for post IDs via standard feed pipeline
+      activities =
+        Bonfire.Search.load_activities_for_search(
+          search_result.post_ids,
+          current_user: current_user
+        )
+        |> debug("loaded activities for search")
 
-    # ++ tagged
-    new_hits =
-      (extra_results ++ hits)
-      |> Enum.uniq_by(&Enums.id/1)
-      |> debug("search2 merged")
+      # Load users separately
+      users =
+        if search_result.user_ids != [] do
+          Bonfire.Me.Users.by_ids(search_result.user_ids, skip_boundary_check: true)
+        end || []
 
-    # Handle pagination state
-    current_hits =
-      if live_opts[:append] && is_list(e(assigns(socket), :hits, nil)) do
-        e(assigns(socket), :hits, []) ++ new_hits
-      else
-        new_hits
-      end
+      # Handle pagination state - append to existing hits on load_more
+      current_hits =
+        if live_opts[:append] && is_list(e(assigns(socket), :hits, nil)) do
+          e(assigns(socket), :hits, []) ++ activities
+        else
+          activities
+        end
 
-    {:noreply,
-     socket
-     |> assign(
-       index: search_opts[:index],
-       selected_facets: facet_filters,
-       hits: current_hits,
-       facets: facets || e(assigns(socket), :facets, nil),
-       num_hits: total_hits,
-       search: q,
-       search_term: q,
-       page_info: page_info,
-       searching: false
-       #  current_user: current_user(socket)
-     )}
-  end
+      current_user_hits =
+        if live_opts[:append] && is_list(e(assigns(socket), :user_hits, nil)) do
+          e(assigns(socket), :user_hits, []) ++ users
+        else
+          users
+        end
 
-  defp do_search(q, facet_filters, opts) do
-    facet_filters = facet_filters || %{}
-
-    search =
-      Bonfire.Search.search(q, opts, Map.keys(facet_filters), facet_filters)
-      |> debug("did_search")
-
-    hits = e(search, :hits, [])
-    # if(
-    #   is_map(search) and Map.has_key?(search, "hits") and
-    #     length(search["hits"])
-    # ) do
-    #   search["hits"]
-    #   # return object-like results
-    #   |> Enum.map(
-    #     &(&1
-    #       |> input_to_atoms()
-    #       |> maybe_to_structs())
-    #   )
-    # else
-    #   if is_list(search), do: search
-    # end
-
-    # note we only get proper facets when not already faceting
-    facets =
-      if !facet_filters and e(search, :facet_distribution, nil) do
-        e(search, :facet_distribution, nil)
-      end
-
-    # Extract pagination info from Meilisearch response
-    total_hits = search.estimatedTotalHits || search.totalHits || search.nb_hits || length(hits)
-    limit = e(search, :limit, e(search, :hitsPerPage, opts[:limit])) || opts[:limit] || 20
-    offset = e(search, :offset, 0) || opts[:offset] || 0
-
-    # Build page_info similar to feed pagination
-    # Check if there are more results by comparing total hits with current position
-    has_more = total_hits > offset + limit
-
-    page_info =
-      if has_more do
-        %{
-          has_next_page: true,
-          end_cursor: to_string(offset + limit)
-        }
-      else
-        %{
-          has_next_page: false,
-          end_cursor: nil
-        }
-      end
-
-    {total_hits, hits || [], facets, page_info}
+      {:noreply,
+       socket
+       |> assign(
+         index: search_opts[:index],
+         selected_facets: facet_filters,
+         hits: current_hits,
+         user_hits: current_user_hits,
+         facets: search_result.facets || e(assigns(socket), :facets, nil),
+         num_hits: search_result.total_hits,
+         search: q,
+         search_term: q,
+         page_info: search_result.page_info,
+         searching: false
+       )}
+    rescue
+      error ->
+        error(error, "Search failed")
+        {:noreply, assign(socket, searching: false)}
+    end
   end
 end

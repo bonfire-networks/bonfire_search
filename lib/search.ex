@@ -66,6 +66,114 @@ defmodule Bonfire.Search do
     end
   end
 
+  @doc """
+  Search and return just IDs + metadata (no struct transformation).
+  Categorizes results into post IDs and user IDs for separate loading.
+  """
+  def search_ids(string, opts, calculate_facets \\ [], filter_facets \\ %{}) do
+    # Pass raw: true to get unprocessed Meilisearch hits (skip prepare_hits in adapter)
+    raw_opts = opts |> Enum.into(%{raw: true})
+    result = search(string, raw_opts, calculate_facets, filter_facets)
+    hits = e(result, :hits, [])
+
+    %{post_ids: post_ids, user_ids: user_ids} = categorize_hit_ids(hits)
+
+    total_hits =
+      e(result, :estimatedTotalHits, nil) || e(result, :totalHits, nil) || length(hits)
+
+    limit = e(result, :limit, nil) || e(result, :hitsPerPage, nil) || opts[:limit] || 20
+    offset = e(result, :offset, 0) || opts[:offset] || 0
+    has_more = total_hits > offset + limit
+
+    %{
+      post_ids: post_ids,
+      user_ids: user_ids,
+      facets: if(!filter_facets, do: e(result, :facetDistribution, nil)),
+      total_hits: total_hits,
+      page_info: %{
+        has_next_page: has_more,
+        end_cursor: if(has_more, do: to_string(offset + limit))
+      }
+    }
+  end
+
+  @user_index_types ["Bonfire.Data.Identity.User", "Bonfire.Data.Identity.Character"]
+
+  defp categorize_hit_ids(hits) do
+    # use prepend + reverse to avoid O(n²) from ++
+    result =
+      Enum.reduce(hits, %{post_ids: [], user_ids: []}, fn hit, acc ->
+        id = Enums.id(hit)
+        # handle both raw Meilisearch maps (string keys) and Ecto structs
+        type = hit_index_type(hit)
+
+        if id do
+          if type in @user_index_types do
+            %{acc | user_ids: [id | acc.user_ids]}
+          else
+            %{acc | post_ids: [id | acc.post_ids]}
+          end
+        else
+          acc
+        end
+      end)
+
+    # reverse to preserve Meilisearch relevance order
+    %{post_ids: Enum.reverse(result.post_ids), user_ids: Enum.reverse(result.user_ids)}
+  end
+
+  defp hit_index_type(%{index_type: type}) when is_binary(type), do: type
+  defp hit_index_type(%{"index_type" => type}) when is_binary(type), do: type
+
+  defp hit_index_type(%{__struct__: module}),
+    do: to_string(module)
+
+  defp hit_index_type(_), do: nil
+
+  @search_preloads [
+    :with_object_more,
+    :with_creator,
+    :with_subject,
+    :with_media,
+    :with_reply_to,
+    :quote_tags
+  ]
+
+  @doc """
+  Load activities by object IDs using the standard feed pipeline.
+  Preserves the order of input IDs (Meilisearch relevance order).
+  """
+  def load_activities_for_search(object_ids, opts)
+      when is_list(object_ids) and object_ids != [] do
+    opts = Keyword.put(opts, :preload, @search_preloads)
+
+    Bonfire.Social.FeedLoader.query_object_extras_boundarised(
+      nil,
+      %{objects: object_ids},
+      opts
+    )
+    |> repo().many()
+    |> Bonfire.Social.Activities.prepare_subject_and_creator(opts)
+    |> reorder_by_ids(object_ids)
+  end
+
+  def load_activities_for_search(_, _), do: []
+
+  defp reorder_by_ids(loaded_items, ordered_ids) do
+    id_map =
+      Map.new(loaded_items, fn item ->
+        obj_id = e(item, :activity, :object_id, nil) || Enums.id(item)
+        {obj_id, item}
+      end)
+
+    Enum.flat_map(ordered_ids, fn id ->
+      case Map.get(id_map, id) do
+        nil -> []
+        item -> [item]
+      end
+    end)
+  end
+
   def prepare_hits(hits, index, opts) do
     # used for displaying federated objects 
     index = normalise_index(index)
