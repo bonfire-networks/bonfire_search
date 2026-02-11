@@ -200,6 +200,7 @@ defmodule Bonfire.Search.Web.MeiliTest do
         text: e(me, :profile, :name, nil)
       )
       |> assert_has_or_open_browser(".activity [data-id=subject_avatar]")
+
       # TODO: investigate why avatar img[src] doesn't render in search results
       # |> assert_has_or_open_browser(".activity [data-id=subject_avatar] img[src]")
       # |> assert_has_or_open_browser(".activity [data-id=subject_avatar] img[src*='gen_avatar']")

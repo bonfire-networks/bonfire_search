@@ -102,12 +102,7 @@
   >
     <div class="text-sm font-semibold">{l("Results")}</div>
 
-    <div
-      data-position="bottom-end"
-      phx-hook="Tooltip"
-      id="search_boundary"
-      class="relative"
-    >
+    <div data-position="bottom-end" phx-hook="Tooltip" id="search_boundary" class="relative">
       <label
         class={"tooltip-button btn-soft btn btn-sm", "btn-warning": @index != "public"}
         tabindex="0"
