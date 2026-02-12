@@ -23,6 +23,20 @@ if Application.compile_env(:bonfire_api_graphql, :modularity) != :disabled do
     alias Bonfire.API.GraphQL.RestAdapter
     alias Bonfire.API.MastoCompat.{Mappers, PaginationHelpers, Fragments}
 
+    # Custom pipeline to ensure context has dataloader for both authenticated and unauthenticated requests
+    def absinthe_pipeline(schema, opts) do
+      context = Keyword.get(opts, :context, %{})
+
+      context_with_loader =
+        if Map.has_key?(context, :loader) do
+          context
+        else
+          schema.context(context)
+        end
+
+      AbsintheClient.default_pipeline(schema, Keyword.put(opts, :context, context_with_loader))
+    end
+
     # Use centralized fragments from bonfire_api_graphql
     @user Fragments.user_profile()
 
