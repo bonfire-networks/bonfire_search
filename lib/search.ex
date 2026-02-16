@@ -132,6 +132,7 @@ defmodule Bonfire.Search do
 
   @search_preloads [
     :with_object_more,
+    :with_object_peered,
     :with_creator,
     :with_subject,
     :with_media,
