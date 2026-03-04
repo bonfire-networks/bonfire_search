@@ -2,7 +2,7 @@
   id="the_search_results"
   phx-update="replace"
   data-page={e(@page, [])}
-  class="divide-y divide-base-content/20"
+  class="divide-y divide-base-content/10"
 >
   {#if @searching && e(@hits, []) == [] && e(@user_hits, []) == []}
     <div class="flex items-center justify-center py-8">
@@ -89,7 +89,7 @@
             </LinkLive>
           {/if}
         </div>
-        <div class="divide-y divide-base-content/20">
+        <div class="divide-y divide-base-content/10">
           {#for user <- Enum.take(e(@user_hits, []), 5)}
             <div>
               <StatefulComponent
@@ -119,7 +119,7 @@
             </LinkLive>
           {/if}
         </div>
-        <div class="divide-y divide-base-content/20">
+        <div class="divide-y divide-base-content/10">
           {#for hit <- Enum.take(e(@hits, []), 5)}
             <div>
               <StatefulComponent
