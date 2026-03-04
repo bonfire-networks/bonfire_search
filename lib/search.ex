@@ -366,7 +366,8 @@ defmodule Bonfire.Search do
       |> module.maybe_index_object(index)
     else
       # TODO: should we index in closed index in this case?
-      error(assumed_caretaker, "Search indexing is disabled for this user")
+      info(assumed_caretaker, "Search indexing is disabled for this user")
+      {:error, :search_index_disabled}
     end
   end
 
