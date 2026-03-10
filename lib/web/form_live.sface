@@ -1,5 +1,5 @@
 <!--  -->
-<div class="relative">
+<div class="relative flex-1">
   <div
     x-data="{ menuOpen: false, searchValue: '' }"
     x-init="searchValue = $refs.searchInput.value"
