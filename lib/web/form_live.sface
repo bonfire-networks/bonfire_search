@@ -1,8 +1,8 @@
 <!--  -->
 <div class="relative flex-1">
   <div
-    x-data="{ menuOpen: false, searchValue: '' }"
     x-init="searchValue = $refs.searchInput.value"
+    x-data="{ menuOpen: false, searchValue: '' }"
     x-on:click.outside="menuOpen = false"
     class="relative w-full"
   >
