@@ -236,6 +236,10 @@ defmodule Bonfire.Search.MeiliLib do
     end
   end
 
+  def healthy? do
+    Meilisearch.Health.healthy?(get_client())
+  end
+
   def create_index(index_name, _fail_silently \\ false) do
     client = get_client()
     Index.create(client, %{uid: index_name})

@@ -24,8 +24,10 @@ defmodule Bonfire.Search.Adapter do
   @callback delete(binary(), binary()) :: {:ok, map()} | {:error, term()}
 
   @callback index_exists(binary()) :: boolean()
+  @callback healthy?() :: boolean()
 
   @optional_callbacks [
+    healthy?: 0,
     index_exists: 1,
     put_documents: 2,
     delete: 2,

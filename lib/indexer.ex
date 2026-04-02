@@ -6,6 +6,9 @@ defmodule Bonfire.Search.Indexer do
   use Bonfire.Common.Localise
   use Bonfire.Common.Config
 
+  @main_indexes [:public, :closed]
+  @main_indexes_aliases [:public, :closed, "public", "closed", nil]
+
   def main_facets,
     do:
       Bonfire.Common.Config.get(
@@ -95,12 +98,31 @@ defmodule Bonfire.Search.Indexer do
   end
 
   # add to general instance search index
+  def init_indexes_on_startup do
+    if adapter = adapter() do
+      Task.start(fn -> await_and_init(adapter, 1_000) end)
+    end
+  end
+
+  defp await_and_init(adapter, backoff) do
+    if adapter.healthy?() do
+      info("Initializing search indexes")
+
+      for index <- @main_indexes do
+        init_index(index)
+      end
+    else
+      warn("Search service not ready, retrying in #{backoff}ms")
+      Process.sleep(backoff)
+      await_and_init(adapter, min(backoff * 2, 30_000))
+    end
+  end
+
   defp do_index_object(object, index) do
-    # IO.inspect(search_indexing: objects)
-    # FIXME - should create the index only once
     if adapter = adapter() do
       with {:ok, task} <-
-             index_objects(object, index, index_name(index), true, adapter) |> debug("queued?") do
+             index_objects(object, index, index_name(index), adapter)
+             |> debug("queued?") do
         if Bonfire.Common.Config.get_ext(:bonfire_search, :wait_for_indexing)
            |> debug("wait_for_indexing?") do
           adapter.wait_for_task(task) |> debug("indexed?")
@@ -113,15 +135,15 @@ defmodule Bonfire.Search.Indexer do
     end
   end
 
-  # index several things in an existing index
-  defp index_objects(objects, index, index_name, init_index_first \\ false, adapter \\ nil)
+  defp index_objects(objects, index, index_name, adapter \\ nil)
 
-  defp index_objects(objects, index, index_name, init_index_first, adapter)
+  # index several things in an index
+  defp index_objects(objects, index, index_name, adapter)
        when is_list(objects) do
     if adapter = adapter || adapter() do
       # FIXME: should check if enabled for creator? or we already doing that in indexable_object?
       if module_enabled?(__MODULE__) do
-        if init_index_first, do: init_index(index, index_name, true, adapter)
+        maybe_init_index(index, index_name, adapter)
 
         objects
         # |> debug("filtered")
@@ -136,20 +158,23 @@ defmodule Bonfire.Search.Indexer do
     end
   end
 
-  # index something in an existing index
-  defp index_objects(object, index, index_name, init_index_first, adapter) do
-    if adapter = adapter || adapter() do
-      if init_index_first, do: init_index(index, index_name, true, adapter)
-
-      index_objects([object], index, index_name, false)
-    end
+  # index a thing in an index
+  defp index_objects(object, index, index_name, adapter) do
+    index_objects([object], index, index_name, adapter)
   end
+
+  # Init custom indexes on first use; standard ones are initialized once at startup
+  defp maybe_init_index(index, index_name, adapter)
+       when index not in @main_indexes_aliases,
+       do: init_index(index, index_name, true, adapter)
+
+  defp maybe_init_index(_index, _index_name, _adapter), do: :skip
 
   # create a new index
   def init_index(index \\ nil, index_name \\ nil, fail_silently \\ false, adapter \\ nil)
 
   def init_index(index, index_name, fail_silently, adapter)
-      when index in [:public, :closed, "public", "closed", nil] do
+      when index in @main_indexes_aliases do
     if adapter = adapter || adapter() do
       index_name = index_name || index_name(index) || index_name(:public)
 

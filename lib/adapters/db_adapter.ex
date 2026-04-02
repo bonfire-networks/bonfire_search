@@ -10,6 +10,9 @@ defmodule Bonfire.Search.DB do
   use Bonfire.Common.Utils
   use Bonfire.Common.Repo
 
+  @impl true
+  def healthy?, do: true
+
   @doc """
   Main search implementation using database queries
   """

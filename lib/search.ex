@@ -6,9 +6,24 @@ defmodule Bonfire.Search do
   @moduledoc "./README.md" |> File.stream!() |> Enum.drop(1) |> Enum.join()
 
   import Untangle
+  use Application
   use Bonfire.Common.Utils
   use Bonfire.Common.Repo
   use Bonfire.Common.Config
+
+  def start(_, _) do
+    :telemetry.attach(
+      "bonfire_search_index_init",
+      [:settings, :load_config, :stop],
+      fn _event, _measurements, _meta, _config ->
+        :telemetry.detach("bonfire_search_index_init")
+        Bonfire.Search.Indexer.init_indexes_on_startup()
+      end,
+      nil
+    )
+
+    Supervisor.start_link([], strategy: :one_for_one)
+  end
 
   @doc """
   Returns the configured search adapter module.
