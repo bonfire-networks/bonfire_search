@@ -46,7 +46,7 @@ defmodule Bonfire.Search.Web.SearchLive do
        sidebar_widgets: [
          users: [
            secondary: [
-             {Bonfire.Tag.Web.WidgetTagsLive, []}
+            #  {Bonfire.Tag.Web.WidgetTagsLive, []}
            ]
          ],
          guests: [
