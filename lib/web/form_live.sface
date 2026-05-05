@@ -1,8 +1,8 @@
 <!--  -->
 <div class="relative flex-1">
   <div
-    x-init="searchValue = $refs.searchInput.value"
     x-data="{ menuOpen: false, searchValue: '' }"
+    x-init="$nextTick(() => { searchValue = $refs.searchInput?.value || '' })"
     x-on:click.outside="menuOpen = false"
     class="relative w-full"
   >
