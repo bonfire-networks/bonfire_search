@@ -72,9 +72,9 @@ defmodule Bonfire.Search.Web.MeiliTest do
       conn
       |> visit("/search")
       # Fill in the search term
-      |> fill_in("[name=s]", "Search content", with: "test")
-      # Submit the form by clocking button
-      |> click_button("Search")
+      |> fill_in("#main-search-input", "Search content", with: "test")
+      # Submit the form
+      |> submit()
       |> wait_async()
       # Ensure the results section exists
       |> assert_has("#the_search_results")
@@ -87,7 +87,7 @@ defmodule Bonfire.Search.Web.MeiliTest do
       conn
       |> visit("/search")
       # Fill in the search term
-      |> fill_in("[name=s]", "Search content", with: "test")
+      |> fill_in("#main-search-input", "Search content", with: "test")
       # try by submitting form instead
       |> submit()
       |> wait_async()
