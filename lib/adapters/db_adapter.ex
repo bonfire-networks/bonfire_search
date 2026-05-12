@@ -75,7 +75,7 @@ defmodule Bonfire.Search.DB do
     |> paginate_and_boundarise_deferred_query(search, List.wrap(types), opts)
     |> repo().many()
 
-    # |> Bonfire.Social.many(true, opts)
+    # |> repo().many_maybe_paginated(true, opts)
   end
 
   defp paginate_and_boundarise_deferred_query(initial_query, search, types, opts) do
@@ -86,7 +86,7 @@ defmodule Bonfire.Search.DB do
       |> select([:id])
       # to avoid 'cannot preload in subquery' error
       |> maybe_order_override(search, length(types))
-      |> Bonfire.Social.many(true, return: :query, multiply_limit: 2)
+      |> repo().many_maybe_paginated(true, return: :query, multiply_limit: 2)
       |> repo().make_subquery()
       |> debug("deferred subquery")
 
