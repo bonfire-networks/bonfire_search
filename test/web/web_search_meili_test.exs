@@ -70,11 +70,7 @@ defmodule Bonfire.Search.Web.MeiliTest do
       {:ok, _post} = Posts.publish(current_user: alice, post_attrs: attrs, boundary: "public")
 
       conn
-      |> visit("/search")
-      # Fill in the search term
-      |> fill_in("#main-search-input", "Search content", with: "test")
-      # Submit the form
-      |> submit()
+      |> visit("/search?s=test")
       |> wait_async()
       # Ensure the results section exists
       |> assert_has("#the_search_results")
@@ -86,10 +82,11 @@ defmodule Bonfire.Search.Web.MeiliTest do
 
       conn
       |> visit("/search")
-      # Fill in the search term
-      |> fill_in("#main-search-input", "Search content", with: "test")
-      # try by submitting form instead
-      |> submit()
+      |> within("main", fn session ->
+        session
+        |> fill_in("Search content", with: "test")
+        |> submit()
+      end)
       |> wait_async()
       # Check if the result is displayed
       |> assert_has_or_open_browser(".activity", text: html_body)

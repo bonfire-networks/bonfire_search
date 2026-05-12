@@ -3,7 +3,7 @@ defmodule Bonfire.Search.DB do
   Database-based search adapter implementation.
   Uses Ecto queries to search across tables directly in the database.
   """
-  @behaviour Bonfire.Search.Adapter
+  use Bonfire.Search.Adapter
 
   import Ecto.Query
   import Untangle

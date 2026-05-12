@@ -180,9 +180,40 @@ defmodule Bonfire.Search.Indexer do
 
       adapter.create_index(index_name, fail_silently)
 
-      # define facets to be used for filtering main search index
-      adapter.set_facets(index_name, main_facets())
-      adapter.set_searchable_fields(index_name, main_searcheable_fields())
+      desired_facets = main_facets()
+
+      facet_task =
+        case adapter.list_facets(index_name) do
+          {:ok, current} when is_list(current) ->
+            if Enum.sort(current) == Enum.sort(desired_facets) do
+              debug(index_name, "facets unchanged, skipping update")
+              nil
+            else
+              adapter.set_facets(index_name, desired_facets)
+            end
+
+          _ ->
+            adapter.set_facets(index_name, desired_facets)
+        end
+
+      desired_searchable = main_searcheable_fields()
+
+      searchable_task =
+        case adapter.list_searchable_fields(index_name) do
+          {:ok, current} when is_list(current) ->
+            if Enum.sort(current) == Enum.sort(desired_searchable) do
+              debug(index_name, "searchable fields unchanged, skipping update")
+              nil
+            else
+              adapter.set_searchable_fields(index_name, desired_searchable)
+            end
+
+          _ ->
+            adapter.set_searchable_fields(index_name, desired_searchable)
+        end
+
+      [facet_task, searchable_task]
+      |> Enum.reject(&is_nil/1)
     end
   end
 

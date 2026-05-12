@@ -24,6 +24,45 @@ defmodule Bonfire.Search.IndexesMeiliTest do
     :ok
   end
 
+  describe "index settings diff" do
+    test "does not update facets when already matching" do
+      index_name = Indexer.index_name(:public)
+      @adapter.set_facets(index_name, Indexer.main_facets()) |> @adapter.wait_for_task()
+
+      @adapter.set_searchable_fields(index_name, Indexer.main_searcheable_fields())
+      |> @adapter.wait_for_task()
+
+      # init should return no settings update tasks when settings already match
+      assert Indexer.init_index(:public) == []
+    end
+
+    test "updates facets when they differ" do
+      index_name = Indexer.index_name(:public)
+      @adapter.set_facets(index_name, ["other_field"]) |> @adapter.wait_for_task()
+
+      {:ok, current} = @adapter.list_facets(index_name)
+      assert current == ["other_field"]
+
+      Indexer.init_index(:public) |> @adapter.wait_for_task()
+
+      {:ok, after_init} = @adapter.list_facets(index_name)
+      assert Enum.sort(after_init) == Enum.sort(Indexer.main_facets())
+    end
+
+    test "updates searchable fields when they differ" do
+      index_name = Indexer.index_name(:public)
+      @adapter.set_searchable_fields(index_name, ["other_field"]) |> @adapter.wait_for_task()
+
+      {:ok, current} = @adapter.list_searchable_fields(index_name)
+      assert current == ["other_field"]
+
+      Indexer.init_index(:public) |> @adapter.wait_for_task()
+
+      {:ok, after_init} = @adapter.list_searchable_fields(index_name)
+      assert after_init == Indexer.main_searcheable_fields()
+    end
+  end
+
   test "indexes and searches public posts, and preloads required data" do
     # Create sender 
     account = fake_account!()

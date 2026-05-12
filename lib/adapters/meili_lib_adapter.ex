@@ -8,7 +8,7 @@ defmodule Bonfire.Search.MeiliLib do
   alias Meilisearch.{Client, Document, Index, Settings}
   alias Meilisearch.Settings.{Faceting, FilterableAttributes, SearchableAttributes}
 
-  @behaviour Bonfire.Search.Adapter
+  use Bonfire.Search.Adapter
 
   def search_by_type(tag_search, facets \\ nil, opts \\ []) do
     facets = search_type_facets(facets)
@@ -245,10 +245,8 @@ defmodule Bonfire.Search.MeiliLib do
     Index.create(client, %{uid: index_name})
   end
 
-  def list_facets(index \\ nil) do
-    client = get_client()
-    index_name = Indexer.index_name(index || :public)
-    FilterableAttributes.get(client, index_name)
+  def list_facets(index_name) do
+    FilterableAttributes.get(get_client(), index_name)
   end
 
   def set_facets(index_name, facets) when is_list(facets) do
@@ -258,6 +256,10 @@ defmodule Bonfire.Search.MeiliLib do
 
   def set_facets(index_name, facet) do
     set_facets(index_name, [facet])
+  end
+
+  def list_searchable_fields(index_name) do
+    SearchableAttributes.get(get_client(), index_name)
   end
 
   def set_searchable_fields(index_name, fields) do
