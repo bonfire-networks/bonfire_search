@@ -72,10 +72,10 @@ defmodule Bonfire.Search.Indexer do
   @doc """
   Format an object (or list) into the map(s) sent to the search index.
 
-  Public so the batched-indexing buffer (`Bonfire.Search.IndexQueue`) can store
-  the *final* indexable map. Already-formatted maps (those carrying `"id"` or
-  `"index_type"`) pass through unchanged, so re-feeding a buffered doc through
-  `maybe_index_object/2` in the flush worker is a safe no-op re-format.
+  Public so the batched indexer (`Bonfire.Search.Workers.IndexWorker`) can put
+  the *final* indexable map in the Oban job. Already-formatted maps (those
+  carrying `"id"` or `"index_type"`) pass through unchanged, so re-feeding a
+  buffered doc through `maybe_index_object/2` in the worker is a safe no-op.
   """
   def prepare_indexable_object(%{"index_type" => index_type} = object)
       when not is_nil(index_type) do
@@ -120,23 +120,14 @@ defmodule Bonfire.Search.Indexer do
         init_index(index)
       end
 
-      # fail loud if the queue isn't configured: otherwise buffered docs are
-      # inserted but never processed, and nothing gets indexed — silently
-      unless Bonfire.Search.Workers.FlushWorker.queue_configured?() do
+      # fail loud if the queue isn't configured: otherwise index jobs are
+      # inserted but never processed, and nothing gets indexed — silently.
+      # (No explicit drain needed: Oban durably persists jobs and resumes any
+      # scheduled/available ones automatically after a restart.)
+      unless Bonfire.Search.Workers.IndexWorker.queue_configured?() do
         error(
-          "Bonfire.Search: the `search_index` Oban queue is NOT configured — buffered documents will never be indexed. Add `search_index: <n>` to `config :bonfire, Oban, queues`."
+          "Bonfire.Search: the `search_index` Oban queue is NOT configured — index jobs will never be processed. Add `search_index: <n>` to `config :bonfire, Oban, queues`."
         )
-      end
-
-      # surface the buffer size at boot (also covers a backlog left by a crash)
-      info(
-        "Search index buffer at boot: public=#{Bonfire.Search.IndexQueue.count(:public)} closed=#{Bonfire.Search.IndexQueue.count(:closed)}"
-      )
-
-      # drain anything buffered before a restart/crash (rows are durable; the
-      # debounced flush that would have run may have been lost on shutdown)
-      for index <- Bonfire.Search.IndexQueue.pending_indexes() do
-        Bonfire.Search.Workers.FlushWorker.schedule(index, schedule_in: 0)
       end
     else
       warn("Search service not ready, retrying in #{backoff}ms")

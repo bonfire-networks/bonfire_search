@@ -401,8 +401,7 @@ defmodule Bonfire.Search do
     if batched? and not wait? do
       case module.prepare_indexable_object(object) do
         doc when is_map(doc) ->
-          with {:ok, _} <- Bonfire.Search.IndexQueue.enqueue(index, doc) do
-            Bonfire.Search.Workers.FlushWorker.schedule(index)
+          with {:ok, _job} <- Bonfire.Search.Workers.IndexWorker.enqueue(index, doc) do
             {:ok, :queued}
           end
 
