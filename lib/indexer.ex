@@ -69,19 +69,27 @@ defmodule Bonfire.Search.Indexer do
     end
   end
 
-  defp prepare_indexable_object(%{"index_type" => index_type} = object)
-       when not is_nil(index_type) do
+  @doc """
+  Format an object (or list) into the map(s) sent to the search index.
+
+  Public so the batched-indexing buffer (`Bonfire.Search.IndexQueue`) can store
+  the *final* indexable map. Already-formatted maps (those carrying `"id"` or
+  `"index_type"`) pass through unchanged, so re-feeding a buffered doc through
+  `maybe_index_object/2` in the flush worker is a safe no-op re-format.
+  """
+  def prepare_indexable_object(%{"index_type" => index_type} = object)
+      when not is_nil(index_type) do
     # already formatted indexable object
     object
   end
 
-  defp prepare_indexable_object(%{"id" => id} = object)
-       when not is_nil(id) do
+  def prepare_indexable_object(%{"id" => id} = object)
+      when not is_nil(id) do
     # hopefully already formatted indexable object
     object
   end
 
-  defp prepare_indexable_object(%{__struct__: object_type} = object) do
+  def prepare_indexable_object(%{__struct__: object_type} = object) do
     Bonfire.Common.ContextModule.maybe_apply(
       object_type,
       :indexing_object_format,
@@ -89,11 +97,11 @@ defmodule Bonfire.Search.Indexer do
     )
   end
 
-  defp prepare_indexable_object(objects) when is_list(objects) do
+  def prepare_indexable_object(objects) when is_list(objects) do
     Enum.map(objects, &prepare_indexable_object/1)
   end
 
-  defp prepare_indexable_object(_) do
+  def prepare_indexable_object(_) do
     nil
   end
 
@@ -110,6 +118,25 @@ defmodule Bonfire.Search.Indexer do
 
       for index <- @main_indexes do
         init_index(index)
+      end
+
+      # fail loud if the queue isn't configured: otherwise buffered docs are
+      # inserted but never processed, and nothing gets indexed — silently
+      unless Bonfire.Search.Workers.FlushWorker.queue_configured?() do
+        error(
+          "Bonfire.Search: the `search_index` Oban queue is NOT configured — buffered documents will never be indexed. Add `search_index: <n>` to `config :bonfire, Oban, queues`."
+        )
+      end
+
+      # surface the buffer size at boot (also covers a backlog left by a crash)
+      info(
+        "Search index buffer at boot: public=#{Bonfire.Search.IndexQueue.count(:public)} closed=#{Bonfire.Search.IndexQueue.count(:closed)}"
+      )
+
+      # drain anything buffered before a restart/crash (rows are durable; the
+      # debounced flush that would have run may have been lost on shutdown)
+      for index <- Bonfire.Search.IndexQueue.pending_indexes() do
+        Bonfire.Search.Workers.FlushWorker.schedule(index, schedule_in: 0)
       end
     else
       warn("Search service not ready, retrying in #{backoff}ms")
@@ -192,8 +219,15 @@ defmodule Bonfire.Search.Indexer do
               adapter.set_facets(index_name, desired_facets)
             end
 
-          _ ->
-            adapter.set_facets(index_name, desired_facets)
+          other ->
+            # fail safe: a settings *read* error/unexpected shape must NOT
+            # cause an unconditional set, which would force a full reindex
+            warn(
+              other,
+              "Could not read current facets for #{index_name}; skipping set to avoid an unintended full reindex"
+            )
+
+            nil
         end
 
       desired_searchable = main_searcheable_fields()
@@ -208,8 +242,14 @@ defmodule Bonfire.Search.Indexer do
               adapter.set_searchable_fields(index_name, desired_searchable)
             end
 
-          _ ->
-            adapter.set_searchable_fields(index_name, desired_searchable)
+          other ->
+            # fail safe: see note above — never set on a read error/odd shape
+            warn(
+              other,
+              "Could not read current searchable fields for #{index_name}; skipping set to avoid an unintended full reindex"
+            )
+
+            nil
         end
 
       [facet_task, searchable_task]

@@ -378,11 +378,39 @@ defmodule Bonfire.Search do
       object
       # FIXME: should be done in a Social act
       |> Bonfire.Social.Activities.activity_under_object()
-      |> module.maybe_index_object(index)
+      |> enqueue_or_index(index, module)
     else
       # TODO: should we index in closed index in this case?
       info(assumed_caretaker, "Search indexing is disabled for this user")
       {:error, :search_index_disabled}
+    end
+  end
+
+  # Single chokepoint: either buffer the document for batched indexing (default,
+  # production) or index it synchronously (when batching is disabled, or when
+  # `wait_for_indexing` is set — e.g. tests that need the doc searchable now).
+  #
+  # We format to the final indexable map *before* buffering so the buffer holds
+  # plain JSON (storable, and re-feeding it through `maybe_index_object` is a
+  # no-op thanks to its `%{"id"}`/`%{"index_type"}` passthrough clauses).
+  defp enqueue_or_index(object, index, module) do
+    # strict booleans: config may be unset (nil) — `not nil` would raise
+    batched? = Bonfire.Common.Config.get_ext(:bonfire_search, :batched_indexing, true) != false
+    wait? = Bonfire.Common.Config.get_ext(:bonfire_search, :wait_for_indexing) == true
+
+    if batched? and not wait? do
+      case module.prepare_indexable_object(object) do
+        doc when is_map(doc) ->
+          with {:ok, _} <- Bonfire.Search.IndexQueue.enqueue(index, doc) do
+            Bonfire.Search.Workers.FlushWorker.schedule(index)
+            {:ok, :queued}
+          end
+
+        _ ->
+          error(object, "Search: nothing indexable to enqueue, skipping")
+      end
+    else
+      module.maybe_index_object(object, index)
     end
   end
 
