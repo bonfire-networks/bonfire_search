@@ -13,6 +13,8 @@ defmodule Bonfire.Search.DB do
   @impl true
   def healthy?, do: true
 
+  def batch_indexing?, do: false
+
   @doc """
   Main search implementation using database queries
   """

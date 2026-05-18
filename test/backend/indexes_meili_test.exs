@@ -15,10 +15,12 @@ defmodule Bonfire.Search.IndexesMeiliTest do
   @adapter Bonfire.Search.MeiliLib
 
   setup do
+    Bonfire.Common.Config.put(:wait_for_indexing, true, :bonfire_search)
     {meili_adapter, tesla_adapter} = prepare_meili_for_tests()
 
     on_exit(fn ->
       reset_meili_after_tests(meili_adapter, tesla_adapter)
+      Bonfire.Common.Config.put(:wait_for_indexing, false, :bonfire_search)
     end)
 
     :ok

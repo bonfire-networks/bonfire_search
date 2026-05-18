@@ -47,7 +47,6 @@ defmodule Bonfire.Search.Web.MeiliTest do
 
       on_exit(fn ->
         reset_meili_after_tests(meili_adapter, tesla_adapter)
-
         Bonfire.Common.Config.put(:wait_for_indexing, false, :bonfire_search)
       end)
 

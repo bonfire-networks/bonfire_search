@@ -10,6 +10,8 @@ defmodule Bonfire.Search.MeiliLib do
 
   use Bonfire.Search.Adapter
 
+  def batch_indexing?, do: true
+
   def search_by_type(tag_search, facets \\ nil, opts \\ []) do
     facets = search_type_facets(facets)
 

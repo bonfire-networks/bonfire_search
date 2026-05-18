@@ -21,6 +21,7 @@ defmodule Bonfire.Search.Adapter do
 
   # Optional — index-management (no-ops for DB adapter)
   @callback healthy?() :: boolean()
+  @callback batch_indexing?() :: boolean()
   @callback index_exists(binary()) :: boolean()
   @callback create_index(binary(), boolean()) :: {:ok, map()} | {:error, term()}
   @callback list_facets(binary()) :: {:ok, list()} | {:error, term()}
@@ -49,6 +50,7 @@ defmodule Bonfire.Search.Adapter do
       @behaviour Bonfire.Search.Adapter
 
       def healthy?, do: true
+      def batch_indexing?, do: false
       def index_exists(_index_name), do: false
       def create_index(_index_name, _fail_silently \\ false), do: {:ok, %{}}
       def list_facets(_index_name), do: {:ok, []}
@@ -60,6 +62,7 @@ defmodule Bonfire.Search.Adapter do
       def delete(_object, _index_name), do: {:ok, %{}}
 
       defoverridable healthy?: 0,
+                     batch_indexing?: 0,
                      index_exists: 1,
                      create_index: 2,
                      list_facets: 1,
