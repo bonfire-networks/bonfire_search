@@ -107,7 +107,9 @@ defmodule Bonfire.Search do
 
     limit = e(result, :limit, nil) || e(result, :hitsPerPage, nil) || opts[:limit] || 20
     offset = e(result, :offset, 0) || opts[:offset] || 0
-    has_more = total_hits > offset + limit
+
+    # If the adapter doesn't report a total (e.g. Sonic), assume there's more when we got a full page
+    has_more = total_hits > offset + limit or length(hits) == limit
 
     %{
       post_ids: post_ids,

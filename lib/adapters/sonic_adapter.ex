@@ -103,8 +103,12 @@ defmodule Bonfire.Search.Sonic do
   def search(string, opts, _calculate_facets, filter_facets) when is_map(filter_facets) do
     index = e(opts, :index, nil) || :public
     index_name = Bonfire.Search.Indexer.index_name(index)
-    bucket = filter_facets[:index_type] || @all_bucket
+    bucket = filter_facets[:index_type] || filter_facets["index_type"] || @all_bucket
     do_search(string, index_name, bucket, opts)
+  end
+
+  def search(string, opts, _calculate_facets, _filter_facets) do
+    search(string, opts)
   end
 
   @impl true
@@ -122,7 +126,12 @@ defmodule Bonfire.Search.Sonic do
 
   @impl true
   def search_by_type(string, facets, opts \\ []) do
-    bucket = List.wrap(facets) |> List.first() || @all_bucket
+    bucket =
+      List.wrap(facets)
+      |> List.first()
+      |> Types.module_to_str()
+      |> then(&if &1 == "nil", do: @all_bucket, else: &1)
+
     index_name = Bonfire.Search.Indexer.index_name(:public)
 
     do_search(string, index_name, bucket, opts)
@@ -135,9 +144,14 @@ defmodule Bonfire.Search.Sonic do
     offset = e(opts, :offset, nil) || 0
     index = e(opts, :index, nil) || :public
 
+    info("Sonic: searching for #{inspect(string)} in collection=#{collection} bucket=#{bucket}")
+
     with {:ok, conn} <- search_conn(),
          {:ok, ids} <-
            Sonix.query(conn, collection, bucket, string, limit: limit, offset: offset) do
+      info("Sonic: query returned ids: #{inspect(ids)}")
+      # NOTE: Sonic only returns object IDs, so raw hits only contain %{"id" => id}.
+      # Unlike Meilisearch, raw results have no document fields (no index_type, content, etc).
       raw_hits = Enum.map(ids, &%{"id" => &1})
 
       hits =
@@ -174,6 +188,10 @@ defmodule Bonfire.Search.Sonic do
           warn(object_id, "Sonic: no text to index for object, skipping")
         else
           buckets = buckets_for(doc)
+
+          info(
+            "Sonic: indexing #{object_id} in buckets #{inspect(buckets)} with text: #{inspect(text)}"
+          )
 
           for bucket <- buckets do
             with {:ok, conn} <- ingest_conn() do

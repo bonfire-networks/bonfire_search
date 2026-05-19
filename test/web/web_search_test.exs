@@ -61,17 +61,14 @@ defmodule Bonfire.Search.Web.SearchTest do
       alice: alice,
       conn: conn
     } do
-      # Create a public post by 'alice' to test search functionality
-      html_body = "test post"
+      html_body = "xyloquartz luminiferous post"
       attrs = %{post_content: %{html_body: html_body}}
       {:ok, _post} = Posts.publish(current_user: alice, post_attrs: attrs, boundary: "public")
 
       conn
-      |> visit("/search?s=test")
+      |> visit("/search?s=xyloquartz")
       |> wait_async()
-      # Ensure the results section exists
       |> assert_has("#the_search_results")
-      # Check if the result is displayed
       |> assert_has(".activity", text: html_body)
       |> assert_has_or_open_browser(".activity [data-id=subject_name]",
         text: e(alice, :profile, :name, nil)
@@ -81,21 +78,14 @@ defmodule Bonfire.Search.Web.SearchTest do
       |> visit("/search")
       |> within("main", fn session ->
         session
-        |> fill_in("Search content", with: "test")
+        |> fill_in("Search content", with: "xyloquartz")
         |> submit()
       end)
       |> wait_async()
-      # Check if the result is displayed
       |> assert_has_or_open_browser(".activity", text: html_body)
       |> assert_has_or_open_browser(".activity [data-id=subject_name]",
         text: e(alice, :profile, :name, nil)
       )
-
-      # TODO
-      # |> assert_has_or_open_browser("[data-id=subject_avatar]")
-      # |> assert_has_or_open_browser("[data-id=subject_avatar] img[src]")
-      # #  ensure it is a generated avatar, since we didn't upload a custom one
-      # |> assert_has_or_open_browser("[data-id=subject_avatar] img[src*='gen_avatar']")
     end
 
     test "Search results paginate correctly", %{
@@ -110,41 +100,18 @@ defmodule Bonfire.Search.Web.SearchTest do
         Bonfire.Common.Config.put(:default_pagination_limit, original_limit)
       end)
 
-      # Create multiple public post to test search functionality
-      html_body = "test post"
-      attrs = %{post_content: %{html_body: html_body}}
-      {:ok, _post} = Posts.publish(current_user: me, post_attrs: attrs, boundary: "public")
-
-      html_body = "test2 post"
-      attrs = %{post_content: %{html_body: html_body}}
-      {:ok, _post} = Posts.publish(current_user: me, post_attrs: attrs, boundary: "public")
-
-      html_body = "test3 post"
-      attrs = %{post_content: %{html_body: html_body}}
-      {:ok, _post} = Posts.publish(current_user: me, post_attrs: attrs, boundary: "public")
-
-      html_body = "test4 post"
-      attrs = %{post_content: %{html_body: html_body}}
-      {:ok, _post} = Posts.publish(current_user: me, post_attrs: attrs, boundary: "public")
-
-      # Wait a bit for indexing to complete
-      # Process.sleep(100)
+      for i <- 1..4 do
+        attrs = %{post_content: %{html_body: "crepuscular pagination post #{i}"}}
+        {:ok, _post} = Posts.publish(current_user: me, post_attrs: attrs, boundary: "public")
+      end
 
       conn
-      # Visit Posts tab directly with search term (pagination only available on type-specific tabs)
-      |> visit("/search?facet[index_type]=Bonfire.Data.Social.Post&s=test")
+      |> visit("/search?facet[index_type]=Bonfire.Data.Social.Post&s=crepuscular")
       |> wait_async()
-      # Ensure the results section exists
       |> assert_has("#the_search_results")
-      # |> PhoenixTest.open_browser()
-      # Should only show 2 activities initially due to pagination limit
       |> assert_has(".activity", count: 2)
-      # Should have a load more button (debug first if missing)
-      # |> PhoenixTest.open_browser()
       |> assert_has("[data-id=load_more]")
-      # Click load more to get the remaining results
       |> click_button("[data-id=load_more]", "Load more")
-      # Should now show all 4 activities
       |> assert_has(".activity", count: 4)
     end
 
@@ -157,7 +124,7 @@ defmodule Bonfire.Search.Web.SearchTest do
          } do
       op = fake_user!()
 
-      reply_to_message = "Reply-to this"
+      reply_to_message = "noctilucent reply-to content"
 
       post1_attrs = %{
         post_content: %{html_body: reply_to_message}
@@ -165,8 +132,7 @@ defmodule Bonfire.Search.Web.SearchTest do
 
       {:ok, post1} = Posts.publish(current_user: op, post_attrs: post1_attrs, boundary: "public")
 
-      # Create a post to test search results
-      html_body = "test post with title"
+      html_body = "fulgurescent post with title"
       title = "the post title"
       cw = "the post CW"
 
@@ -182,23 +148,16 @@ defmodule Bonfire.Search.Web.SearchTest do
         )
 
       conn
-      |> visit("/search?s=test")
+      |> visit("/search?s=fulgurescent")
       |> wait_async()
-      # Verify the post is displayed
       |> assert_has_or_open_browser(".activity", text: html_body)
       |> assert_has_or_open_browser(".activity", text: reply_to_message)
-      # Verify the title is displayed
       |> assert_has_or_open_browser(".activity [data-role=name]", text: title)
       |> assert_has_or_open_browser(".activity [data-role=cw]", text: cw)
       |> assert_has_or_open_browser(".activity [data-id=subject_name]",
         text: e(me, :profile, :name, nil)
       )
       |> assert_has_or_open_browser(".activity [data-id=subject_avatar]")
-
-      # TODO: investigate why avatar img[src] doesn't render in search results
-      # |> assert_has_or_open_browser(".activity [data-id=subject_avatar] img[src]")
-      # |> assert_has_or_open_browser(".activity [data-id=subject_avatar] img[src*='gen_avatar']")
-      # |> assert_has_or_open_browser("[data-id=subject_avatar] img[src=\"#{me_avatar_url}\"]")
     end
 
     # how to avoid fetching from web since we use real Tesla adapter here?
@@ -208,8 +167,7 @@ defmodule Bonfire.Search.Web.SearchTest do
       me: me,
       conn: conn
     } do
-      # Create a post to test search results
-      body = "test post with link or attachments"
+      body = "iridescent post with link or attachments"
       html_body = "#{body} https://developer.mozilla.org/en-US/docs/Web/API/"
 
       {:ok, _post} =
@@ -220,11 +178,8 @@ defmodule Bonfire.Search.Web.SearchTest do
         )
 
       conn
-      |> visit("/search?s=test")
-      # |> open_browser()
-      # Verify the post is displayed
+      |> visit("/search?s=iridescent")
       |> assert_has(".activity", text: body)
-      # Verify the post is displayed
       |> assert_has(".activity [data-id=media_title]", text: "Web APIs")
     end
 
@@ -233,7 +188,7 @@ defmodule Bonfire.Search.Web.SearchTest do
       me: me,
       conn: conn
     } do
-      body = "simple test post"
+      body = "phosphorescent luminous post"
       html_body = "#{body}"
 
       {:ok, _post} =
@@ -244,8 +199,7 @@ defmodule Bonfire.Search.Web.SearchTest do
         )
 
       conn
-      |> visit("/search?facet[index_type]=Bonfire.Data.Social.Post&index=public&s=test")
-      # Verify the post is displayed
+      |> visit("/search?facet[index_type]=Bonfire.Data.Social.Post&index=public&s=phosphorescent")
       |> assert_has_or_open_browser(".activity", text: body)
     end
 
@@ -254,15 +208,13 @@ defmodule Bonfire.Search.Web.SearchTest do
       me: me,
       conn: conn
     } do
-      # Create posts and user profiles for filtering
-      user_name = "test user for search"
-      html_body_post = "test post for search filters"
+      user_name = "veridian wanderer profile"
+      html_body_post = "veridian compendium manuscript"
 
       {:ok, _post} =
         Posts.publish(
           current_user: me,
           post_attrs: %{
-            # set as sensitive to test CW handled in indexing
             sensitive: true,
             post_content: %{html_body: html_body_post}
           },
@@ -272,53 +224,35 @@ defmodule Bonfire.Search.Web.SearchTest do
       {:ok, me} = Bonfire.Me.Users.update(me, %{profile: %{name: user_name}})
 
       conn
-      |> visit("/search?s=test")
+      |> visit("/search?s=veridian")
       |> wait_async()
-      # Verify post-related content
       |> assert_has_or_open_browser(".activity", text: html_body_post)
       |> assert_has_or_open_browser(".activity [data-role=cw]")
-      # Ensure user-related content is shown
       |> assert_has_or_open_browser(".activity [data-id=profile_name]", text: user_name)
 
       conn
-      # load the "Users" tab
-      |> visit("/search?facet[index_type]=Bonfire.Data.Identity.User&s=test")
+      |> visit("/search?facet[index_type]=Bonfire.Data.Identity.User&s=veridian")
       |> wait_async()
-      #  |> open_browser()
-      # Verify user-related content
       |> assert_has_or_open_browser(".activity [data-id=profile_name]", text: user_name)
-      # Ensure post-related content is not shown
       |> refute_has(".activity", text: html_body_post)
 
       conn
-      # load the "Posts" tab
-      |> visit("/search?facet[index_type]=Bonfire.Data.Social.Post&s=test")
+      |> visit("/search?facet[index_type]=Bonfire.Data.Social.Post&s=veridian")
       |> wait_async()
-      # Verify post-related content
       |> assert_has_or_open_browser(".activity", text: html_body_post)
       |> assert_has_or_open_browser(".activity [data-role=cw]")
-      # Ensure user-related content is not shown
       |> refute_has(".activity [data-id=profile_name]", text: user_name)
 
       conn
-      |> visit("/search?s=test")
-      # start filtering
-      # Filter for "Users"
+      |> visit("/search?s=veridian")
       |> click_link(".tabs a", "Users")
       |> wait_async()
-      # |> open_browser()
-      # Verify user-related content
       |> assert_has_or_open_browser(".activity [data-id=profile_name]", text: user_name)
-      # Ensure post-related content is not shown
       |> refute_has(".activity", text: html_body_post)
-      # filter again
-      # Filter for "Posts"
       |> click_link(".tabs a", "Posts")
       |> wait_async()
-      # Verify post-related content
       |> assert_has_or_open_browser(".activity", text: html_body_post)
       |> assert_has_or_open_browser(".activity [data-role=cw]")
-      # Ensure user-related content is not shown
       |> refute_has(".activity [data-id=profile_name]", text: user_name)
     end
 
@@ -328,7 +262,7 @@ defmodule Bonfire.Search.Web.SearchTest do
            alice: alice,
            conn: conn
          } do
-      html_message = "test direct message from alice"
+      html_message = "zymurgy clandestine dispatch from alice"
 
       attrs = %{
         to_circles: [bob.id],
@@ -338,26 +272,19 @@ defmodule Bonfire.Search.Web.SearchTest do
       assert {:ok, message} = Messages.send(alice, attrs)
 
       conn
-      # load the "Public" tab
-      |> visit("/search?index=public&s=test")
-      # Ensure post-related content is not shown
+      |> visit("/search?index=public&s=zymurgy")
       |> refute_has(".activity", text: html_message)
 
       conn
-      # load the "Private" tab
-      |> visit("/search?index=closed&s=test")
-      # |> open_browser()
-      # Verify post-related content
+      |> visit("/search?index=closed&s=zymurgy")
       |> assert_has(".activity [data-id=object_body]", text: html_message)
 
       conn
-      # Verify DM is not in public index
-      |> visit("/search?index=public&s=test")
+      |> visit("/search?index=public&s=zymurgy")
       |> refute_has(".activity", text: html_message)
 
       conn
-      # Verify DM is in closed index
-      |> visit("/search?index=closed&s=test")
+      |> visit("/search?index=closed&s=zymurgy")
       |> assert_has(".activity", text: html_message)
     end
 
@@ -366,7 +293,7 @@ defmodule Bonfire.Search.Web.SearchTest do
       alice: alice,
       conn: conn
     } do
-      html_message = "test direct message to alice"
+      html_message = "quixotic clandestine dispatch received"
 
       attrs = %{
         to_circles: [alice.id],
@@ -376,30 +303,23 @@ defmodule Bonfire.Search.Web.SearchTest do
       assert {:ok, message} = Messages.send(me, attrs)
 
       conn
-      # load the "Public" tab
-      |> visit("/search?index=public&s=test")
-      # Ensure post-related content is not shown
+      |> visit("/search?index=public&s=quixotic")
       |> refute_has(".activity", text: html_message)
 
       conn
-      # load the "Private" tab
-      |> visit("/search?index=closed&s=test")
-      # Verify post-related content
+      |> visit("/search?index=closed&s=quixotic")
       |> assert_has(".activity", text: html_message)
 
       conn
-      # Verify DM is not in public index
-      |> visit("/search?index=public&s=test")
+      |> visit("/search?index=public&s=quixotic")
       |> refute_has(".activity", text: html_message)
 
       conn
-      # Verify DM is in closed index
-      |> visit("/search?index=closed&s=test")
+      |> visit("/search?index=closed&s=quixotic")
       |> assert_has(".activity", text: html_message)
 
       conn
-      # Verify DM is not there after switching back to public
-      |> visit("/search?index=public&s=test")
+      |> visit("/search?index=public&s=quixotic")
       |> refute_has(".activity", text: html_message)
     end
   end

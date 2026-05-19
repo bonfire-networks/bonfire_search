@@ -24,42 +24,45 @@ defmodule Bonfire.Search.IndexesSearchTest do
     :ok
   end
 
-  describe "index settings diff" do
-    test "does not update facets when already matching" do
-      index_name = Indexer.index_name(:public)
-      @adapter.set_facets(index_name, Indexer.main_facets()) |> @adapter.wait_for_task()
+  # Index settings diff tests only apply to Meilisearch (Sonic has no facet/searchable-field settings)
+  if @adapter == Bonfire.Search.MeiliLib do
+    describe "index settings diff" do
+      test "does not update facets when already matching" do
+        index_name = Indexer.index_name(:public)
+        @adapter.set_facets(index_name, Indexer.main_facets()) |> @adapter.wait_for_task()
 
-      @adapter.set_searchable_fields(index_name, Indexer.main_searcheable_fields())
-      |> @adapter.wait_for_task()
+        @adapter.set_searchable_fields(index_name, Indexer.main_searcheable_fields())
+        |> @adapter.wait_for_task()
 
-      # init should return no settings update tasks when settings already match
-      assert Indexer.init_index(:public) == []
-    end
+        # init should return no settings update tasks when settings already match
+        assert Indexer.init_index(:public) == []
+      end
 
-    test "updates facets when they differ" do
-      index_name = Indexer.index_name(:public)
-      @adapter.set_facets(index_name, ["other_field"]) |> @adapter.wait_for_task()
+      test "updates facets when they differ" do
+        index_name = Indexer.index_name(:public)
+        @adapter.set_facets(index_name, ["other_field"]) |> @adapter.wait_for_task()
 
-      {:ok, current} = @adapter.list_facets(index_name)
-      assert current == ["other_field"]
+        {:ok, current} = @adapter.list_facets(index_name)
+        assert current == ["other_field"]
 
-      Indexer.init_index(:public) |> @adapter.wait_for_task()
+        Indexer.init_index(:public) |> @adapter.wait_for_task()
 
-      {:ok, after_init} = @adapter.list_facets(index_name)
-      assert Enum.sort(after_init) == Enum.sort(Indexer.main_facets())
-    end
+        {:ok, after_init} = @adapter.list_facets(index_name)
+        assert Enum.sort(after_init) == Enum.sort(Indexer.main_facets())
+      end
 
-    test "updates searchable fields when they differ" do
-      index_name = Indexer.index_name(:public)
-      @adapter.set_searchable_fields(index_name, ["other_field"]) |> @adapter.wait_for_task()
+      test "updates searchable fields when they differ" do
+        index_name = Indexer.index_name(:public)
+        @adapter.set_searchable_fields(index_name, ["other_field"]) |> @adapter.wait_for_task()
 
-      {:ok, current} = @adapter.list_searchable_fields(index_name)
-      assert current == ["other_field"]
+        {:ok, current} = @adapter.list_searchable_fields(index_name)
+        assert current == ["other_field"]
 
-      Indexer.init_index(:public) |> @adapter.wait_for_task()
+        Indexer.init_index(:public) |> @adapter.wait_for_task()
 
-      {:ok, after_init} = @adapter.list_searchable_fields(index_name)
-      assert after_init == Indexer.main_searcheable_fields()
+        {:ok, after_init} = @adapter.list_searchable_fields(index_name)
+        assert after_init == Indexer.main_searcheable_fields()
+      end
     end
   end
 
@@ -108,6 +111,74 @@ defmodule Bonfire.Search.IndexesSearchTest do
     assert e(object, :created, :creator, :profile, :name, nil) != nil
   end
 
+  test "searches across multiple types and filters by type" do
+    account = fake_account!()
+    user = fake_user!(account)
+
+    user_attrs = %{post_content: %{html_body: "zephyranthes multitype luminiferous"}}
+
+    {:ok, _post_by_user} =
+      Posts.publish(current_user: user, post_attrs: user_attrs, boundary: "public")
+
+    post_attrs = %{post_content: %{html_body: "noctilucent multitype luminiferous"}}
+    {:ok, post} = Posts.publish(current_user: user, post_attrs: post_attrs, boundary: "public")
+
+    assert %{hits: hits} = Search.search("luminiferous")
+    assert length(hits) >= 1
+
+    results = Search.search_by_type("noctilucent", Post)
+    assert length(results) == 1
+    assert Enums.id(hd(results)) == Enums.id(post)
+  end
+
+  test "delete from public index removes object" do
+    account = fake_account!()
+    user = fake_user!(account)
+
+    {:ok, post} =
+      Posts.publish(
+        current_user: user,
+        post_attrs: %{post_content: %{html_body: "obliterable zymurgical compendium"}},
+        boundary: "public"
+      )
+
+    assert %{hits: [_]} = Search.search("obliterable")
+
+    assert Bonfire.Common.Enums.has_ok?(
+             Indexer.maybe_delete_object_all_indexes(Enums.id(post))
+             |> @adapter.wait_for_task()
+           )
+
+    assert %{hits: []} = Search.search("obliterable")
+  end
+
+  test "supports faceted search filtering by type" do
+    account = fake_account!()
+    user = fake_user!(account)
+
+    {:ok, _post} =
+      Posts.publish(
+        current_user: user,
+        post_attrs: %{post_content: %{html_body: "faceted search test content"}},
+        boundary: "public"
+      )
+
+    assert {:ok, _} =
+             Indexer.maybe_index_object(user)
+             ~> @adapter.wait_for_task()
+
+    results =
+      Search.search(
+        "faceted search test",
+        %{},
+        true,
+        %{"index_type" => Types.module_to_str(Post)}
+      )
+
+    assert %{hits: hits} = results
+    assert Enum.all?(hits, &(Types.object_type(e(&1, :activity, :object, nil) || &1) == Post))
+  end
+
   describe "private index" do
     test "can index and search for objects in private index" do
       # Create a post and index it in the private index
@@ -136,13 +207,12 @@ defmodule Bonfire.Search.IndexesSearchTest do
     end
 
     test "can remove objects from private index" do
-      # Create a post and index it in the private index
       post = %Post{
         id: uid(Post),
         post_content: %{
-          name: "To Be Deleted",
-          summary: "This will be removed",
-          html_body: "Temporary private content"
+          name: "Obliterate Zymurgy Private",
+          summary: "Evanescent private summary",
+          html_body: "Evanescent zymurgical content"
         }
       }
 
@@ -150,23 +220,19 @@ defmodule Bonfire.Search.IndexesSearchTest do
                Indexer.maybe_index_object(post, :closed)
                ~> @adapter.wait_for_task()
 
-      # Verify it is in the private index
       assert %{hits: [hit]} =
-               Search.search("To Be Deleted", index: :closed, skip_boundary_check: true)
+               Search.search("evanescent", index: :closed, skip_boundary_check: true)
 
       assert Enums.id(hit) == Enums.id(post)
 
-      # Remove it from the private index
       # NOTE: without having to specify which index
       assert Bonfire.Common.Enums.has_ok?(
                Indexer.maybe_delete_object_all_indexes(Enums.id(post))
-               #  Indexer.maybe_delete_object(Enums.id(post), :closed)
                |> @adapter.wait_for_task()
              )
 
-      # Verify it is no longer in the private index
       assert %{hits: []} =
-               Search.search("To Be Deleted", index: :closed, skip_boundary_check: true)
+               Search.search("evanescent", index: :closed, skip_boundary_check: true)
     end
 
     test "indexes and searches non-public posts with boundary checks" do

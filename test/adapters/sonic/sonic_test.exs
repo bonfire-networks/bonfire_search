@@ -47,7 +47,7 @@ if Application.get_env(:bonfire_search, :adapter) == Bonfire.Search.Sonic do
 
         assert {:ok, :indexed} = Sonic.put_documents(doc, collection)
 
-        result = Sonic.search("roundtrip", %{index: index})
+        result = Sonic.search("roundtrip", %{index: index, raw: true})
         assert %{hits: hits} = result
         assert Enum.any?(hits, &(&1["id"] == doc["id"]))
 
