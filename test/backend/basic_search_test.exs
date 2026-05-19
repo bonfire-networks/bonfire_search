@@ -1,4 +1,4 @@
-defmodule Bonfire.Search.BasicMeiliTest do
+defmodule Bonfire.Search.BasicSearchTest do
   use Bonfire.Search.DataCase, async: false
   doctest Bonfire.Search
 
@@ -10,17 +10,11 @@ defmodule Bonfire.Search.BasicMeiliTest do
   alias Bonfire.Posts
   alias Bonfire.Messages
 
-  # @adapter Bonfire.Search.DB
-  # @adapter Bonfire.Search.Meili
-  @adapter Bonfire.Search.MeiliLib
+  @adapter Bonfire.Common.Config.get(:adapter, Bonfire.Search.MeiliLib, :bonfire_search)
 
   setup do
-    {meili_adapter, tesla_adapter} = prepare_meili_for_tests()
-
-    on_exit(fn ->
-      reset_meili_after_tests(meili_adapter, tesla_adapter)
-    end)
-
+    prev = prepare_indexes_for_tests(@adapter)
+    on_exit(fn -> reset_indexes_after_tests(@adapter, prev) end)
     :ok
   end
 

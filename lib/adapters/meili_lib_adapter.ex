@@ -240,6 +240,23 @@ defmodule Bonfire.Search.MeiliLib do
 
   def healthy? do
     Meilisearch.Health.healthy?(get_client())
+  rescue
+    e ->
+      error(e)
+      false
+  end
+
+  def prepare_for_tests do
+    Bonfire.Common.Config.put(:adapter, {Tesla.Adapter.Finch, name: Bonfire.Finch}, :tesla)
+
+    case Bonfire.Search.Adapter.await_healthy(__MODULE__) do
+      {:ok, _} -> :ok
+      {:error, _} -> raise "Meilisearch not available for tests"
+    end
+  end
+
+  def reset_after_tests do
+    Bonfire.Common.Config.put(:adapter, nil, :tesla)
   end
 
   def create_index(index_name, _fail_silently \\ false) do

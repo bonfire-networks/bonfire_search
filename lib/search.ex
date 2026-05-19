@@ -22,7 +22,16 @@ defmodule Bonfire.Search do
       nil
     )
 
-    Supervisor.start_link([], strategy: :one_for_one)
+    children =
+      case Bonfire.Common.Config.get_ext(:bonfire_search, :adapter) do
+        nil ->
+          []
+
+        adapter ->
+          if function_exported?(adapter, :child_specs, 0), do: adapter.child_specs(), else: []
+      end
+
+    Supervisor.start_link(children, strategy: :one_for_one)
   end
 
   @doc """

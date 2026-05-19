@@ -32,6 +32,14 @@ defmodule Bonfire.Search.Adapter do
   @callback put_documents(object(), binary()) :: {:ok, map()} | {:error, term()}
   @callback delete(binary(), binary()) :: {:ok, map()} | {:error, term()}
 
+  # Optional test lifecycle hooks — adapters that need special setup (e.g. Tesla
+  # mock config for Meili) implement these; others get no-op defaults.
+  @callback prepare_for_tests() :: any()
+  @callback reset_after_tests() :: any()
+
+  # Optional — return supervisor child specs for any processes the adapter needs
+  @callback child_specs() :: [:supervisor.child_spec()]
+
   @optional_callbacks [
     healthy?: 0,
     index_exists: 1,
@@ -42,8 +50,24 @@ defmodule Bonfire.Search.Adapter do
     set_searchable_fields: 2,
     wait_for_task: 1,
     put_documents: 2,
-    delete: 2
+    delete: 2,
+    prepare_for_tests: 0,
+    reset_after_tests: 0,
+    child_specs: 0
   ]
+
+  @doc "Polls `healthy?/0` with exponential backoff until the adapter is ready or retries are exhausted."
+  def await_healthy(adapter, backoff \\ 500, retries_left \\ 8)
+  def await_healthy(_adapter, _backoff, 0), do: {:error, :timeout}
+
+  def await_healthy(adapter, backoff, retries_left) do
+    if adapter.healthy?() do
+      {:ok, :healthy}
+    else
+      Process.sleep(backoff)
+      await_healthy(adapter, min(backoff * 2, 10_000), retries_left - 1)
+    end
+  end
 
   defmacro __using__(_opts) do
     quote do
@@ -51,6 +75,7 @@ defmodule Bonfire.Search.Adapter do
 
       def healthy?, do: true
       def batch_indexing?, do: false
+      def child_specs, do: []
       def index_exists(_index_name), do: false
       def create_index(_index_name, _fail_silently \\ false), do: {:ok, %{}}
       def list_facets(_index_name), do: {:ok, []}
@@ -61,8 +86,18 @@ defmodule Bonfire.Search.Adapter do
       def put_documents(_object, _index_name), do: {:ok, %{}}
       def delete(_object, _index_name), do: {:ok, %{}}
 
+      def prepare_for_tests do
+        case Bonfire.Search.Adapter.await_healthy(__MODULE__) do
+          {:ok, _} -> :ok
+          {:error, _} -> raise "Search adapter not available for tests"
+        end
+      end
+
+      def reset_after_tests, do: :ok
+
       defoverridable healthy?: 0,
                      batch_indexing?: 0,
+                     child_specs: 0,
                      index_exists: 1,
                      create_index: 2,
                      list_facets: 1,
@@ -71,7 +106,9 @@ defmodule Bonfire.Search.Adapter do
                      set_searchable_fields: 2,
                      wait_for_task: 1,
                      put_documents: 2,
-                     delete: 2
+                     delete: 2,
+                     prepare_for_tests: 0,
+                     reset_after_tests: 0
     end
   end
 end

@@ -40,7 +40,6 @@ defmodule Bonfire.Search.Indexer do
         description: l("Default searchable fields")
       )
 
-
   def index_name(name), do: "#{Config.env()}_#{name}"
 
   @doc """
@@ -49,7 +48,6 @@ defmodule Bonfire.Search.Indexer do
   Pass `wait_for_indexing: true` in config to force the synchronous path (useful in tests).
   """
   def maybe_queue_or_index(object, index \\ nil, adapter \\ adapter()) do
-
     if !adapter do
       error("No adapter configured for indexing")
     else
@@ -80,7 +78,6 @@ defmodule Bonfire.Search.Indexer do
   def maybe_index_object(nil), do: error("object is nil, skipping indexing")
 
   def maybe_index_object(object, index \\ nil, adapter \\ adapter()) do
-
     indexable_object =
       prepare_indexable_object(object)
       |> filter_empty(nil)
@@ -137,31 +134,30 @@ defmodule Bonfire.Search.Indexer do
   # add to general instance search index
   def init_indexes_on_startup do
     if adapter = adapter() do
-      Task.start(fn -> await_and_init(adapter, 1_000) end)
-    end
-  end
+      Task.start(fn ->
+        with {:ok, _} <- Bonfire.Search.Adapter.await_healthy(adapter, 1_000) do
+          info("Initializing search indexes")
 
-  defp await_and_init(adapter, backoff) do
-    if adapter.healthy?() do
-      info("Initializing search indexes")
+          for index <- @main_indexes do
+            init_index(index)
+          end
 
-      for index <- @main_indexes do
-        init_index(index)
-      end
-
-      # fail loud if the queue isn't configured: otherwise index jobs are
-      # inserted but never processed, and nothing gets indexed — silently.
-      # (No explicit drain needed: Oban durably persists jobs and resumes any
-      # scheduled/available ones automatically after a restart.)
-      unless Bonfire.Search.Workers.IndexWorker.queue_configured?() do
-        error(
-          "Bonfire.Search: the `search_index` Oban queue is NOT configured — index jobs will never be processed. Add `search_index: <n>` to `config :bonfire, Oban, queues`."
-        )
-      end
-    else
-      warn("Search service not ready, retrying in #{backoff}ms")
-      Process.sleep(backoff)
-      await_and_init(adapter, min(backoff * 2, 30_000))
+          # fail loud if the queue isn't configured: otherwise index jobs are
+          # inserted but never processed, and nothing gets indexed — silently.
+          # (No explicit drain needed: Oban durably persists jobs and resumes any
+          # scheduled/available ones automatically after a restart.)
+          if adapter.batch_indexing?() &&
+               !Bonfire.Search.Workers.IndexWorker.queue_configured?() do
+            error(
+              "Bonfire.Search: the `search_index` Oban queue is NOT configured — index jobs will never be processed. Add `search_index: <n>` to `config :bonfire, Oban, queues`."
+            )
+          end
+        else
+          err ->
+            error(err, "Search adapter unavailable, disabling search")
+            Bonfire.Common.Config.put(:adapter, nil, :bonfire_search)
+        end
+      end)
     end
   end
 
@@ -291,7 +287,11 @@ defmodule Bonfire.Search.Indexer do
 
   def maybe_delete_object_all_indexes(object, adapter \\ adapter()) do
     object = uid(object)
-    [delete_object(object, index_name(:closed), adapter), delete_object(object, index_name(:public), adapter)]
+
+    [
+      delete_object(object, index_name(:closed), adapter),
+      delete_object(object, index_name(:public), adapter)
+    ]
   end
 
   defp delete_object(nil, _, _) do
@@ -301,7 +301,7 @@ defmodule Bonfire.Search.Indexer do
   defp delete_object(object_id, index_name, adapter) do
     if adapter do
       with {:ok, task} <- adapter.delete(object_id, index_name) do
-      if Bonfire.Common.Config.get([:bonfire_search, :wait_for_indexing])
+        if Bonfire.Common.Config.get([:bonfire_search, :wait_for_indexing])
            |> debug("wait_for_indexing?") do
           adapter.wait_for_task(task)
         else

@@ -32,6 +32,7 @@ defmodule Bonfire.Search.DataCase do
 
       use Arrows
       use Bonfire.Common.E
+      use Bonfire.Common.Config
       import Bonfire.Common.Utils
       alias Bonfire.Common.Enums
       alias Bonfire.Common.Types

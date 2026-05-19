@@ -107,7 +107,7 @@ defmodule Bonfire.Search.Acts.Queue do
           :activity_preloads,
           [
             thing,
-            [:tags, :feed_by_creator, :with_replied],
+            [:tags, :feed_by_creator, :with_creator, :with_replied],
             []
           ]
         )
