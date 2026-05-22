@@ -23,9 +23,9 @@
     {#if @selected_tab == "Bonfire.Data.Identity.User"}
       {#for user <- e(@user_hits, [])}
         <div>
-          <StatefulComponent
-            module={maybe_component(Bonfire.UI.Social.ActivityLive, @__context__)}
-            id={"search-user-#{id(user)}"}
+          <StatelessComponent
+            module={maybe_component(Bonfire.UI.Me.Preview.CharacterLive, @__context__)}
+            activity_component_id={"search-user-#{id(user)}"}
             showing_within={:search}
             object={user}
           />
@@ -92,9 +92,9 @@
         <div class="divide-y divide-base-content/10">
           {#for user <- Enum.take(e(@user_hits, []), 5)}
             <div>
-              <StatefulComponent
-                module={maybe_component(Bonfire.UI.Social.ActivityLive, @__context__)}
-                id={"search-user-#{id(user)}"}
+              <StatelessComponent
+                module={maybe_component(Bonfire.UI.Me.Preview.CharacterLive, @__context__)}
+                activity_component_id={"search-user-#{id(user)}"}
                 showing_within={:search}
                 object={user}
               />

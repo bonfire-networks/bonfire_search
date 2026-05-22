@@ -18,6 +18,10 @@ defmodule Bonfire.Search.DataCase do
 
   using do
     quote do
+      if is_nil(Application.get_env(:bonfire_search, :adapter)) do
+        @moduletag :skip
+      end
+
       import Ecto
       import Ecto.Changeset
       import Ecto.Query

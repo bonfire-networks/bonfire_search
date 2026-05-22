@@ -228,12 +228,16 @@ defmodule Bonfire.Search.Web.SearchTest do
       |> wait_async()
       |> assert_has_or_open_browser(".activity", text: html_body_post)
       |> assert_has_or_open_browser(".activity [data-role=cw]")
-      |> assert_has_or_open_browser(".activity [data-id=profile_name]", text: user_name)
+      |> assert_has_or_open_browser("[data-role=character] [data-id=profile_name]",
+        text: user_name
+      )
 
       conn
       |> visit("/search?facet[index_type]=Bonfire.Data.Identity.User&s=veridian")
       |> wait_async()
-      |> assert_has_or_open_browser(".activity [data-id=profile_name]", text: user_name)
+      |> assert_has_or_open_browser("[data-role=character] [data-id=profile_name]",
+        text: user_name
+      )
       |> refute_has(".activity", text: html_body_post)
 
       conn
@@ -241,19 +245,21 @@ defmodule Bonfire.Search.Web.SearchTest do
       |> wait_async()
       |> assert_has_or_open_browser(".activity", text: html_body_post)
       |> assert_has_or_open_browser(".activity [data-role=cw]")
-      |> refute_has(".activity [data-id=profile_name]", text: user_name)
+      |> refute_has("[data-role=character] [data-id=profile_name]", text: user_name)
 
       conn
       |> visit("/search?s=veridian")
       |> click_link(".tabs a", "Users")
       |> wait_async()
-      |> assert_has_or_open_browser(".activity [data-id=profile_name]", text: user_name)
+      |> assert_has_or_open_browser("[data-role=character] [data-id=profile_name]",
+        text: user_name
+      )
       |> refute_has(".activity", text: html_body_post)
       |> click_link(".tabs a", "Posts")
       |> wait_async()
       |> assert_has_or_open_browser(".activity", text: html_body_post)
       |> assert_has_or_open_browser(".activity [data-role=cw]")
-      |> refute_has(".activity [data-id=profile_name]", text: user_name)
+      |> refute_has("[data-role=character] [data-id=profile_name]", text: user_name)
     end
 
     test "user can switch between public/private search indexes, showing messages I sent in private one",
@@ -273,18 +279,22 @@ defmodule Bonfire.Search.Web.SearchTest do
 
       conn
       |> visit("/search?index=public&s=zymurgy")
+      |> wait_async()
       |> refute_has(".activity", text: html_message)
 
       conn
       |> visit("/search?index=closed&s=zymurgy")
+      |> wait_async()
       |> assert_has(".activity [data-id=object_body]", text: html_message)
 
       conn
       |> visit("/search?index=public&s=zymurgy")
+      |> wait_async()
       |> refute_has(".activity", text: html_message)
 
       conn
       |> visit("/search?index=closed&s=zymurgy")
+      |> wait_async()
       |> assert_has(".activity", text: html_message)
     end
 
@@ -304,22 +314,27 @@ defmodule Bonfire.Search.Web.SearchTest do
 
       conn
       |> visit("/search?index=public&s=quixotic")
+      |> wait_async()
       |> refute_has(".activity", text: html_message)
 
       conn
       |> visit("/search?index=closed&s=quixotic")
+      |> wait_async()
       |> assert_has(".activity", text: html_message)
 
       conn
       |> visit("/search?index=public&s=quixotic")
+      |> wait_async()
       |> refute_has(".activity", text: html_message)
 
       conn
       |> visit("/search?index=closed&s=quixotic")
+      |> wait_async()
       |> assert_has(".activity", text: html_message)
 
       conn
       |> visit("/search?index=public&s=quixotic")
+      |> wait_async()
       |> refute_has(".activity", text: html_message)
     end
   end

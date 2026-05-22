@@ -151,8 +151,13 @@ defmodule Bonfire.Search.Sonic do
            Sonix.query(conn, collection, bucket, string, limit: limit, offset: offset) do
       info("Sonic: query returned ids: #{inspect(ids)}")
       # NOTE: Sonic only returns object IDs, so raw hits only contain %{"id" => id}.
-      # Unlike Meilisearch, raw results have no document fields (no index_type, content, etc).
-      raw_hits = Enum.map(ids, &%{"id" => &1})
+      # When searching a typed bucket (not "all"), we know the index_type from the bucket name.
+      raw_hits =
+        if bucket == @all_bucket do
+          Enum.map(ids, &%{"id" => &1})
+        else
+          Enum.map(ids, &%{"id" => &1, "index_type" => bucket})
+        end
 
       hits =
         if e(opts, :raw, false) do
@@ -256,27 +261,21 @@ defmodule Bonfire.Search.Sonic do
   end
 
   defp extract_text(doc) when is_map(doc) do
-    collect_strings(doc)
+    Bonfire.Search.Indexer.main_searcheable_fields()
+    |> Enum.flat_map(fn field_path ->
+      keys = String.split(field_path, ".")
+
+      case get_in(doc, keys) do
+        nil -> []
+        val when is_binary(val) and val != "" -> [val]
+        vals when is_list(vals) -> Enum.filter(vals, &(is_binary(&1) and &1 != ""))
+        _ -> []
+      end
+    end)
     |> Enum.map(&strip_html/1)
     |> Enum.join(" ")
     |> String.trim()
   end
-
-  # Skip non-indexable top-level keys
-  @skip_keys ["id", "index_type", "index_instance"]
-
-  defp collect_strings(map) when is_map(map) do
-    Enum.flat_map(map, fn
-      {k, _} when k in @skip_keys -> []
-      {_, v} -> collect_strings(v)
-    end)
-  end
-
-  defp collect_strings(list) when is_list(list),
-    do: Enum.flat_map(list, &collect_strings/1)
-
-  defp collect_strings(str) when is_binary(str) and str != "", do: [str]
-  defp collect_strings(_), do: []
 
   defp strip_html(text) when is_binary(text) do
     # Remove HTML tags so Sonic indexes clean words

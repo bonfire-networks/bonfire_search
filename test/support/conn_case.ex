@@ -19,6 +19,10 @@ defmodule Bonfire.Search.ConnCase do
 
   using do
     quote do
+      if is_nil(Application.get_env(:bonfire_search, :adapter)) do
+        @moduletag :skip
+      end
+
       # Import conveniences for testing with connections
       import Plug.Conn
       import Phoenix.ConnTest

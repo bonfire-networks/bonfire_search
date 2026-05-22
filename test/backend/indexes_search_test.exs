@@ -111,6 +111,80 @@ defmodule Bonfire.Search.IndexesSearchTest do
     assert e(object, :created, :creator, :profile, :name, nil) != nil
   end
 
+  test "search_and_load returns activities with preloaded data" do
+    account = fake_account!()
+    sender = fake_user!(account)
+
+    html_message = "xyloquartz luminiferous search_and_load"
+
+    {:ok, post} =
+      Posts.publish(
+        current_user: sender,
+        post_attrs: %{post_content: %{html_body: html_message}},
+        boundary: "public"
+      )
+
+    result = Search.search_and_load(html_message, [], %{}, current_user: sender)
+
+    assert %{activities: activities, users: users} = result
+    assert length(activities) >= 1
+
+    activity_hit =
+      Enum.find(
+        activities,
+        &(Enums.id(&1) == Enums.id(post) or e(&1, :activity, :object_id, nil) == Enums.id(post))
+      )
+
+    assert activity_hit != nil
+
+    activity = e(activity_hit, :activity, nil) || activity_hit
+    object = e(activity, :object, nil)
+
+    assert object != nil
+
+    assert (e(object, :post_content, nil) != nil ||
+              e(object, :post_content, :html_body, nil) != nil) or
+             Types.object_type(object) == Post
+  end
+
+  test "search_and_load returns users separately from activities" do
+    account = fake_account!()
+    user = fake_user!(account)
+    user_name = "zymurgy separate user search_and_load"
+    {:ok, user} = Bonfire.Me.Users.update(user, %{profile: %{name: user_name}})
+    {:ok, _} = Bonfire.Search.Indexer.maybe_index_object(user) ~> @adapter.wait_for_task()
+
+    html_body = "zymurgy separate post search_and_load"
+
+    {:ok, _post} =
+      Posts.publish(
+        current_user: user,
+        post_attrs: %{post_content: %{html_body: html_body}},
+        boundary: "public"
+      )
+
+    result = Search.search_and_load("zymurgy separate", [], %{}, current_user: user)
+
+    assert %{activities: activities, users: users} = result
+
+    assert length(users) >= 1, "expected at least one user hit, got: #{inspect(result)}"
+    user_hit = hd(users)
+
+    assert e(user_hit, :profile, :name, nil) != nil,
+           "user profile name should be preloaded, got: #{inspect(user_hit)}"
+
+    assert e(user_hit, :character, :username, nil) != nil,
+           "user character username should be preloaded, got: #{inspect(user_hit)}"
+
+    assert length(activities) >= 1, "expected at least one activity hit, got: #{inspect(result)}"
+    activity_hit = hd(activities)
+    activity = e(activity_hit, :activity, nil) || activity_hit
+    assert e(activity, :object, nil) != nil, "activity object should be preloaded"
+
+    assert e(activity, :subject_id, nil) != nil or e(activity_hit, :subject_id, nil) != nil,
+           "activity subject_id should be set"
+  end
+
   test "searches across multiple types and filters by type" do
     account = fake_account!()
     user = fake_user!(account)
@@ -181,58 +255,62 @@ defmodule Bonfire.Search.IndexesSearchTest do
 
   describe "private index" do
     test "can index and search for objects in private index" do
-      # Create a post and index it in the private index
-      post = %Post{
-        id: uid(Post),
-        post_content: %{
-          name: "Private Post Title",
-          summary: "This post is private",
-          html_body: "Private content"
-        }
-      }
+      account = fake_account!()
+      sender = fake_user!(account)
 
-      assert {:ok, _} =
-               Indexer.maybe_index_object(post, :closed)
-               ~> @adapter.wait_for_task()
+      {:ok, post} =
+        Posts.publish(
+          current_user: sender,
+          post_attrs: %{post_content: %{html_body: "private zymurgical content luminiferous"}},
+          boundary: "mentions"
+        )
 
       # Verify it's not in the public index
       assert %{hits: []} =
-               Search.search("Private content", index: :public, skip_boundary_check: true)
+               Search.search("private zymurgical content luminiferous",
+                 index: :public,
+                 skip_boundary_check: true
+               )
 
       # Verify it is in the private index
       assert %{hits: [hit]} =
-               Search.search("Private content", index: :closed, skip_boundary_check: true)
+               Search.search("private zymurgical content luminiferous",
+                 index: :closed,
+                 skip_boundary_check: true
+               )
 
       assert Enums.id(hit) == Enums.id(post)
     end
 
     test "can remove objects from private index" do
-      post = %Post{
-        id: uid(Post),
-        post_content: %{
-          name: "Obliterate Zymurgy Private",
-          summary: "Evanescent private summary",
-          html_body: "Evanescent zymurgical content"
-        }
-      }
+      account = fake_account!()
+      sender = fake_user!(account)
 
-      assert {:ok, _} =
-               Indexer.maybe_index_object(post, :closed)
-               ~> @adapter.wait_for_task()
+      {:ok, post} =
+        Posts.publish(
+          current_user: sender,
+          post_attrs: %{post_content: %{html_body: "evanescent obliterate zymurgical private"}},
+          boundary: "mentions"
+        )
 
       assert %{hits: [hit]} =
-               Search.search("evanescent", index: :closed, skip_boundary_check: true)
+               Search.search("evanescent obliterate zymurgical private",
+                 index: :closed,
+                 skip_boundary_check: true
+               )
 
       assert Enums.id(hit) == Enums.id(post)
 
-      # NOTE: without having to specify which index
       assert Bonfire.Common.Enums.has_ok?(
                Indexer.maybe_delete_object_all_indexes(Enums.id(post))
                |> @adapter.wait_for_task()
              )
 
       assert %{hits: []} =
-               Search.search("evanescent", index: :closed, skip_boundary_check: true)
+               Search.search("evanescent obliterate zymurgical private",
+                 index: :closed,
+                 skip_boundary_check: true
+               )
     end
 
     test "indexes and searches non-public posts with boundary checks" do

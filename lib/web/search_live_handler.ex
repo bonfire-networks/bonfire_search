@@ -219,8 +219,7 @@ defmodule Bonfire.Search.LiveHandler do
           socket
         end
 
-      socket
-      |> content_live_search(q, search_limit, facet_filters, ..., search_opts, opts)
+      content_live_search(q, search_limit, facet_filters, socket, search_opts, opts)
     else
       {:noreply, socket}
     end
@@ -327,29 +326,17 @@ defmodule Bonfire.Search.LiveHandler do
     try do
       current_user = current_user(socket)
 
-      # Get IDs from Meilisearch, categorized by type
       search_result =
-        Bonfire.Search.search_ids(
+        Bonfire.Search.search_and_load(
           q,
-          search_opts,
           Map.keys(facet_filters || %{}),
-          facet_filters
+          facet_filters,
+          Map.put(search_opts, :current_user, current_user)
         )
-        |> debug("search_ids result")
+        |> debug("search_and_load result")
 
-      # Load activities for post IDs via standard feed pipeline
-      activities =
-        Bonfire.Search.load_activities_for_search(
-          search_result.post_ids,
-          current_user: current_user
-        )
-        |> debug("loaded activities for search")
-
-      # Load users separately
-      users =
-        if search_result.user_ids != [] do
-          Bonfire.Me.Users.by_ids(search_result.user_ids, skip_boundary_check: true)
-        end || []
+      activities = e(search_result, :activities, [])
+      users = e(search_result, :users, [])
 
       # Handle pagination state - append to existing hits on load_more
       current_hits =

@@ -32,6 +32,9 @@ defmodule Bonfire.Search.RuntimeConfig do
       instance: System.get_env("SEARCH_MEILI_INSTANCE", "http://search:7700"),
       api_key: meili_key
 
+    config :bonfire_search,
+      modularity: if(!adapter, do: :disabled)
+
     config :bonfire_search, Bonfire.Search.Indexer,
       modularity:
         if(

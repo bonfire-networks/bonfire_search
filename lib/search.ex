@@ -5,6 +5,16 @@
 defmodule Bonfire.Search do
   @moduledoc "./README.md" |> File.stream!() |> Enum.drop(1) |> Enum.join()
 
+  @search_preloads [
+    :with_object_more,
+    :with_object_peered,
+    :with_creator,
+    :with_subject,
+    :with_media,
+    :with_reply_to,
+    :quote_tags
+  ]
+
   import Untangle
   use Application
   use Bonfire.Common.Utils
@@ -91,16 +101,70 @@ defmodule Bonfire.Search do
   end
 
   @doc """
+  Search and load results in one step, returning categorised activities and users.
+
+  For typed adapters (e.g. Meilisearch): uses `search_ids` + `load_activities_for_search`
+  + `Users.by_ids` — the efficient path since type info is already in the hits.
+
+  For Sonic (ID-only hits, no type info): skips raw mode and uses `prepare_hits` so
+  results are loaded from DB before categorisation. User hits are identified by their
+  subject_id equalling object_id (set in `prepare_hits` for standalone objects).
+  """
+  def search_and_load(string, calculate_facets \\ [], filter_facets \\ %{}, opts \\ []) do
+    opts = to_options(opts)
+    sonic? = adapter() == Bonfire.Search.Sonic
+
+    search_result = search_categorised(string, calculate_facets, filter_facets, not sonic?, opts)
+
+    if sonic? do
+      # Hits are typed structs — apply appropriate preloads per category
+      activities =
+        search_result.activity_hits
+        |> Bonfire.Social.Activities.activity_preloads(@search_preloads,
+          current_user: current_user(opts)
+        )
+        |> Enum.map(&backfill_subject_id/1)
+        |> Bonfire.Social.Activities.prepare_subject_and_creator(opts)
+
+      flood(search_result.user_hits, "search_and_load: user_hits before preload")
+
+      users =
+        search_result.user_hits
+        |> repo().maybe_preload([profile: [:icon], character: []], opts)
+        |> flood("search_and_load: user_hits after preload")
+
+      flood(activities, "search_and_load: activity_hits after preload")
+
+      Map.merge(search_result, %{activities: activities, users: users})
+    else
+      # Meilisearch — activity_hits/user_hits are IDs, load from DB
+      activities = load_activities_for_search(search_result.activity_hits, opts)
+
+      users =
+        if search_result.user_hits != [],
+          do: Bonfire.Me.Users.by_ids(search_result.user_hits, skip_boundary_check: true),
+          else: []
+
+      Map.merge(search_result, %{activities: activities, users: users})
+    end
+  end
+
+  @doc """
   Search and return just IDs + metadata (no struct transformation).
   Categorizes results into post IDs and user IDs for separate loading.
   """
-  def search_ids(string, opts, calculate_facets \\ [], filter_facets \\ %{}) do
-    # Pass raw: true to get unprocessed Meilisearch hits (skip prepare_hits in adapter)
-    raw_opts = opts |> Enum.into(%{raw: true})
+  def search_categorised(
+        string,
+        calculate_facets \\ [],
+        filter_facets \\ %{},
+        raw \\ adapter() != Bonfire.Search.Sonic,
+        opts \\ []
+      ) do
+    raw_opts = opts |> Enum.into(%{raw: raw})
     result = search(string, raw_opts, calculate_facets, filter_facets)
     hits = e(result, :hits, [])
 
-    %{post_ids: post_ids, user_ids: user_ids} = categorize_hit_ids(hits)
+    %{activity_hits: activity_hits, user_hits: user_hits, typed: typed} = categorize_hits(hits)
 
     total_hits =
       e(result, :estimatedTotalHits, nil) || e(result, :totalHits, nil) || length(hits)
@@ -112,8 +176,9 @@ defmodule Bonfire.Search do
     has_more = total_hits > offset + limit or length(hits) == limit
 
     %{
-      post_ids: post_ids,
-      user_ids: user_ids,
+      activity_hits: activity_hits,
+      user_hits: user_hits,
+      typed: typed,
       facets: if(!filter_facets, do: e(result, :facetDistribution, nil)),
       total_hits: total_hits,
       page_info: %{
@@ -125,46 +190,60 @@ defmodule Bonfire.Search do
 
   @user_index_types ["Bonfire.Data.Identity.User", "Bonfire.Data.Identity.Character"]
 
-  defp categorize_hit_ids(hits) do
+  defp categorize_hits(hits) do
     # use prepend + reverse to avoid O(n²) from ++
+    # For typed structs (Sonic), store the hit itself; for raw maps (Meili), store just the ID
     result =
-      Enum.reduce(hits, %{post_ids: [], user_ids: []}, fn hit, acc ->
-        id = Enums.id(hit)
-        # handle both raw Meilisearch maps (string keys) and Ecto structs
-        type = hit_index_type(hit)
+      Enum.reduce(
+        hits,
+        %{activity_hits: [], user_hits: [], typed: false},
+        fn hit, acc ->
+          type = hit_index_type(hit)
+          item = if is_struct(hit), do: hit, else: Enums.id(hit)
 
-        if id do
-          if type in @user_index_types do
-            %{acc | user_ids: [id | acc.user_ids]}
+          if item do
+            if type in @user_index_types do
+              %{acc | user_hits: [item | acc.user_hits], typed: true}
+            else
+              %{
+                acc
+                | activity_hits: [item | acc.activity_hits],
+                  typed: acc.typed || not is_nil(type)
+              }
+            end
           else
-            %{acc | post_ids: [id | acc.post_ids]}
+            acc
           end
-        else
-          acc
         end
-      end)
+      )
 
-    # reverse to preserve Meilisearch relevance order
-    %{post_ids: Enum.reverse(result.post_ids), user_ids: Enum.reverse(result.user_ids)}
+    %{
+      activity_hits: Enum.reverse(result.activity_hits),
+      user_hits: if(result.typed, do: Enum.reverse(result.user_hits), else: []),
+      typed: result.typed
+    }
   end
 
   defp hit_index_type(%{index_type: type}) when is_binary(type), do: type
   defp hit_index_type(%{"index_type" => type}) when is_binary(type), do: type
 
-  defp hit_index_type(%{__struct__: module}),
-    do: to_string(module)
+  defp hit_index_type(%{__struct__: module} = hit) when module != Needle.Pointer do
+    Types.module_to_str(module)
+  end
+
+  defp hit_index_type(%{__struct__: _} = hit) do
+    # For Needle.Pointer or other pointer-like structs, check the nested object
+    hit = e(hit, :activity, :object, nil) || e(hit, :object, nil) || hit
+
+    type = Types.object_type(hit)
+
+    case type do
+      t when is_atom(t) and not is_nil(t) -> Types.module_to_str(t)
+      _ -> nil
+    end
+  end
 
   defp hit_index_type(_), do: nil
-
-  @search_preloads [
-    :with_object_more,
-    :with_object_peered,
-    :with_creator,
-    :with_subject,
-    :with_media,
-    :with_reply_to,
-    :quote_tags
-  ]
 
   @doc """
   Load activities by object IDs using the standard feed pipeline.
@@ -215,12 +294,17 @@ defmodule Bonfire.Search do
         id = id(hit)
 
         # Create a proper structure that activity_preloads can handle
-        case hit do
-          %{__struct__: Bonfire.Data.Social.Activity} = activity ->
+        case {hit, Types.object_type(hit)} do
+          {user, type}
+          when type in [Bonfire.Data.Identity.User, Bonfire.Data.Identity.Character] ->
+            # Users are categorized separately and loaded via Users.by_ids — no activity wrapping needed
+            user
+
+          {%{__struct__: Bonfire.Data.Social.Activity} = activity, _} ->
             activity
 
-          %{__struct__: _, activity: %{__struct__: Bonfire.Data.Social.Activity} = activity} =
-              struct_hit ->
+          {%{__struct__: _, activity: %{__struct__: Bonfire.Data.Social.Activity} = activity} =
+               struct_hit, _} ->
             struct_hit
             |> Map.drop([:created, :subject, :replied])
             |> Map.put(
@@ -228,10 +312,6 @@ defmodule Bonfire.Search do
               activity
               |> Map.merge(%{
                 object: struct_hit,
-                # subject:
-                #   e(struct_hit, :created, :creator, nil) || e(activity, :subject, nil) ||
-                #     e(struct_hit, :caretaker, nil) || %Ecto.Association.NotLoaded{},
-                #  set a default if not sensitive
                 sensitive: e(hit, :sensitive, nil),
                 replied:
                   e(struct_hit, :replied, nil) || e(activity, :replied, nil) ||
@@ -240,17 +320,21 @@ defmodule Bonfire.Search do
             )
             |> debug("transformed activity struct")
 
-          # %Needle.Pointer{
-          #   id: id,
-          #   activity: %Bonfire.Data.Social.Activity{
-          #     object: struct_hit,
-          #     object_id: id,
-          #     id: id
-          #   }
-          # }
+          {%{__struct__: _} = object, _} ->
+            # Already a typed DB struct (e.g. from load_pointers) — use directly as object
+            # without mangling it through input_to_atoms/maybe_to_structs
+            debug(object, "prepare_hits: typed struct case")
+
+            %Needle.Pointer{
+              id: id,
+              activity:
+                %{id: id, object: object, object_id: id}
+                |> maybe_to_struct(Bonfire.Data.Social.Activity)
+            }
+            |> debug("transformed typed struct")
 
           _ ->
-            # For non-Activity hits, create a simpler structure
+            # For raw map hits (e.g. Meilisearch), create a structure from the map
 
             hit =
               hit
@@ -291,9 +375,23 @@ defmodule Bonfire.Search do
     end)
     # |> debug("converted results to structs")
     |> hits_preloads(opts)
+    |> Enum.map(&backfill_subject_id/1)
     |> Bonfire.Social.Activities.prepare_subject_and_creator(opts)
     |> debug("preloaded structs")
   end
+
+  defp backfill_subject_id(%{activity: %{subject_id: sid} = activity} = hit)
+       when is_nil(sid) or sid == "" do
+    creator_id =
+      e(activity, :object, :created, :creator_id, nil) ||
+        e(activity, :object, :caretaker_id, nil)
+
+    if creator_id,
+      do: put_in(hit, [Access.key(:activity), Access.key(:subject_id)], creator_id),
+      else: hit
+  end
+
+  defp backfill_subject_id(hit), do: hit
 
   defp hits_preloads(objects, opts) do
     objects
@@ -304,34 +402,49 @@ defmodule Bonfire.Search do
     )
   end
 
-  def maybe_boundarise(hits, :public, _) do
-    debug("skip boundarising for public index")
-    hits
+  def maybe_boundarise(hits, :public, _opts) do
+    if adapter() == Bonfire.Search.Sonic do
+      info("loading for public index")
+      ids = Enums.ids(hits)
+
+      if ids != [],
+        do: Bonfire.Boundaries.load_pointers(ids, skip_boundary_check: true),
+        else: hits
+    else
+      debug("skip loading for public index")
+      hits
+    end
   end
 
   def maybe_boundarise(hits, _closed, opts) do
     opts = to_options(opts)
 
     if Bonfire.Boundaries.Queries.skip_boundary_check?(opts) do
-      hits
+      maybe_boundarise(hits, :public, opts)
     else
       # WIP: filter by boundaries for closed index
       list_of_ids =
         Enums.ids(hits)
         |> debug()
 
-      my_visible_ids =
-        if current_user = current_user(opts),
-          do:
-            Bonfire.Boundaries.load_pointers(list_of_ids,
-              current_user: current_user,
-              verbs: e(opts, :verbs, [:see, :read]),
-              ids_only: true
-            )
-            |> Enums.ids(),
-          else: []
+      sonic? = adapter() == Bonfire.Search.Sonic
 
-      Enum.filter(hits, &(Enums.id(&1) in my_visible_ids))
+      if current_user = current_user(opts) do
+        visible =
+          Bonfire.Boundaries.load_pointers(list_of_ids,
+            current_user: current_user,
+            verbs: e(opts, :verbs, [:see, :read]),
+            ids_only: not sonic?
+          )
+          |> flood("maybe_boundarise: closed load_pointers result")
+
+        if sonic?,
+          do: visible,
+          else: Enum.filter(hits, &(Enums.id(&1) in Enums.ids(visible)))
+      else
+        warn("maybe_boundarise: no current_user, returning []")
+        []
+      end
     end
   end
 

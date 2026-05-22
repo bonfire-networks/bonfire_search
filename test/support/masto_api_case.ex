@@ -6,6 +6,10 @@ defmodule Bonfire.Search.MastoApiCase do
 
   using do
     quote do
+      if is_nil(Application.get_env(:bonfire_search, :adapter)) do
+        @moduletag :skip
+      end
+
       import Plug.Conn
       import Phoenix.ConnTest
 

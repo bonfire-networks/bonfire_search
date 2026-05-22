@@ -6,6 +6,8 @@ defmodule Bonfire.Search.DataHelpers do
   (for adapter-specific setup like Tesla config), and clears the test indexes.
   Returns the previous adapter to pass to `reset_indexes_after_tests/2`.
   """
+  def prepare_indexes_for_tests(nil), do: nil
+
   def prepare_indexes_for_tests(adapter) do
     prev_adapter = Bonfire.Common.Config.get(:adapter, nil, :bonfire_search)
 
@@ -24,6 +26,8 @@ defmodule Bonfire.Search.DataHelpers do
   Clears test indexes, calls the adapter's `reset_after_tests/0` hook, and
   restores the previous adapter config.
   """
+  def reset_indexes_after_tests(nil, _prev_adapter), do: :ok
+
   def reset_indexes_after_tests(adapter, prev_adapter) do
     adapter.delete(:all, "test_public")
     adapter.delete(:all, "test_closed")
