@@ -56,13 +56,52 @@ defmodule Bonfire.Search.Sonic.Connection do
   end
 
   def handle_call(:get, _from, state) do
-    {:reply, {:ok, state.conn}, state}
+    # TODO: This protects callers from Sonix returning Sonic's fresh TCP greeting
+    # after an internal reconnect, but it adds one PING round trip per checkout.
+    # If this becomes hot, cache the health check briefly or retry only after a
+    # command returns the known stale-channel protocol responses.
+    if connected?(state.conn) do
+      {:reply, {:ok, state.conn}, state}
+    else
+      close(state.conn)
+
+      case open(state.mode) do
+        {:ok, conn} ->
+          {:reply, {:ok, conn}, %{state | conn: conn}}
+
+        {:error, reason} ->
+          warn(reason, "Sonic #{state.mode} reconnect failed")
+          {:reply, {:error, :not_connected}, %{state | conn: nil}}
+      end
+    end
   end
 
   @impl GenServer
-  def handle_info(:reconnect, state) do
+  def handle_info(:reconnect, %{conn: nil} = state) do
     {:noreply, state, {:continue, :connect}}
   end
+
+  def handle_info(:reconnect, state), do: {:noreply, state}
+
+  defp connected?(conn) when is_pid(conn) do
+    Sonix.ping(conn) == :ok
+  rescue
+    _ -> false
+  catch
+    _, _ -> false
+  end
+
+  defp connected?(_), do: false
+
+  defp close(conn) when is_pid(conn) do
+    Sonix.quit(conn)
+  rescue
+    _ -> :ok
+  catch
+    _, _ -> :ok
+  end
+
+  defp close(_), do: :ok
 
   # Opens a TCP connection via Sonix and issues the START handshake.
   # Sonix.Tcp handles TCP-level reconnection automatically; we only need

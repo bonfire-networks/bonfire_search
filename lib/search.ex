@@ -456,8 +456,46 @@ defmodule Bonfire.Search do
   def normalise_index(false), do: :closed
   def normalise_index(index), do: index
 
-  def maybe_index(object, "public", opts), do: maybe_index(object, :public, opts)
-  def maybe_index(object, ["public"], opts), do: maybe_index(object, :public, opts)
+  # Boundary names (as set when publishing) that mean "anyone can see this", so
+  # the object belongs in the `:public` search index. `"public_remote"` is the
+  # boundary assigned to incoming *federated* public content (see
+  # `Bonfire.Federate.ActivityPub.AdapterUtils.recipients_boundary_circles/4`),
+  # which maps to the same "public" access preset — without this it would wrongly
+  # land in the `:closed` index via the generic `is_binary/1` clause below.
+  @public_boundary_names ["public", "public_remote"]
+
+  @doc """
+  Returns true if a boundary (a name, or a list of names) grants public read
+  access, meaning matching objects should go in the `:public` search index.
+
+  ## Examples
+
+      iex> Bonfire.Search.public_boundary_name?("public")
+      true
+
+      iex> Bonfire.Search.public_boundary_name?("public_remote")
+      true
+
+      iex> Bonfire.Search.public_boundary_name?("mentions")
+      false
+
+      iex> Bonfire.Search.public_boundary_name?(["local", "public_remote"])
+      true
+
+      iex> Bonfire.Search.public_boundary_name?(["mentions"])
+      false
+
+      iex> Bonfire.Search.public_boundary_name?(nil)
+      false
+  """
+  def public_boundary_name?(boundary) when is_binary(boundary),
+    do: boundary in @public_boundary_names
+
+  def public_boundary_name?(boundaries) when is_list(boundaries),
+    do: Enum.any?(@public_boundary_names, &(&1 in boundaries))
+
+  def public_boundary_name?(_), do: false
+
   def maybe_index(object, true, opts), do: maybe_index(object, :public, opts)
   def maybe_index(object, false, opts), do: maybe_index(object, :closed, opts)
 
@@ -470,14 +508,17 @@ defmodule Bonfire.Search do
     end
   end
 
-  def maybe_index(object, boundary, opts) when is_binary(boundary),
-    do: maybe_index(object, :closed, opts)
+  def maybe_index(object, boundary, opts) when is_binary(boundary) do
+    if public_boundary_name?(boundary),
+      do: maybe_index(object, :public, opts),
+      else: maybe_index(object, :closed, opts)
+  end
 
   def maybe_index(object, boundaries, opts) when is_list(boundaries) do
-    if "public" in boundaries do
+    if public_boundary_name?(boundaries) do
       maybe_index(object, :public, opts)
     else
-      debug(boundaries, "`public` was not in list of boundaries, so indexing as closed")
+      debug(boundaries, "no `public`/`public_remote` boundary in list, so indexing as closed")
       maybe_index(object, :closed, opts)
     end
   end

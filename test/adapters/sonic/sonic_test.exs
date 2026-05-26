@@ -1,3 +1,41 @@
+defmodule Bonfire.Search.Sonic.ConnectionTest do
+  use ExUnit.Case, async: false
+
+  import Mock
+
+  alias Bonfire.Search.Sonic.Connection
+
+  test "restarts the channel before returning it when Sonic returns an uninitialized greeting" do
+    name = Module.concat(__MODULE__, "Search#{System.unique_integer([:positive])}")
+    {:ok, stale_conn} = Agent.start_link(fn -> nil end)
+    {:ok, fresh_conn} = Agent.start_link(fn -> nil end)
+    {:ok, calls} = Agent.start_link(fn -> %{inits: 0, quits: 0, starts: []} end)
+
+    with_mock Sonix,
+      init: fn _host, _port ->
+        Agent.get_and_update(calls, fn %{inits: inits} = state ->
+          conn = if inits == 0, do: stale_conn, else: fresh_conn
+          {{:ok, conn}, %{state | inits: inits + 1}}
+        end)
+      end,
+      start: fn conn, mode, _password ->
+        Agent.update(calls, fn state -> %{state | starts: [mode | state.starts]} end)
+        {:ok, conn}
+      end,
+      ping: fn ^stale_conn -> {:error, {:ok, "CONNECTED <sonic-server v1.4.9>"}} end,
+      quit: fn ^stale_conn ->
+        Agent.update(calls, fn state -> %{state | quits: state.quits + 1} end)
+        :ok
+      end do
+      start_supervised!({Connection, name: name, mode: "search"})
+
+      assert {:ok, ^fresh_conn} = Connection.get(name)
+
+      assert %{inits: 2, quits: 1, starts: ["search", "search"]} = Agent.get(calls, & &1)
+    end
+  end
+end
+
 if Application.get_env(:bonfire_search, :adapter) == Bonfire.Search.Sonic do
   defmodule Bonfire.Search.SonicTest do
     use Bonfire.Search.DataCase, async: false
