@@ -126,14 +126,14 @@ defmodule Bonfire.Search do
         |> Enum.map(&backfill_subject_id/1)
         |> Bonfire.Social.Activities.prepare_subject_and_creator(opts)
 
-      flood(search_result.user_hits, "search_and_load: user_hits before preload")
+      debug(search_result.user_hits, "search_and_load: user_hits before preload")
 
       users =
         search_result.user_hits
         |> repo().maybe_preload([profile: [:icon], character: []], opts)
-        |> flood("search_and_load: user_hits after preload")
+        |> debug("search_and_load: user_hits after preload")
 
-      flood(activities, "search_and_load: activity_hits after preload")
+      debug(activities, "search_and_load: activity_hits after preload")
 
       Map.merge(search_result, %{activities: activities, users: users})
     else
@@ -436,7 +436,7 @@ defmodule Bonfire.Search do
             verbs: e(opts, :verbs, [:see, :read]),
             ids_only: not sonic?
           )
-          |> flood("maybe_boundarise: closed load_pointers result")
+          |> debug("maybe_boundarise: closed load_pointers result")
 
         if sonic?,
           do: visible,
