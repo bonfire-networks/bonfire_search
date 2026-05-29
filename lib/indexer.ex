@@ -314,7 +314,7 @@ defmodule Bonfire.Search.Indexer do
   end
 
   def host(url) when is_binary(url) do
-    URI.parse(url).host
+    Bonfire.Common.URIs.base_domain(url)
   end
 
   def host(_) do
