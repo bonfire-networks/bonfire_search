@@ -24,12 +24,16 @@ if Application.compile_env(:bonfire_api_graphql, :modularity) != :disabled and
       @desc "Search for activities/statuses using meilisearch"
       field :search_activities, list_of(:activity) do
         arg(:filter, non_null(:search_filters))
+        # Phase 3 security: each result is a deeply-nested :activity — bound by a flat page
+        # estimate × per-node complexity (search results are server-capped).
+        complexity(fn _args, child -> 20 * child + 1 end)
         resolve(&search_activities/3)
       end
 
       @desc "Search for users/accounts using meilisearch"
       field :search_users, list_of(:user) do
         arg(:filter, non_null(:search_filters))
+        complexity(fn _args, child -> 20 * child + 1 end)
         resolve(&search_users/3)
       end
     end
