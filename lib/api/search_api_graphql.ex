@@ -75,7 +75,9 @@ if Application.compile_env(:bonfire_api_graphql, :modularity) != :disabled and
           Bonfire.Search.search(
             query,
             %{
-              index: :closed,
+              # search the public/discoverable index (same as the web UI + the adapter default);
+              # `:closed` only holds boundary-restricted content, so it misses public users/posts
+              index: :public,
               limit: filter[:limit] || 20,
               offset: filter[:offset] || 0,
               current_user: current_user
