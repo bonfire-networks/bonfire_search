@@ -151,4 +151,29 @@ defmodule Bonfire.Search.MastoApi.SearchTest do
       end
     end
   end
+
+  describe "GET /api/v1/search (GoToSocial serves search at both api versions)" do
+    setup do
+      account = fake_account!()
+      user = fake_user!(account)
+      {:ok, account: account, user: user}
+    end
+
+    test "is served and returns the same shape as v2", %{
+      conn: conn,
+      user: user,
+      account: account
+    } do
+      api_conn = masto_api_conn(conn, user: user, account: account)
+
+      response =
+        api_conn
+        |> get("/api/v1/search?q=test")
+        |> json_response(200)
+
+      assert is_list(response["accounts"])
+      assert is_list(response["statuses"])
+      assert is_list(response["hashtags"])
+    end
+  end
 end
