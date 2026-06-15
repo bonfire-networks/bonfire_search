@@ -231,8 +231,45 @@ defmodule Bonfire.Search.Sonic do
   end
 
   def put_documents(docs, collection) when is_list(docs) do
-    Enum.each(docs, &put_documents(&1, collection))
-    {:ok, :indexed}
+    # Batch: build every FLUSHO+PUSH up front, then pipeline them over a single
+    # connection checkout (Sonic has no bulk command, but allows pipelining).
+    case build_commands(docs, collection) do
+      [] ->
+        {:ok, :indexed}
+
+      commands ->
+        with {:ok, conn} <- ingest_conn(),
+             {:ok, results} <- Sonix.Tcp.pipeline(conn, commands) do
+          for {:error, reason} <- results,
+              do: error(reason, "Sonic: a pipelined ingest command failed")
+
+          {:ok, :indexed}
+        else
+          err -> error(err, "Sonic batch indexing failed")
+        end
+    end
+  end
+
+  @doc """
+  Maps prepared indexable docs into the flat list of Sonic ingest commands
+  (`FLUSHO`+`PUSH` per doc × bucket). Pure — sends nothing. Public for testing.
+  """
+  def build_commands(docs, collection) when is_list(docs) do
+    Enum.flat_map(docs, &doc_commands(&1, collection))
+  end
+
+  defp doc_commands(doc, collection) do
+    object_id = e(doc, "id", nil) || Types.uid(doc)
+    text = extract_text(doc)
+
+    if object_id && text != "" do
+      Enum.flat_map(
+        buckets_for(doc),
+        &Sonix.Modes.Ingest.flush_push_commands(collection, &1, object_id, text)
+      )
+    else
+      []
+    end
   end
 
   @impl true

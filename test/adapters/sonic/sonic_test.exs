@@ -88,6 +88,29 @@ if Application.get_env(:bonfire_search, :adapter) == Bonfire.Search.Sonic do
         Sonic.delete(:all, collection)
       end
 
+      test "adapter put_documents (batch list) pipelines and both are searchable" do
+        index = :public
+        collection = Bonfire.Search.Indexer.index_name(index)
+
+        Sonic.delete(:all, collection)
+
+        n = System.unique_integer([:positive])
+
+        docs = [
+          %{"id" => "sonic-batch-a-#{n}", "post_content" => %{"html_body" => "batchroundtrip alpha"}},
+          %{"id" => "sonic-batch-b-#{n}", "post_content" => %{"html_body" => "batchroundtrip beta"}}
+        ]
+
+        assert {:ok, :indexed} = Sonic.put_documents(docs, collection)
+
+        result = Sonic.search("batchroundtrip", %{index: index, raw: true})
+        assert %{hits: hits} = result
+        ids = Enum.map(hits, & &1["id"])
+        assert Enum.all?(docs, &(&1["id"] in ids))
+
+        Sonic.delete(:all, collection)
+      end
+
       test "delete removes document from index" do
         index = :public
         collection = Bonfire.Search.Indexer.index_name(index)
