@@ -71,7 +71,9 @@ defmodule Bonfire.Search.DB do
 
     do_search_db(opts[:query] || base_query(), search, types, opts ++ [skip_boundary_check: true])
     # |> Bonfire.Tag.search_hashtagged_query(search, opts) # TODO: use do_search_db like other types
+    # re-apply (AND-composed) the deleted + future-ULID filters that base_query omits
     |> where([p], is_nil(p.deleted_at))
+    |> repo().maybe_filter_out_future_ulids()
     # |> limit(^limit)
     |> debug("core query")
     |> paginate_and_boundarise_deferred_query(search, List.wrap(types), opts)
@@ -131,8 +133,10 @@ defmodule Bonfire.Search.DB do
   end
 
   def base_query do
-    Bonfire.Common.Needles.Pointers.Queries.query()
-    # Bonfire.Common.Needles.Pointers.Queries.query_incl_deleted()
+    # must stay `where`-free: type-specific conditions are added with `or_where`, so any
+    # base condition would get OR'ed in and match almost everything. run_search_db re-adds
+    # the deleted/future filters with AND afterwards.
+    Bonfire.Common.Needles.Pointers.Queries.query_incl_deleted()
   end
 
   defp do_search_db(query, search, types, opts) when is_list(types) do

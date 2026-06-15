@@ -86,18 +86,76 @@ defmodule Bonfire.Search do
     if adapter, do: adapter.search(string, index_or_opts)
   end
 
+  # only identity facets merge index hits with a DB query (see `search_by_type/3`)
+  @identity_search_types [Bonfire.Data.Identity.User, Bonfire.Data.Identity.Character]
+
   @doc """
-  Type-specific search with optional facets
+  Type-specific search with optional facets.
+
+  For identity facets, index hits are merged with a direct DB query (see
+  `merge_with_db_results/4`). Pass `db_merge: false` to skip it, `raw: true` for
+  untransformed index hits.
   """
   def search_by_type(tag_search, facets \\ nil, opts \\ []) do
     adapter = adapter()
+    opts = to_options(opts)
 
-    if Bonfire.Common.Config.get_ext(:bonfire_search, :disable_for_autocompletes) || !adapter do
-      debug("Search disabled for autocompletes, using DB adapter")
-      Bonfire.Search.DB.search_by_type(tag_search, facets, opts)
-    else
-      adapter.search_by_type(tag_search, facets, opts)
+    cond do
+      Bonfire.Common.Config.get_ext(:bonfire_search, :disable_for_autocompletes) || !adapter ->
+        debug("Search disabled for autocompletes, using DB adapter")
+        Bonfire.Search.DB.search_by_type(tag_search, facets, opts)
+
+      adapter == Bonfire.Search.DB || opts[:db_merge] == false || opts[:raw] ||
+          not identity_facet?(facets) ->
+        adapter.search_by_type(tag_search, facets, opts)
+
+      true ->
+        adapter.search_by_type(tag_search, facets, opts)
+        |> merge_with_db_results(tag_search, facets, opts)
     end
+  end
+
+  defp identity_facet?(facets) do
+    facets
+    |> List.wrap()
+    |> Enum.any?(fn facet ->
+      mod = if is_atom(facet), do: facet, else: Types.maybe_to_module(facet)
+      mod in @identity_search_types
+    end)
+  end
+
+  @doc """
+  Merges search-index hits with a direct DB query, DB matches first, deduped by ID.
+
+  Returns loaded pointer structs only: index-only IDs (which can be bare maps from
+  eg. Meilisearch) are loaded by ID, so the caller can safely preload the result
+  and stale index IDs drop out.
+  """
+  def merge_with_db_results(index_hits, tag_search, facets, opts \\ []) do
+    opts = to_options(opts)
+
+    db_results = search_by_type_in_db(tag_search, facets, opts)
+    db_ids = Enums.ids(db_results)
+
+    # load index-only IDs as structs so we never return a mix of structs and bare maps
+    index_only_ids = Enums.ids(List.wrap(index_hits)) -- db_ids
+
+    index_only =
+      if index_only_ids != [],
+        do: Bonfire.Boundaries.load_pointers(index_only_ids, skip_boundary_check: true),
+        else: []
+
+    (db_results ++ index_only)
+    |> Enum.take(opts[:limit] || 20)
+  end
+
+  defp search_by_type_in_db(tag_search, facets, opts) do
+    List.wrap(Bonfire.Search.DB.search_by_type(tag_search, facets, opts))
+  rescue
+    e ->
+      # a broken type-specific search query shouldn't take down index-based search
+      error(e, "Could not query the DB to merge with search index hits")
+      []
   end
 
   @doc """

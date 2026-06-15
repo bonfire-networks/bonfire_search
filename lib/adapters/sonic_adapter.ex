@@ -58,6 +58,14 @@ defmodule Bonfire.Search.Sonic do
 
   @all_bucket "all"
 
+  # pushed/queried with LANG(none) so Sonic doesn't stem or drop stopword-like usernames
+  # (eg. "test"). Only the per-type buckets; the mixed "all" bucket keeps stemming, so
+  # untyped global search can still miss such usernames.
+  @identity_buckets ["Bonfire.Data.Identity.User", "Bonfire.Data.Identity.Character"]
+
+  defp lang_opts(bucket) when bucket in @identity_buckets, do: [lang: "none"]
+  defp lang_opts(_bucket), do: []
+
   # ---------------------------------------------------------------------------
   # Connection helpers
   # ---------------------------------------------------------------------------
@@ -144,11 +152,20 @@ defmodule Bonfire.Search.Sonic do
     offset = e(opts, :offset, nil) || 0
     index = e(opts, :index, nil) || :public
 
+    # quotes/newlines break Sonic's single-line QUERY command (see sanitize_for_sonic)
+    string = sanitize_for_sonic(string)
+
     info("Sonic: searching for #{inspect(string)} in collection=#{collection} bucket=#{bucket}")
 
     with {:ok, conn} <- search_conn(),
          {:ok, ids} <-
-           Sonix.query(conn, collection, bucket, string, limit: limit, offset: offset) do
+           Sonix.query(
+             conn,
+             collection,
+             bucket,
+             string,
+             [limit: limit, offset: offset] ++ lang_opts(bucket)
+           ) do
       info("Sonic: query returned ids: #{inspect(ids)}")
       # NOTE: Sonic only returns object IDs, so raw hits only contain %{"id" => id}.
       # When searching a typed bucket (not "all"), we know the index_type from the bucket name.
@@ -202,7 +219,7 @@ defmodule Bonfire.Search.Sonic do
             with {:ok, conn} <- ingest_conn() do
               # Always flush first — PUSH appends, so we must clear stale text
               Sonix.flush(conn, collection, bucket, object_id)
-              Sonix.push(conn, collection, bucket, object_id, text)
+              Sonix.push(conn, collection, bucket, object_id, text, lang_opts(bucket))
             else
               err -> error(err, "Sonic ingest connection failed for bucket #{bucket}")
             end
@@ -278,9 +295,17 @@ defmodule Bonfire.Search.Sonic do
   end
 
   defp strip_html(text) when is_binary(text) do
-    # Remove HTML tags so Sonic indexes clean words
     Regex.replace(~r/<[^>]+>/, text, " ")
+    |> sanitize_for_sonic()
+  end
+
+  # strip quotes + collapse whitespace/newlines that would break Sonic's line protocol
+  defp sanitize_for_sonic(text) when is_binary(text) do
+    text
+    |> String.replace("\"", " ")
     |> String.replace(~r/\s+/, " ")
     |> String.trim()
   end
+
+  defp sanitize_for_sonic(text), do: text
 end
