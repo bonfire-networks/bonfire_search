@@ -97,8 +97,14 @@ if Application.get_env(:bonfire_search, :adapter) == Bonfire.Search.Sonic do
         n = System.unique_integer([:positive])
 
         docs = [
-          %{"id" => "sonic-batch-a-#{n}", "post_content" => %{"html_body" => "batchroundtrip alpha"}},
-          %{"id" => "sonic-batch-b-#{n}", "post_content" => %{"html_body" => "batchroundtrip beta"}}
+          %{
+            "id" => "sonic-batch-a-#{n}",
+            "post_content" => %{"html_body" => "batchroundtrip alpha"}
+          },
+          %{
+            "id" => "sonic-batch-b-#{n}",
+            "post_content" => %{"html_body" => "batchroundtrip beta"}
+          }
         ]
 
         assert {:ok, :indexed} = Sonic.put_documents(docs, collection)

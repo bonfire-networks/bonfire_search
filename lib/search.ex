@@ -100,12 +100,20 @@ defmodule Bonfire.Search do
     adapter = adapter()
     opts = to_options(opts)
 
+    # Whether to merge a DB query into index results (so e.g. users appear without being reindexed).
+    # Disabled by default; enable via the `:merge_db_results` config or per-call `db_merge: true`.
+    merge_db_results? =
+      case opts[:db_merge] do
+        nil -> Bonfire.Common.Config.get_ext(:bonfire_search, :merge_db_results, false)
+        db_merge -> db_merge
+      end
+
     cond do
       Bonfire.Common.Config.get_ext(:bonfire_search, :disable_for_autocompletes) || !adapter ->
         debug("Search disabled for autocompletes, using DB adapter")
         Bonfire.Search.DB.search_by_type(tag_search, facets, opts)
 
-      adapter == Bonfire.Search.DB || opts[:db_merge] == false || opts[:raw] ||
+      adapter == Bonfire.Search.DB || !merge_db_results? || opts[:raw] ||
           not identity_facet?(facets) ->
         adapter.search_by_type(tag_search, facets, opts)
 
@@ -338,12 +346,31 @@ defmodule Bonfire.Search do
     end)
   end
 
+  # Exclude hits whose id ULID encodes a future timestamp (scheduled content), so search mirrors
+  # the DB adapter's query-level `maybe_filter_out_future_ulids`. Skipped when `include_scheduled`.
+  # Works for both bare index maps (%{"id" => id}) and loaded structs via `id/1`.
+  defp filter_out_future_hits(hits, opts) do
+    if opts[:include_scheduled] do
+      hits
+    else
+      now = Needle.ULID.generate(System.system_time(:millisecond))
+
+      Enum.filter(hits, fn hit ->
+        case id(hit) do
+          id when is_binary(id) -> id <= now
+          _ -> true
+        end
+      end)
+    end
+  end
+
   def prepare_hits(hits, index, opts) do
-    # used for displaying federated objects 
+    # used for displaying federated objects
     index = normalise_index(index)
 
     hits
     |> List.wrap()
+    |> filter_out_future_hits(opts)
     |> maybe_boundarise(index, opts)
     |> Enum.map(fn hit ->
       if opts[:data_input_type] == :struct do

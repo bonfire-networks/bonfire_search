@@ -320,4 +320,56 @@ defmodule Bonfire.Search.Indexer do
   def host(_) do
     ""
   end
+
+  @doc """
+  Backfills the search index with existing data by running every registered reindex module
+  (see `Bonfire.Common.ReindexModule`) — e.g. users (`Bonfire.Me.Users.ReindexLocal`) and posts
+  (`Bonfire.Posts.Reindex`). Each indexes its objects in throttled, keyset-paginated batches.
+
+  Needed after enabling search or switching adapters (e.g. Meilisearch → Sonic), since indexes only
+  receive objects created/updated *after* the adapter is active. Run in production via:
+
+      bin/bonfire rpc 'Bonfire.Search.Indexer.reindex_from_db()'
+
+  ## Options
+    * `:only` — run only the given reindex module(s), e.g. `only: Bonfire.Posts.Reindex`
+    * `:origin` — passed to each module to scope what's indexed, e.g. `origin: :remote` (users/posts)
+    * `:async` — run in the background (default `true`)
+
+  Any other options are passed through to each module's `reindex/1` (and on to its `base_query/1`).
+  """
+  def reindex_from_db(opts \\ []) do
+    if !adapter() do
+      error(
+        "No search adapter is configured/enabled (set SEARCH_ADAPTER and ensure the service is running)"
+      )
+    else
+      modules = only_modules(Bonfire.Common.ReindexModule.modules(), opts[:only])
+
+      run = fn ->
+        Enum.each(modules, fn module ->
+          info("Search reindex: running #{inspect(module)}")
+          module.reindex(opts)
+          info("Search reindex: done with #{inspect(module)}")
+        end)
+
+        info("Search reindex: all done")
+      end
+
+      if Keyword.get(opts, :async, true) do
+        Task.start(run)
+        {:ok, :reindexing}
+      else
+        run.()
+        :ok
+      end
+    end
+  end
+
+  defp only_modules(modules, nil), do: modules
+
+  defp only_modules(modules, only) do
+    only = List.wrap(only)
+    Enum.filter(modules, &(&1 in only))
+  end
 end

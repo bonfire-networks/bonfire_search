@@ -28,6 +28,9 @@ defmodule Bonfire.Search.RuntimeConfig do
         String.to_existing_atom(System.get_env("SEARCH_HTTP_ADAPTER", "nil")) ||
           Bonfire.Common.HTTP,
       disable_for_autocompletes: System.get_env("SEARCH_AUTOCOMPLETES_DISABLED") in ["true", "1"],
+      # merge a DB query into identity search results (so users appear without being reindexed);
+      # disabled by default — enable with SEARCH_MERGE_DB_RESULTS=1
+      merge_db_results: System.get_env("SEARCH_MERGE_DB_RESULTS") in ["true", "1"],
       adapter: adapter,
       instance: System.get_env("SEARCH_MEILI_INSTANCE", "http://search:7700"),
       api_key: meili_key

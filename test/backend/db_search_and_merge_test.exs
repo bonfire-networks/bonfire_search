@@ -12,6 +12,7 @@ defmodule Bonfire.Search.DBSearchAndMergeTest do
      index hits with DB matches (see `merge_with_db_results/4`).
   """
   use Bonfire.Search.DataCase, async: true
+  use Repatch.ExUnit
 
   alias Bonfire.Data.Identity.User
 
@@ -113,10 +114,12 @@ defmodule Bonfire.Search.DBSearchAndMergeTest do
   end
 
   describe "Bonfire.Me.Users.search/2 (the function all user live_selects call)" do
+    # `db_merge: true` opts into merging a DB query with index hits (off by default now), which is
+    # what user live_selects need so DB-only matches (e.g. data predating the index) are still found.
     test "finds users by name prefix" do
       findable = fake_user!("Tamarind Searchable")
 
-      results = Bonfire.Me.Users.search("tamarind")
+      results = Bonfire.Me.Users.search("tamarind", db_merge: true)
 
       assert Enums.id(findable) in Enum.map(results, &Enums.id/1)
     end
@@ -126,7 +129,7 @@ defmodule Bonfire.Search.DBSearchAndMergeTest do
       username = e(findable, :character, :username, nil)
       assert is_binary(username)
 
-      results = Bonfire.Me.Users.search(String.slice(username, 0, 6))
+      results = Bonfire.Me.Users.search(String.slice(username, 0, 6), db_merge: true)
 
       assert Enums.id(findable) in Enum.map(results, &Enums.id/1)
     end
@@ -134,7 +137,7 @@ defmodule Bonfire.Search.DBSearchAndMergeTest do
     test "results have profile and character usable by results_for_multiselect" do
       _findable = fake_user!("Rambutan Formatted")
 
-      results = Bonfire.Me.Users.search("rambutan")
+      results = Bonfire.Me.Users.search("rambutan", db_merge: true)
 
       assert results != []
 
@@ -142,6 +145,38 @@ defmodule Bonfire.Search.DBSearchAndMergeTest do
         assert e(user, :profile, :name, nil) || e(user, :character, :username, nil),
                "search results must have profile/character loaded or live_select options get dropped"
       end
+    end
+  end
+
+  describe "merge gating (merge_with_db_results is now opt-in)" do
+    setup do
+      # a user findable by DB name search, but NOT returned by the (faked) index
+      findable = fake_user!("Merensky DbOnly")
+
+      # pretend a real (non-DB) adapter is configured, returning some unrelated index hit
+      Repatch.patch(Bonfire.Search, :adapter, fn -> Bonfire.Search.Sonic end)
+
+      Repatch.patch(Bonfire.Search.Sonic, :search_by_type, fn _string, _facets, _opts ->
+        [%{"id" => Needle.UID.generate(), "index_type" => "Bonfire.Data.Identity.User"}]
+      end)
+
+      {:ok, findable: findable}
+    end
+
+    test "does NOT merge DB results by default", %{findable: findable} do
+      ids =
+        Bonfire.Search.search_by_type("merensky", User, skip_boundary_check: true)
+        |> Enum.map(&Enums.id/1)
+
+      refute Enums.id(findable) in ids
+    end
+
+    test "merges DB results when db_merge: true", %{findable: findable} do
+      ids =
+        Bonfire.Search.search_by_type("merensky", User, skip_boundary_check: true, db_merge: true)
+        |> Enum.map(&Enums.id/1)
+
+      assert Enums.id(findable) in ids
     end
   end
 end

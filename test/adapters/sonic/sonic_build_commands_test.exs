@@ -1,35 +1,44 @@
-defmodule Bonfire.Search.Sonic.BuildCommandsTest do
+defmodule Bonfire.Search.Sonic.IngestCommandsTest do
   @moduledoc """
   Pure unit test for the Bonfire-doc → Sonic command mapping (no live Sonic needed).
   The generic FLUSHO+PUSH packing/sequencing is tested in the sonix fork; here we only
-  check that docs map to the right buckets/text and delegate per doc × bucket.
+  check that docs map to the right buckets/text, delegate per doc × bucket, and that
+  identity buckets get `LANG(none)` (so usernames aren't stemmed/dropped).
   """
   use ExUnit.Case, async: true
 
   alias Bonfire.Search.Sonic
 
-  test "maps each doc to FLUSHO+PUSH per bucket, across the list" do
-    doc1 = %{"id" => "obj1", "index_type" => "T", "post_content" => %{"html_body" => "hello world"}}
-    doc2 = %{"id" => "obj2", "post_content" => %{"html_body" => "second doc"}}
+  test "identity-type doc gets LANG(none) on the type bucket but not the mixed 'all' bucket" do
+    user = %{
+      "id" => "user1",
+      "index_type" => "Bonfire.Data.Identity.User",
+      "character" => %{"username" => "alice"}
+    }
 
-    assert Sonic.build_commands([doc1, doc2], "coll") == [
-             # doc1 → buckets ["all", "T"]
-             "FLUSHO coll all obj1",
-             ~s[PUSH coll all obj1 "hello world"],
-             "FLUSHO coll T obj1",
-             ~s[PUSH coll T obj1 "hello world"],
-             # doc2 → bucket ["all"] only (no index_type)
-             "FLUSHO coll all obj2",
-             ~s[PUSH coll all obj2 "second doc"]
+    assert Sonic.ingest_commands([user], "coll") == [
+             "FLUSHO coll all user1",
+             ~s[PUSH coll all user1 "alice"],
+             "FLUSHO coll Bonfire.Data.Identity.User user1",
+             ~s[PUSH coll Bonfire.Data.Identity.User user1 "alice" LANG(none)]
+           ]
+  end
+
+  test "non-identity doc indexes into 'all' only, no LANG" do
+    post = %{"id" => "post1", "post_content" => %{"html_body" => "hello world"}}
+
+    assert Sonic.ingest_commands([post], "coll") == [
+             "FLUSHO coll all post1",
+             ~s[PUSH coll all post1 "hello world"]
            ]
   end
 
   test "skips docs with no indexable text" do
-    empty = %{"id" => "obj3", "post_content" => %{"html_body" => ""}}
-    assert Sonic.build_commands([empty], "coll") == []
+    empty = %{"id" => "post2", "post_content" => %{"html_body" => ""}}
+    assert Sonic.ingest_commands([empty], "coll") == []
   end
 
   test "empty doc list yields no commands" do
-    assert Sonic.build_commands([], "coll") == []
+    assert Sonic.ingest_commands([], "coll") == []
   end
 end

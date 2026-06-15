@@ -152,8 +152,8 @@ defmodule Bonfire.Search.Sonic do
     offset = e(opts, :offset, nil) || 0
     index = e(opts, :index, nil) || :public
 
-    # quotes/newlines break Sonic's single-line QUERY command (see sanitize_for_sonic)
-    string = sanitize_for_sonic(string)
+    # quotes/newlines break Sonic's single-line QUERY command (see sanitize)
+    string = sanitize(string)
 
     info("Sonic: searching for #{inspect(string)} in collection=#{collection} bucket=#{bucket}")
 
@@ -233,11 +233,13 @@ defmodule Bonfire.Search.Sonic do
   def put_documents(docs, collection) when is_list(docs) do
     # Batch: build every FLUSHO+PUSH up front, then pipeline them over a single
     # connection checkout (Sonic has no bulk command, but allows pipelining).
-    case build_commands(docs, collection) do
+    case ingest_commands(docs, collection) do
       [] ->
         {:ok, :indexed}
 
       commands ->
+        debug(commands, "Sonic: batch indexing #{length(commands)} commands into #{collection}")
+
         with {:ok, conn} <- ingest_conn(),
              {:ok, results} <- Sonix.Tcp.pipeline(conn, commands) do
           for {:error, reason} <- results,
@@ -254,19 +256,25 @@ defmodule Bonfire.Search.Sonic do
   Maps prepared indexable docs into the flat list of Sonic ingest commands
   (`FLUSHO`+`PUSH` per doc × bucket). Pure — sends nothing. Public for testing.
   """
-  def build_commands(docs, collection) when is_list(docs) do
-    Enum.flat_map(docs, &doc_commands(&1, collection))
+  def ingest_commands(docs, collection) when is_list(docs) do
+    Enum.flat_map(docs, &ingest_commands_for_doc(&1, collection))
   end
 
-  defp doc_commands(doc, collection) do
+  defp ingest_commands_for_doc(doc, collection) do
     object_id = e(doc, "id", nil) || Types.uid(doc)
     text = extract_text(doc)
 
     if object_id && text != "" do
-      Enum.flat_map(
-        buckets_for(doc),
-        &Sonix.Modes.Ingest.flush_push_commands(collection, &1, object_id, text)
-      )
+      Enum.flat_map(buckets_for(doc), fn bucket ->
+        # pass lang_opts so identity buckets get LANG(none), matching the single-doc path
+        Sonix.Modes.Ingest.flush_push_commands(
+          collection,
+          bucket,
+          object_id,
+          text,
+          lang_opts(bucket)
+        )
+      end)
     else
       []
     end
@@ -326,23 +334,25 @@ defmodule Bonfire.Search.Sonic do
         _ -> []
       end
     end)
-    |> Enum.map(&strip_html/1)
     |> Enum.join(" ")
-    |> String.trim()
+    |> sanitize_for_indexing()
   end
 
-  defp strip_html(text) when is_binary(text) do
-    Regex.replace(~r/<[^>]+>/, text, " ")
-    |> sanitize_for_sonic()
+  # strip HTML to plain text (reusing the shared Text helper), then make it Sonic-safe
+  defp sanitize_for_indexing(text) when is_binary(text) do
+    Bonfire.Common.Text.text_only(text)
+    |> sanitize()
   end
 
-  # strip quotes + collapse whitespace/newlines that would break Sonic's line protocol
-  defp sanitize_for_sonic(text) when is_binary(text) do
+  defp sanitize_for_indexing(text), do: text
+
+  # Sonic's QUERY/PUSH are single-line and quote-delimited, so strip `"` (Sonic-specific);
+  # and whitespace/newline collapsing with the generic `Text.normalize_whitespace/1`.
+  defp sanitize(text) when is_binary(text) do
     text
     |> String.replace("\"", " ")
-    |> String.replace(~r/\s+/, " ")
-    |> String.trim()
+    |> Bonfire.Common.Text.normalize_whitespace()
   end
 
-  defp sanitize_for_sonic(text), do: text
+  defp sanitize(text), do: text
 end
