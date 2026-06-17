@@ -344,7 +344,7 @@ defmodule Bonfire.Search.Indexer do
         "No search adapter is configured/enabled (set SEARCH_ADAPTER and ensure the service is running)"
       )
     else
-      modules = only_modules(Bonfire.Common.ReindexModule.modules(), opts[:only])
+      modules = only_modules(opts[:only])
 
       run = fn ->
         Enum.each(modules, fn module ->
@@ -366,10 +366,12 @@ defmodule Bonfire.Search.Indexer do
     end
   end
 
-  defp only_modules(modules, nil), do: modules
+  defp only_modules(nil), do: Bonfire.Common.ReindexModule.modules()
 
-  defp only_modules(modules, only) do
+  defp only_modules(only) do
     only = List.wrap(only)
-    Enum.filter(modules, &(&1 in only))
+
+    Bonfire.Common.ReindexModule.modules()
+    |> Enum.filter(&(&1 in only))
   end
 end
