@@ -9,11 +9,7 @@ defmodule Bonfire.Search.RuntimeConfig do
 
     meili_key =
       if adapter_name == "meili" do
-        case {System.get_env("MEILI_MASTER_KEY"), System.get_env("MEILI_MASTER_KEY_FILE")} do
-          {key, _} when is_binary(key) and key != "" -> key
-          {_, file} when is_binary(file) and file != "" -> File.read!(file)
-          _ -> nil
-        end
+        Bonfire.Common.EnvSecrets.env_or_file("MEILI_MASTER_KEY")
       end
 
     adapter =
@@ -53,12 +49,7 @@ defmodule Bonfire.Search.RuntimeConfig do
       config :bonfire_search, Bonfire.Search.Sonic.Connection,
         host: System.get_env("SONIC_HOST", "localhost"),
         port: System.get_env("SONIC_PORT", "1491") |> String.to_integer(),
-        password:
-          (case {System.get_env("SONIC_PASSWORD"), System.get_env("SONIC_PASSWORD_FILE")} do
-             {key, _} when is_binary(key) and key != "" -> key
-             {_, file} when is_binary(file) and file != "" -> File.read!(file)
-             _ -> nil
-           end)
+        password: Bonfire.Common.EnvSecrets.env_or_file("SONIC_PASSWORD")
     end
   end
 end

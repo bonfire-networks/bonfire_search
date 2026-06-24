@@ -310,7 +310,35 @@ defmodule Bonfire.Search.LiveHandler do
   end
 
   def handle_async(:direct_lookup, _, socket) do
-    # No changes needed when no result is found
+    # The federated lookup (of a URL or @handle) found nothing. If federation isn't open, it likely
+    # couldn't reach the remote server — tell the user why (#647/#2058). Open + manual modes both
+    # allow on-demand lookup, so a not-found there is genuine and gets no notice.
+    socket =
+      case maybe_apply(Bonfire.Federate.ActivityPub, :federation_mode, [current_user(socket)],
+             fallback_return: true
+           ) do
+        false ->
+          assign_flash(
+            socket,
+            :info,
+            l(
+              "Federation is currently disabled, so profiles or posts from other servers can't be looked up."
+            )
+          )
+
+        :allowlist_only ->
+          assign_flash(
+            socket,
+            :info,
+            l(
+              "This instance only federates with allow-listed servers, so that profile or post may not be reachable."
+            )
+          )
+
+        _ ->
+          socket
+      end
+
     {:noreply, assign(socket, searching_direct: false)}
   end
 
