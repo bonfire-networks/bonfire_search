@@ -86,15 +86,22 @@ if Application.compile_env(:bonfire_api_graphql, :modularity) != :disabled and
             facet_filter
           )
 
-        hits = (search_result && Map.get(search_result, :hits, [])) || []
+        case search_result do
+          nil ->
+            {:error, "Search backend is unavailable"}
 
-        results =
-          hits
-          |> Enum.map(&Bonfire.Common.Enums.id/1)
-          |> Enum.reject(&is_nil/1)
-          |> Enum.flat_map(&loader_fn.(&1, current_user))
+          %{hits: hits} when is_list(hits) ->
+            results =
+              hits
+              |> Enum.map(&Bonfire.Common.Enums.id/1)
+              |> Enum.reject(&is_nil/1)
+              |> Enum.flat_map(&loader_fn.(&1, current_user))
 
-        {:ok, results}
+            {:ok, results}
+
+          _ ->
+            {:error, "Search backend returned an invalid response"}
+        end
       end
     end
   end
