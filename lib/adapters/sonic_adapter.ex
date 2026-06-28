@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: AGPL-3.0-only
-
 defmodule Bonfire.Search.Sonic do
   @moduledoc """
   Search adapter backed by Sonic (https://github.com/valeriansaliou/sonic).
