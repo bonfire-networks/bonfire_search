@@ -27,6 +27,7 @@
             module={maybe_component(Bonfire.UI.Me.Preview.CharacterLive, @__context__)}
             activity_component_id={"search-user-#{id(user)}"}
             showing_within={:search}
+            wrapper_class="p-card"
             object={user}
           />
         </div>
@@ -96,6 +97,7 @@
                 module={maybe_component(Bonfire.UI.Me.Preview.CharacterLive, @__context__)}
                 activity_component_id={"search-user-#{id(user)}"}
                 showing_within={:search}
+                wrapper_class="p-card"
                 object={user}
               />
             </div>
