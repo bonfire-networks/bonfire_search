@@ -1,12 +1,12 @@
 <nav>
-  <div role="tablist" class="tabs tabs-border border-b justify-evenly border-base-content/10">
+  <div role="tablist" class="tabs bg-base-200 justify-evenly border-y-hair border-secondary">
     {#case @search}
       {#match _}
         {!-- ALL TYPES --}
         <LinkLive
           class={
-            "tab",
-            "tab-active":
+            "tab !h-[35px] flex-1",
+            "tab-active font-medium":
               @selected_tab not in [
                 "Bonfire.Data.Identity.User",
                 "Bonfire.Data.Social.Post",
@@ -19,14 +19,14 @@
         </LinkLive>
         {!-- USERS --}
         <LinkLive
-          class={"tab", "tab-active": @selected_tab == "Bonfire.Data.Identity.User"}
+          class={"tab !h-[35px] flex-1", "tab-active font-medium": @selected_tab == "Bonfire.Data.Identity.User"}
           to={"/search?facet[index_type]=Bonfire.Data.Identity.User&index=#{@index}&s=#{@search || ""}"}
         >
           {l("Users")}
         </LinkLive>
         {!-- POSTS --}
         <LinkLive
-          class={"tab", "tab-active": @selected_tab == "Bonfire.Data.Social.Post"}
+          class={"tab !h-[35px] flex-1", "tab-active font-medium": @selected_tab == "Bonfire.Data.Social.Post"}
           to={"/search?facet[index_type]=Bonfire.Data.Social.Post&index=#{@index}&s=#{@search || ""}"}
         >
           {l("Posts")}
@@ -34,14 +34,14 @@
         <!-- HASHTAGS -->
         {#if String.starts_with?(@search || "", "#")}
           <LinkLive
-            class={"tab", "tab-active": @selected_tab == "hashtag"}
+            class={"tab !h-[35px] flex-1", "tab-active font-medium": @selected_tab == "hashtag"}
             to={"/search/tag/#{String.trim_leading(@search, "#")}"}
           >
             {l("Hashtags")}
           </LinkLive>
         {#else}
           <LinkLive
-            class={"tab", "tab-active": @selected_tab == "hashtag"}
+            class={"tab !h-[35px] flex-1", "tab-active font-medium": @selected_tab == "hashtag"}
             to={"/search/tag/#{@search || ""}"}
           >
             {l("Hashtags")}
@@ -51,20 +51,20 @@
 
     <!-- {#match "#" <> hashtag}
         {!-- HASHTAG TAB --}
-        <LinkLive class={"tab", "tab-active": @selected_tab == "hashtag"} to={"/search/tag/#{hashtag}"}>
+        <LinkLive class={"tab", "tab-active font-medium": @selected_tab == "hashtag"} to={"/search/tag/#{hashtag}"}>
           {l("With hashtag")}
         </LinkLive>
 
         {!-- USERS --}
         <LinkLive
-          class={"tab", "tab-active": @selected_tab == "Bonfire.Data.Identity.User"}
+          class={"tab", "tab-active font-medium": @selected_tab == "Bonfire.Data.Identity.User"}
           to={"/search?facet[index_type]=Bonfire.Data.Identity.User&index=#{@index}&s=#{hashtag}"}
         >
           {l("Search users")}
         </LinkLive>
         {!-- POSTS --}
         <LinkLive
-          class={"tab", "tab-active": @selected_tab == "Bonfire.Data.Social.Post"}
+          class={"tab", "tab-active font-medium": @selected_tab == "Bonfire.Data.Social.Post"}
           to={"/search?facet[index_type]=Bonfire.Data.Social.Post&index=#{@index}&s=#{hashtag}"}
         >
           {l("Search posts")}
@@ -78,7 +78,7 @@
     to={"/search?index=public&facet[index_type]=#{@selected_tab}&s=#{@search}"}
   >
     <div class={
-      "text-base-content/70 text-sm pb-3 border-b-2 border-transparent",
+      "text-muted text-sm pb-3 border-b-2 border-transparent",
       "font-semibold !border-primary text-primary": @index == "public"
     }>
       {l("Public")}
@@ -90,7 +90,7 @@
     to={"/search?index=closed&facet[index_type]=#{@selected_tab}&s=#{@search}"}
   >
     <div class={
-      "text-base-content/70 text-sm pb-3 border-b-2 border-transparent",
+      "text-muted text-sm pb-3 border-b-2 border-transparent",
       "font-semibold !border-primary text-primary": @index == "closed"
     }>
       {l("Private")}
@@ -102,14 +102,13 @@
   >
     <div class="text-sm font-semibold">{l("Results")}</div>
 
-    <div data-position="bottom-end" phx-hook="Tooltip" id="search_boundary" class="relative">
-      <label
-        class={"tooltip-button btn-soft btn btn-sm", "btn-warning": @index != "public"}
-        tabindex="0"
-        role="button"
-        aria-haspopup="true"
-        aria-expanded="true"
-      >
+    <Dropdown
+      id="search_boundary"
+      position="bottom-end"
+      trigger_class={"btn-soft btn btn-sm", "btn-warning": @index != "public"}
+      label={l("Search visibility")}
+    >
+      <:trigger>
         {#if @index == "public"}
           <#Icon iconify="ph:lock-simple-open-duotone" class="w-4 h-4 opacity/70" />
           {l("Public only")}
@@ -117,44 +116,34 @@
           <#Icon iconify="ph:detective-duotone" class="w-4 h-4 opacity/70" />
           {l("Private included")}
         {/if}
-        <!-- <#Icon iconify="ph:dots-three-outline-duotone" class="w-4 h-4 opacity/70" /> -->
-      </label>
-      <ul
-        tabindex="0"
-        class="tooltip z-tooltip menu shadow-sm bg-base-100 border border-base-content/10 w-60 absolute rounded-xl top-0 left-0 hidden"
-        role="menu"
-        id="search_boundary_content"
-        phx-update="ignore"
-        aria-orientation="vertical"
-      >
-        <li>
-          <button
-            role="tab"
-            class="flex gap-3 px-2 text-base-content justify-between items-center"
-            phx-click="toggle_index"
-            phx-value-index="public"
-          >{l("Public only")}
-            <div class="w-5 h-5 flex items-center justify-center border border-base-content/10 rounded-full">
-              <span :if={@index == "public"} class="w-[14px] h-[14px] bg-primary rounded-full" />
-            </div>
-          </button>
-        </li>
-        <li>
-          <button
-            role="tab"
-            class="flex gap-3 px-2 text-base-content justify-between items-center"
-            phx-click="toggle_index"
-            phx-value-index="closed"
-          >
-            {l("Private (eg. DMs or custom boundaries)")}
-            <div class="w-5 h-5 min-w-5 flex items-center justify-center border border-base-content/10 rounded-full">
-              <span :if={@index != "public"} class="w-[14px] h-[14px] bg-primary rounded-full" />
-            </div>
-          </button>
-        </li>
-        <!-- <Bonfire.UI.Common.UserMenuLinksLive page={@page} /> -->
-      </ul>
-    </div>
+      </:trigger>
+      <li>
+        <button
+          role="tab"
+          class="flex gap-3 px-2 text-base-content justify-between items-center"
+          phx-click="toggle_index"
+          phx-value-index="public"
+        >{l("Public only")}
+          <div class="w-5 h-5 flex items-center justify-center border border-base-content/10 rounded-full">
+            <span :if={@index == "public"} class="w-[14px] h-[14px] bg-primary rounded-full" />
+          </div>
+        </button>
+      </li>
+      <li>
+        <button
+          role="tab"
+          class="flex gap-3 px-2 text-base-content justify-between items-center"
+          phx-click="toggle_index"
+          phx-value-index="closed"
+        >
+          {l("Private (eg. DMs or custom boundaries)")}
+          <div class="w-5 h-5 min-w-5 flex items-center justify-center border border-base-content/10 rounded-full">
+            <span :if={@index != "public"} class="w-[14px] h-[14px] bg-primary rounded-full" />
+          </div>
+        </button>
+      </li>
+      <!-- <Bonfire.UI.Common.UserMenuLinksLive page={@page} /> -->
+    </Dropdown>
 
     {!-- <div
       :if={@selected_tab != "hashtag"}
@@ -167,7 +156,7 @@
         phx-value-index="public"
         class={
           "tab flex-1",
-          "tab-active": @index == "public"
+          "tab-active font-medium": @index == "public"
         }
       >{l("Public only")}</button>
       <button
@@ -176,7 +165,7 @@
         phx-value-index="closed"
         class={
           "tab flex-1",
-          "tab-active": @index !== "public"
+          "tab-active font-medium": @index !== "public"
         }
       >
         {l("Private (eg. DMs or custom boundaries)")}</button>
@@ -194,7 +183,7 @@
         class="checkbox checkbox-sm checkbox-primary"
         checked={@index == "closed"}
       />
-      <span class="label-text text-sm text-base-content/70">{l("Content with boundaries (eg. DMs)")}</span>
+      <span class="label-text text-sm text-muted">{l("Content with boundaries (eg. DMs)")}</span>
     </label>
   </div> --}
 </nav>

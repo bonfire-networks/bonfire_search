@@ -2,14 +2,14 @@
   id="the_search_results"
   phx-update="replace"
   data-page={e(@page, [])}
-  class="divide-y divide-base-content/10"
+  class="divide-hair divide-secondary"
 >
   {#if @searching && e(@hits, []) == [] && e(@user_hits, []) == []}
     <div class="flex items-center justify-center py-8">
       <span class="loading loading-spinner loading-md" />
     </div>
   {#elseif @searching_direct && (e(@hits, []) != [] || e(@user_hits, []) != [])}
-    <div class="flex items-center justify-center py-2 text-sm text-base-content/70">
+    <div class="flex items-center justify-center py-2 text-sm text-muted">
       <span class="loading loading-spinner loading-xs mr-2" />
       {if String.starts_with?(@search || "", "http"),
         do: l("Searching for a matching federated activity..."),
@@ -61,7 +61,7 @@
       hide_if_no_more
     >
       <:if_no_more>
-        <p class="text-center text-base-content/70 py-4">{l("That's all the search results!")}</p>
+        <p class="text-center text-muted py-4">{l("That's all the search results!")}</p>
       </:if_no_more>
     </Bonfire.UI.Common.LoadMoreLive>
   {#else}
@@ -75,10 +75,10 @@
     {#else}
       {!-- Profiles section --}
       {#if e(@user_hits, []) != []}
-        <div class="flex items-center justify-between p-4 bg-base-content/10">
+        <div class="flex items-center justify-between px-4 pb-2 border-b-hair border-secondary mb-2">
           <div class="flex items-center gap-2">
-            <#Icon iconify="ph:users-duotone" class="w-5 h-5 text-primary" />
-            <h3 class="text-sm font-semibold text-base-content/70">{l("Profiles")}</h3>
+            <#Icon iconify="ph:users-fill" class="w-5 h-5 text-primary" />
+            <h3 class="text-sm font-semibold text-muted">{l("Profiles")}</h3>
           </div>
           {#if length(e(@user_hits, [])) > 5}
             <LinkLive
@@ -89,7 +89,7 @@
             </LinkLive>
           {/if}
         </div>
-        <div class="divide-y divide-base-content/10">
+        <div class="divide-hair divide-secondary">
           {#for user <- Enum.take(e(@user_hits, []), 5)}
             <div>
               <StatelessComponent
@@ -105,10 +105,10 @@
 
       {!-- Posts section --}
       {#if e(@hits, []) != []}
-        <div class="flex items-center justify-between p-4 bg-base-content/10">
+        <div class="flex items-center justify-between px-4 p-2 border-b-hair border-secondary bg-base-200">
           <div class="flex items-center gap-2">
-            <#Icon iconify="ph:note-blank-duotone" class="w-5 h-5 text-primary" />
-            <h3 class="text-sm font-semibold text-base-content/70">{l("Posts")}</h3>
+            <#Icon iconify="ph:note-blank-fill" class="w-5 h-5 text-primary" />
+            <h3 class="text-sm font-semibold text-muted">{l("Posts")}</h3>
           </div>
           {#if length(e(@hits, [])) > 5}
             <LinkLive
@@ -119,9 +119,9 @@
             </LinkLive>
           {/if}
         </div>
-        <div class="divide-y divide-base-content/10">
+        <div class="divide-hair divide-secondary">
           {#for hit <- Enum.take(e(@hits, []), 5)}
-            <div>
+            <div class="p-card">
               <StatefulComponent
                 module={maybe_component(Bonfire.UI.Social.ActivityLive, @__context__)}
                 id={deterministic_dom_id(__MODULE__, e(hit, :activity, :id, nil) || id(hit), "search_activity", nil)}

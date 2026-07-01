@@ -4,7 +4,7 @@
     <Bonfire.Search.Web.FormLive search={@search} />
     {!-- <form action="?" phx-submit="search" method="get">
       <fieldset>
-        <legend class="text-sm font-normal text-base-content/70">{l("Search for")}</legend>
+        <legend class="text-sm font-normal text-muted">{l("Search for")}</legend>
         <input
           name="search_string"
           value={e(@filters, "search_string", nil)}
@@ -17,12 +17,12 @@
 
     <form action="?" phx-change="filter" method="get">
       <fieldset class="mt-4">
-        <legend class="text-sm font-normal text-base-content/70">{l("Type")}</legend>
+        <legend class="text-sm font-normal text-muted">{l("Type")}</legend>
         <div class="mt-2 border rounded-lg border-base-content/10 bg-base-100">
         {#if maybe_module(Bonfire.Search.adapter(), @__context__)==Bonfire.Search.Meili}
           <LinkLive to={~p"/search?s=#{@search}"} class="flex items-center p-3">
             <input type="radio" checked class="w-5 h-5 radio">
-            <div class="block ml-3 text-sm text-base-content/70">
+            <div class="block ml-3 text-sm text-muted">
               {l("Public")}
             </div>
           </LinkLive>
@@ -31,7 +31,7 @@
             class="flex items-center p-3"
           >
             <input type="radio" class="w-5 h-5 radio">
-            <div class="block ml-3 text-sm text-base-content/70">
+            <div class="block ml-3 text-sm text-muted">
               {l("Private")}
             </div>
           </LinkLive>
@@ -40,7 +40,7 @@
 
             <LinkLive to={~p"/search?s=#{@search}"} class="flex items-center p-3">
             <input type="radio" checked class="w-5 h-5 radio">
-            <div class="block ml-3 text-sm text-base-content/70">
+            <div class="block ml-3 text-sm text-muted">
               {l("All types")}
             </div>
           </LinkLive>
@@ -49,7 +49,7 @@
             class="flex items-center p-3"
           >
             <input type="radio" class="w-5 h-5 radio">
-            <div class="block ml-3 text-sm text-base-content/70">
+            <div class="block ml-3 text-sm text-muted">
               {l("Users")}
             </div>
           </LinkLive>
@@ -58,7 +58,7 @@
             class="flex items-center p-3"
           >
             <input type="radio" class="w-5 h-5 radio">
-            <div class="block ml-3 text-sm text-base-content/70">
+            <div class="block ml-3 text-sm text-muted">
               {l("Posts")}
             </div>
           </LinkLive>
@@ -67,17 +67,17 @@
       </fieldset>
 
       {!-- <fieldset class="mt-4">
-        <legend class="text-sm font-normal text-base-content/70">{l("From")}</legend>
+        <legend class="text-sm font-normal text-muted">{l("From")}</legend>
         <div class="flex items-center mt-2 border rounded-lg border-base-content/10 bg-base-100">
           <div class="flex items-center flex-1 p-3">
             <input id="Local" name="from" type="radio" checked class="w-5 h-5 radio">
-            <label for="Local" class="block ml-3 text-sm text-base-content/70">
+            <label for="Local" class="block ml-3 text-sm text-muted">
               {l("Local")}
             </label>
           </div>
           <div class="flex items-center flex-1 p-3 border-l border-base-content/10">
             <input id="Federated" name="from" type="radio" class="w-5 h-5 radio">
-            <label for="Federated" class="block ml-3 text-sm text-base-content/70">
+            <label for="Federated" class="block ml-3 text-sm text-muted">
               {l("Federated")}
             </label>
           </div>
