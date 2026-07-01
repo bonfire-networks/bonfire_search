@@ -5,7 +5,7 @@ defmodule Bonfire.Search.Web.SearchLive do
 
   # Use dynamic limit from config instead of hardcoded value
 
-  declare_extension("Search",
+  declare_extension(l("Search"),
     icon: "heroicons-solid:search",
     emoji: "🔍",
     description: l("Search for users or content."),
