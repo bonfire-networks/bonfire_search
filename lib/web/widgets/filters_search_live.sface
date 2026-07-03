@@ -79,7 +79,7 @@
   >
     <div class={
       "text-muted text-sm pb-3 border-b-2 border-transparent",
-      "font-semibold !border-primary text-primary": @index == "public"
+      "font-medium !border-primary text-primary": @index == "public"
     }>
       {l("Public")}
     </div>
@@ -91,7 +91,7 @@
   >
     <div class={
       "text-muted text-sm pb-3 border-b-2 border-transparent",
-      "font-semibold !border-primary text-primary": @index == "closed"
+      "font-medium !border-primary text-primary": @index == "closed"
     }>
       {l("Private")}
     </div>
@@ -100,7 +100,7 @@
     :if={@selected_tab == "Bonfire.Data.Social.Post"}
     class="flex p-4 border-b border-base-content/10 py-2 items-center justify-between"
   >
-    <div class="text-sm font-semibold">{l("Results")}</div>
+    <div class="text-sm font-medium">{l("Results")}</div>
 
     <Dropdown
       id="search_boundary"

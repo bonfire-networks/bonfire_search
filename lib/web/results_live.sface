@@ -79,7 +79,7 @@
         <div class="flex items-center justify-between px-4 pb-2 border-b-hair border-secondary mb-2">
           <div class="flex items-center gap-2">
             <#Icon iconify="ph:users-fill" class="w-5 h-5 text-primary" />
-            <h3 class="text-sm font-semibold text-muted">{l("Profiles")}</h3>
+            <h3 class="text-sm font-medium text-muted">{l("Profiles")}</h3>
           </div>
           {#if length(e(@user_hits, [])) > 5}
             <LinkLive
@@ -110,7 +110,7 @@
         <div class="flex items-center justify-between px-4 p-2 border-b-hair border-secondary bg-base-200">
           <div class="flex items-center gap-2">
             <#Icon iconify="ph:note-blank-fill" class="w-5 h-5 text-primary" />
-            <h3 class="text-sm font-semibold text-muted">{l("Posts")}</h3>
+            <h3 class="text-sm font-medium text-muted">{l("Posts")}</h3>
           </div>
           {#if length(e(@hits, [])) > 5}
             <LinkLive

@@ -34,7 +34,7 @@
           <label for="editor-style">Search this instance only</label>
         </div> --}
 
-        <div class="mt-4 mb-2 text-sm font-semibold text-base-content opacity-60">Type</div>
+        <div class="mt-4 mb-2 text-sm font-medium text-base-content opacity-60">Type</div>
         <ul class="flex flex-col border rounded ">
           {#for {facet, num_matches} <- e(@facets, "index_type", [])}
             <li class="p-2 text-sm font-medium  ">
