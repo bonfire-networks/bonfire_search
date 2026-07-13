@@ -643,7 +643,9 @@ defmodule Bonfire.Search do
           e(object, :creator, nil) || e(object, :created, :creator_id, nil) ||
           e(object, :activity, :created, :creator_id, nil) || e(object, :creator_id, nil) ||
           object,
-        :settings
+        :settings,
+        # the fallback can be the object itself, whose schema may not have :settings
+        prune: true
       )
 
     index =
