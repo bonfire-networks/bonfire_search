@@ -82,7 +82,10 @@ defmodule Bonfire.Search.RawSearchTest do
                user
                # `skip_err`: this hand-built User's `character` is a bare map with no loadable
                # `:peered`, so opt into best-effort preload rather than crashing the indexer
-               |> Bonfire.Me.Users.indexing_object_format(skip_err: true, preload_if_needed: false)
+               |> Bonfire.Me.Users.indexing_object_format(
+                 skip_err: true,
+                 preload_if_needed: false
+               )
                |> Indexer.maybe_index_object()
                ~> @adapter.wait_for_task()
 
@@ -178,13 +181,19 @@ defmodule Bonfire.Search.RawSearchTest do
       assert {:ok, _} =
                user1
                # `skip_err`: bare-map `character` with no loadable `:peered` (see above)
-               |> Bonfire.Me.Users.indexing_object_format(skip_err: true, preload_if_needed: false)
+               |> Bonfire.Me.Users.indexing_object_format(
+                 skip_err: true,
+                 preload_if_needed: false
+               )
                |> Indexer.maybe_index_object()
                ~> @adapter.wait_for_task()
 
       assert {:ok, _} =
                user2
-               |> Bonfire.Me.Users.indexing_object_format(skip_err: true, preload_if_needed: false)
+               |> Bonfire.Me.Users.indexing_object_format(
+                 skip_err: true,
+                 preload_if_needed: false
+               )
                |> Indexer.maybe_index_object()
                ~> @adapter.wait_for_task()
 
