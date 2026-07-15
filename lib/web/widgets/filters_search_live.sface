@@ -98,7 +98,7 @@
   </LinkLive> -->
   <div
     :if={@selected_tab == "Bonfire.Data.Social.Post"}
-    class="flex p-4 border-b border-base-content/10 py-2 items-center justify-between"
+    class="flex p-4 border-b border-secondary py-2 items-center justify-between"
   >
     <div class="text-sm font-medium">{l("Results")}</div>
 
@@ -124,7 +124,7 @@
           phx-click="toggle_index"
           phx-value-index="public"
         >{l("Public only")}
-          <div class="w-5 h-5 flex items-center justify-center border border-base-content/10 rounded-full">
+          <div class="w-5 h-5 flex items-center justify-center border border-secondary rounded-full">
             <span :if={@index == "public"} class="w-[14px] h-[14px] bg-primary rounded-full" />
           </div>
         </button>
@@ -137,7 +137,7 @@
           phx-value-index="closed"
         >
           {l("Private (eg. DMs or custom boundaries)")}
-          <div class="w-5 h-5 min-w-5 flex items-center justify-center border border-base-content/10 rounded-full">
+          <div class="w-5 h-5 min-w-5 flex items-center justify-center border border-secondary rounded-full">
             <span :if={@index != "public"} class="w-[14px] h-[14px] bg-primary rounded-full" />
           </div>
         </button>
@@ -148,7 +148,7 @@
     {!-- <div
       :if={@selected_tab != "hashtag"}
       role="tablist"
-      class="tabs tabs-border border-b border-base-content/10"
+      class="tabs tabs-border border-b border-secondary"
     >
       <button
         role="tab"
