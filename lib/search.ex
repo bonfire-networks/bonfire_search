@@ -460,8 +460,6 @@ defmodule Bonfire.Search do
     end)
     # |> debug("converted results to structs")
     |> hits_preloads(opts)
-    |> Enum.map(&backfill_subject_id/1)
-    |> Bonfire.Social.Activities.prepare_subject_and_creator(opts)
     |> debug("preloaded structs")
   end
 
@@ -479,12 +477,44 @@ defmodule Bonfire.Search do
   defp backfill_subject_id(hit), do: hit
 
   defp hits_preloads(objects, opts) do
+    # user/character hits are returned unwrapped above (they have no activity), and every pass in
+    # `do_hits_preloads/2` is activity-scoped — running them on those hits costs a
+    # `bonfire_data_social_activity` query each for nothing (and used to resolve their activity to
+    # nil, which then crashed), while `prepare_subject_and_creator/2` just warns and returns them
+    case Enum.split_with(objects, &activity_hit?/1) do
+      {[], _} ->
+        objects
+
+      {activity_hits, []} ->
+        do_hits_preloads(activity_hits, opts)
+
+      {activity_hits, _without_activity} ->
+        # rebuild in the original (relevance) order, keeping the non-activity hits untouched, while honouring any hit the preload pass dropped (eg. content filtering) rather than resurrecting the un-preloaded original
+        preloaded = Map.new(do_hits_preloads(activity_hits, opts), &{id(&1), &1})
+
+        Enum.flat_map(objects, fn hit ->
+          if activity_hit?(hit),
+            do: List.wrap(Map.get(preloaded, id(hit))),
+            else: [hit]
+        end)
+    end
+  end
+
+  # matched as a plain map (like the branches in `prepare_hits/3` above) because `bonfire_social`
+  # is an optional dep here, so the struct must not be expanded at compile time
+  defp activity_hit?(%{__struct__: Bonfire.Data.Social.Activity}), do: true
+  defp activity_hit?(%{activity: %{__struct__: Bonfire.Data.Social.Activity}}), do: true
+  defp activity_hit?(_), do: false
+
+  defp do_hits_preloads(objects, opts) do
     objects
     |> Bonfire.Social.Activities.activity_preloads(
       [:quote_tags, :with_reply_to, :with_media, :with_creator],
       skip_follow_reply_to: true,
       current_user: current_user(opts)
     )
+    |> Enum.map(&backfill_subject_id/1)
+    |> Bonfire.Social.Activities.prepare_subject_and_creator(opts)
   end
 
   def maybe_boundarise(hits, :public, _opts) do

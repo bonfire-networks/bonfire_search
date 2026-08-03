@@ -2,14 +2,9 @@ defmodule Bonfire.Search.DBSearchAndMergeTest do
   @moduledoc """
   Covers the two root causes of live_select autocompletes returning no/wrong results:
 
-  1. `Bonfire.Search.DB.search_by_type/3` composed type-specific conditions with
-     `or_where` on top of a base query that already had a `deleted_at` condition,
-     so the search conditions were OR'ed away (returning junk or nothing).
+  1. `Bonfire.Search.DB.search_by_type/3` composed type-specific conditions with `or_where` on top of a base query that already had a `deleted_at` condition, so the search conditions were OR'ed away (returning junk or nothing).
 
-  2. `Bonfire.Search.search_by_type/3` returned *only* index hits when the adapter
-     returned a non-empty list, so anything not (yet) in the index — eg. all data
-     that predates switching adapters — could never be found. It now merges
-     index hits with DB matches (see `merge_with_db_results/4`).
+  2. `Bonfire.Search.search_by_type/3` returned *only* index hits when the adapter returned a non-empty list, so anything not (yet) in the index — eg. all data that predates switching adapters — could never be found. It now merges index hits with DB matches (see `merge_with_db_results/4`).
   """
   use Bonfire.Search.DataCase, async: true
   use Repatch.ExUnit
