@@ -25,6 +25,11 @@ defmodule Bonfire.Search.ReindexModuleTest do
 
     # it logs `Search reindex: running <module>` per module it runs — assert only the chosen one ran
     # async: false so it runs synchronously in-process (captured + returns :ok, vs the async default)
+    # capture_log's :level only filters the capture handler, the GLOBAL Logger level still gates emission (CI runs TEST_LOG_LEVEL=warning), so raise it for the duration of this test
+    prev_level = Logger.level()
+    Logger.configure(level: :info)
+    on_exit(fn -> Logger.configure(level: prev_level) end)
+
     log =
       capture_log([level: :info], fn ->
         assert :ok =
