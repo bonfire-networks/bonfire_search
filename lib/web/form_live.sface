@@ -41,7 +41,7 @@
             name="s"
             autocomplete="off"
             value={@search || e(@__context__, :current_params, "s", nil)}
-            placeholder={e(@search_placeholder, l("Search..."))}
+            placeholder={e(@search_placeholder, l("Search posts, people and tags…"))}
             phx-debounce="300"
             class="grow"
             x-on:focus="menuOpen = true"
@@ -49,14 +49,17 @@
             x-on:keydown.enter="menuOpen = false"
             x-ref="searchInput"
           />
-          <button type="submit" class="flex items-center">
+          <button
+            type="submit"
+            class="grid min-h-11 min-w-11 shrink-0 place-items-center rounded-selector transition-colors hover:bg-base-content/5 active:bg-base-content/10"
+            aria-label={l("Search")}
+          >
             <span :if={@searching || @searching_direct} class="loading loading-spinner loading-sm" />
             <#Icon
               :if={!@searching && !@searching_direct}
               iconify="ph:magnifying-glass"
               class="w-5 h-5 text-primary"
             />
-            <span class="sr-only">{l("Search")}</span>
           </button>
         </div>
         <label for={@id <> "-input"} class="sr-only">{e(@search_placeholder, l("Search"))}</label>
