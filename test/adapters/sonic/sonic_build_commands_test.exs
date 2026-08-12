@@ -7,6 +7,9 @@ defmodule Bonfire.Search.Sonic.IngestCommandsTest do
   """
   use ExUnit.Case, async: true
 
+  # bucket this into the backend CI leg: bare `ExUnit.Case` skips the tag the extension case templates apply, so without it this also runs in the federation job catch-all
+  @moduletag :backend
+
   alias Bonfire.Search.Sonic
 
   test "identity-type doc gets LANG(none) on the type bucket but not the mixed 'all' bucket" do
