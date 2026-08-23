@@ -196,7 +196,7 @@ defmodule Bonfire.Search do
 
       users =
         search_result.user_hits
-        |> repo().maybe_preload([profile: [:icon], character: []], opts)
+        |> repo().maybe_preload([profile: [:icon], character: [:peered]], opts)
         |> debug("search_and_load: user_hits after preload")
 
       debug(activities, "search_and_load: activity_hits after preload")
