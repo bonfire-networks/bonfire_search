@@ -182,21 +182,30 @@ defmodule Bonfire.Search do
 
     search_result = search_categorised(string, calculate_facets, filter_facets, not sonic?, opts)
 
+    filtered? = feed_filters(opts) != %{}
+
     if sonic? do
-      # Hits are typed structs — apply appropriate preloads per category
+      # Hits are typed structs — apply appropriate preloads per category.
+      # When extra feed_filters are active, re-load by ID through the filtered
+      # query pipeline instead (same path as the Meili branch below).
       activities =
-        search_result.activity_hits
-        |> Bonfire.Social.Activities.activity_preloads(@search_preloads,
-          current_user: current_user(opts)
-        )
-        |> Enum.map(&backfill_subject_id/1)
-        |> Bonfire.Social.Activities.prepare_subject_and_creator(opts)
+        if filtered? do
+          load_activities_for_search(Enums.ids(search_result.activity_hits), opts)
+        else
+          search_result.activity_hits
+          |> Bonfire.Social.Activities.activity_preloads(@search_preloads,
+            current_user: current_user(opts)
+          )
+          |> Enum.map(&backfill_subject_id/1)
+          |> Bonfire.Social.Activities.prepare_subject_and_creator(opts)
+        end
 
       debug(search_result.user_hits, "search_and_load: user_hits before preload")
 
       users =
         search_result.user_hits
         |> repo().maybe_preload([profile: [:icon], character: [:peered]], opts)
+        |> filter_users_by_origin(opts)
         |> debug("search_and_load: user_hits after preload")
 
       debug(activities, "search_and_load: activity_hits after preload")
@@ -208,12 +217,45 @@ defmodule Bonfire.Search do
 
       users =
         if search_result.user_hits != [],
-          do: Bonfire.Me.Users.by_ids(search_result.user_hits, skip_boundary_check: true),
+          do:
+            Bonfire.Me.Users.by_ids(search_result.user_hits, skip_boundary_check: true)
+            |> repo().maybe_preload([character: [:peered]], opts)
+            |> filter_users_by_origin(opts),
           else: []
 
       Map.merge(search_result, %{activities: activities, users: users})
     end
   end
+
+  # Most feed_filters are content filters that don't conceptually apply to user
+  # results, but the origin filter does: honour it so eg. a "Remote"-only search
+  # doesn't keep listing local users.
+  defp filter_users_by_origin(users, opts) do
+    case feed_filters(opts)[:origin] do
+      nil ->
+        users
+
+      :local ->
+        Enum.filter(users, &is_nil(user_peer_id(&1)))
+
+      :remote ->
+        Enum.reject(users, &is_nil(user_peer_id(&1)))
+
+      domains when is_list(domains) ->
+        peer_ids =
+          maybe_apply(Bonfire.Federate.ActivityPub.Instances, :list_by_domains, [domains],
+            fallback_return: []
+          )
+          |> Types.uids()
+
+        Enum.filter(users, &(user_peer_id(&1) in peer_ids))
+
+      _ ->
+        users
+    end
+  end
+
+  defp user_peer_id(user), do: e(user, :character, :peered, :peer_id, nil)
 
   @doc """
   Search and return just IDs + metadata (no struct transformation).
@@ -319,9 +361,13 @@ defmodule Bonfire.Search do
       when is_list(object_ids) and object_ids != [] do
     opts = Keyword.put(opts, :preload, @search_preloads)
 
+    # optional extra `FeedFilters` (eg. from the search filters modal) are applied
+    # here on top of the ID set, since query_object_extras_boundarised runs the
+    # same filter pipeline as feeds. NOTE: DB-side filters can prune a page of
+    # adapter hits, so filtered pages may come back sparse.
     Bonfire.Social.FeedLoader.query_object_extras_boundarised(
       nil,
-      %{objects: object_ids},
+      Map.put(feed_filters(opts), :objects, object_ids),
       opts
     )
     |> repo().many()
@@ -330,6 +376,14 @@ defmodule Bonfire.Search do
   end
 
   def load_activities_for_search(_, _), do: []
+
+  @doc "Extra `Bonfire.Social.FeedFilters` to apply DB-side when loading hits (`%{}` if none)."
+  def feed_filters(opts) do
+    case opts[:feed_filters] do
+      filters when is_map(filters) -> filters
+      _ -> %{}
+    end
+  end
 
   defp reorder_by_ids(loaded_items, ordered_ids) do
     id_map =

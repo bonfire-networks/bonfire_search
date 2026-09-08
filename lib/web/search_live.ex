@@ -1,9 +1,8 @@
 defmodule Bonfire.Search.Web.SearchLive do
   use Bonfire.UI.Common.Web, :surface_live_view
 
-  # alias Bonfire.Search.Web.ResultsLive
-
-  # Use dynamic limit from config instead of hardcoded value
+  alias Bonfire.Search.Filters
+  alias Bonfire.Search.UI.FiltersSearchLive
 
   declare_extension(l("Search"),
     icon: "heroicons-solid:search",
@@ -12,268 +11,156 @@ defmodule Bonfire.Search.Web.SearchLive do
     exclude_from_nav: true
   )
 
-  # declare_nav_link(l("Search"),
-  #   page: "search",
-  #   href: "/search",
-  #   icon: "ph:magnifying-glass-duotone",
-  #   icon_active: "ph:magnifying-glass-duotone"
-  # )
-
   on_mount {LivePlugs, [Bonfire.UI.Me.LivePlugs.LoadCurrentUser]}
 
   def mount(_params, _session, socket) do
-    # socket = init_assigns(params, session, socket)
-    # debug(params, "PARAMS")
-
     {:ok,
      assign(
        socket,
        page: "search",
-       page_title: "Search",
-       selected_tab: :search,
+       page_title: l("Search"),
+       selected_tab: nil,
        index: "public",
        back: true,
        search_limit: Bonfire.Search.LiveHandler.default_limit(),
-       #  me: false,
-       #  selected_facets: nil,
-
+       search_term: nil,
+       selected_facets: nil,
        search: nil,
+       search_filters: %{},
+       mobile_filters_open: false,
        hits: [],
        user_hits: [],
        page_info: nil,
        searching: false,
        searching_direct: false,
-       sidebar_widgets: [
-         users: [
-           secondary: [
-             {Bonfire.Tag.Web.WidgetTagsLive, []}
-           ]
-         ],
-         guests: [
-           secondary: nil
-         ]
-       ]
-       #  facets: %{},
-       #  num_hits: nil
+       sidebar_widgets: widgets(%{})
      )}
   end
 
-  # defp widget(search) do
-  #   [
-  #     users: [
-  #       secondary: [
-  #         {Bonfire.Search.UI.FiltersSearchLive, [selected_tab: nil, search: search]}
-  #       ]
-  #     ]
-  #   ]
-  # end
+  # sidebar widgets receive their assigns at render time, so the filters widget is
+  # re-sent from handle_params whenever the term, tab or filters in the URL change.
+  # The hashtag tab has no filters of its own, so it gets no widget.
+  defp widgets(filters, tab \\ nil) do
+    filters_widget =
+      if tab != "hashtag",
+        do: [{Bonfire.Search.Web.WidgetSearchFiltersLive, [filters: filters, tab: tab]}],
+        else: []
 
-  def handle_params(%{"s" => "#" <> hashtag} = params, _url, socket) do
-    {:noreply,
-     socket
-     |> redirect_to("/search/tag/#{hashtag}")}
+    [
+      users: [
+        secondary: filters_widget ++ [{Bonfire.Tag.Web.WidgetTagsLive, []}]
+      ],
+      guests: [
+        secondary: nil
+      ]
+    ]
+  end
+
+  def handle_params(%{"Bonfire" => %{"Search" => params}}, url, socket),
+    do: handle_params(params, url, socket)
+
+  def handle_params(%{"s" => "#" <> hashtag}, _url, socket) when hashtag != "" do
+    {:noreply, redirect_to(socket, FiltersSearchLive.hashtag_url(hashtag))}
   end
 
   def handle_params(params, _url, socket) do
-    # Extract nested Bonfire.Search parameters if they exist
-    search_params =
-      case params do
-        %{"Bonfire" => %{"Search" => nested_params}} -> nested_params
-        _ -> params
+    tab =
+      if params["hashtag_search"],
+        do: "hashtag",
+        else: FiltersSearchLive.type_facet(e(params, "facet", "index_type", nil))
+    term = search_term(params, socket)
+    index = params["index"] || socket.assigns.index
+    raw_filters = Filters.cast_filters(params["filters"])
+
+    if socket_connected?(socket) and is_nil(tab) and Filters.post_only?(raw_filters) do
+      url = FiltersSearchLive.tab_url(term, index, raw_filters, Filters.tab_for(raw_filters, tab))
+      {:noreply, patch_to(socket, url)}
+    else
+      filters = Filters.for_tab(raw_filters, tab)
+      changed? =
+        term != socket.assigns.search_term or tab != socket.assigns.selected_tab or
+          index != socket.assigns.index or filters != socket.assigns.search_filters
+
+      socket = assign(socket, search_filters: filters, sidebar_widgets: widgets(filters, tab))
+
+      if socket_connected?(socket) and changed? do
+        run_search(socket, term, tab, index)
+      else
+        {:noreply, socket}
       end
-
-    if socket_connected?(socket) do
-      handle_search_params(search_params, nil, socket)
-    else
-      {:noreply, socket}
     end
   end
 
-  def handle_search_params(%{"s" => s, "facet" => facets} = params, _url, socket)
-      when s != "" do
-    previous_index = e(assigns(socket), :index, "nil")
-    index = params["index"] || previous_index
+  defp search_term(%{"hashtag_search" => term}, _socket), do: "#" <> term
+  defp search_term(%{"s" => term}, _socket), do: String.trim(term || "")
 
-    # Check if facet has changed
-    new_facet_type = e(facets, "index_type", nil)
-    current_facet_type = e(assigns(socket), :selected_tab, nil)
-
-    if s != e(assigns(socket), :search_term, nil) or
-         index != previous_index or
-         new_facet_type != current_facet_type do
-      index_type =
-        new_facet_type
-        |> debug("selected_tabsss")
-
-      # If facet index_type is empty, treat as no facet filter
-      search_facets =
-        if new_facet_type == "" or is_nil(new_facet_type) do
-          nil
-        else
-          facets
-        end
-
-      Bonfire.Search.LiveHandler.live_search(
-        s,
-        Bonfire.Search.LiveHandler.default_limit(),
-        search_facets,
-        index,
-        socket
-        |> assign(
-          search_term: s,
-          index: index,
-          selected_tab: index_type
-          # sidebar_widgets: widget(s)
-        )
-        |> assign_global(search_more: true)
-      )
-    else
-      {:noreply, socket}
-    end
+  defp search_term(params, socket) do
+    if Map.has_key?(params, "facet") or Map.has_key?(params, "index"),
+      do: socket.assigns.search_term,
+      else: nil
   end
 
-  def handle_search_params(%{"s" => s} = params, _url, socket) when s != "" do
-    previous_index = e(assigns(socket), :index, "nil")
-    index = params["index"] || previous_index
-
-    if s != e(assigns(socket), :search_term, nil) or index != previous_index do
-      Bonfire.Search.LiveHandler.live_search(
-        s,
-        Bonfire.Search.LiveHandler.default_limit(),
-        nil,
-        index,
-        socket
-        |> assign(
-          search_term: s,
-          index: index,
-          selected_tab: nil
-          # sidebar_widgets: widget(s)
-        )
-        |> assign_global(search_more: true)
-      )
-    else
-      {:noreply, socket}
-    end
+  defp run_search(socket, term, tab, index) when term in [nil, ""] do
+    {:noreply,
+     assign(socket,
+       search: nil,
+       search_term: nil,
+       selected_tab: tab,
+       selected_facets: nil,
+       index: index,
+       hits: [],
+       user_hits: [],
+       page_info: nil,
+       searching: false
+     )}
   end
 
-  def handle_search_params(%{"hashtag_search" => s} = params, _url, socket)
-      when s != "" do
-    hashtag_s = "##{s}"
-    previous_index = e(assigns(socket), :index, "nil")
-    index = params["index"] || previous_index
-
-    if hashtag_s != e(assigns(socket), :search_term, nil) or index != previous_index do
-      Bonfire.Search.LiveHandler.live_search(
-        hashtag_s,
-        index,
-        socket
-        |> assign(search_term: s, search: s, index: index)
-        |> assign_global(search_more: true)
-      )
-    else
-      {:noreply, socket}
-    end
-  end
-
-  def handle_search_params(%{"facet" => facets} = params, _url, socket) do
-    index = params["index"] || e(assigns(socket), :index, "nil")
-
-    index_type =
-      e(facets, "index_type", nil)
-      |> debug("selected_tabsss")
+  defp run_search(socket, term, tab, index) do
+    facets = if tab not in [nil, "hashtag"], do: %{"index_type" => tab}
 
     Bonfire.Search.LiveHandler.live_search(
-      e(assigns(socket), :search_term, nil),
+      term,
       Bonfire.Search.LiveHandler.default_limit(),
       facets,
       index,
       socket
-      |> assign(
-        index: index,
-        selected_tab: index_type
-        # sidebar_widgets: widget(s)
-      )
+      |> assign(search_term: term, selected_tab: tab, index: index)
       |> assign_global(search_more: true)
     )
   end
 
-  def handle_search_params(%{"index" => index} = params, _url, socket) do
-    Bonfire.Search.LiveHandler.live_search(
-      e(assigns(socket), :search_term, nil),
-      index,
-      socket
-      |> assign(
-        index: index
-        # sidebar_widgets: widget(s)
-      )
-    )
-  end
-
-  def handle_search_params(_params, _url, socket) do
-    {:noreply,
-     socket
-     |> assign(search_term: nil)
-     |> assign_global(search_more: true)}
-  end
-
-  # defp type_name(name) do
-  #   String.split(name, ".") |> List.last() |> Recase.to_title()
-  # end
-
-  # defp link_body(name, 1 = num) do
-  #   type_name = type_name(name) |> Inflex.singularize()
-  #   "#{num} #{type_name}"
-  # end
-
-  # defp link_body(name, num) do
-  #   type_name = type_name(name) |> Inflex.pluralize()
-  #   "#{num} #{type_name}"
-  # end
-
   def handle_event("toggle_index", %{"index" => new_index}, socket) do
     url =
-      "/search?index=#{new_index}&facet[index_type]=#{socket.assigns.selected_tab}&s=#{socket.assigns.search}"
+      FiltersSearchLive.tab_url(
+        socket.assigns.search,
+        new_index,
+        e(assigns(socket), :search_filters, %{}),
+        socket.assigns.selected_tab
+      )
 
     {:noreply, push_patch(socket, to: url)}
   end
 
-  def handle_event(
-        "Bonfire.Search:search",
-        params,
-        %{assigns: %{__context__: %{selected_facets: selected_facets}}} = socket
-      )
-      when not is_nil(selected_facets) do
-    handle_event(
-      "Bonfire.Search:search",
-      params,
-      assign(socket, selected_facets: selected_facets)
-    )
+  def handle_info({Bonfire.UI.Social.FeedFiltersModalContentLive, :apply, filters}, socket) do
+    filters = Filters.cast_filters(filters)
+    tab = Filters.tab_for(filters, socket.assigns.selected_tab)
+
+    url = FiltersSearchLive.tab_url(socket.assigns.search || "", socket.assigns.index, filters, tab)
+    {:noreply, patch_to(socket, url)}
   end
 
-  def handle_event(
-        "Bonfire.Search:search",
-        params,
-        %{assigns: %{selected_facets: selected_facets}} = socket
-      )
-      when not is_nil(selected_facets) do
-    debug(search_with_facet: params)
-
-    # debug(socket)
-
-    {:noreply,
-     patch_to(
-       socket,
-       "/search?" <>
-         Plug.Conn.Query.encode(facet: selected_facets) <> "&s=" <> params["s"]
-     )}
+  def handle_info(msg, socket) do
+    debug(msg, "unhandled info in SearchLive")
+    {:noreply, socket}
   end
 
-  def handle_event("Bonfire.Search:search", params, socket) do
-    # debug(search: params)
-    # debug(socket)
-
-    {:noreply, patch_to(socket, "/search?s=" <> params["s"])}
+  # small screens have no sidebar: the same filters editor expands inline under the tabs
+  def handle_event("toggle_mobile_filters", _params, socket) do
+    {:noreply, assign(socket, mobile_filters_open: !e(assigns(socket), :mobile_filters_open, false))}
   end
+
+  def handle_event("Bonfire.Search:search", params, socket),
+    do: Bonfire.Search.LiveHandler.handle_event("patch_search", params, socket)
 
   def handle_async(name, result, socket) do
     # TODO: handle this redirection in LiveHandlers

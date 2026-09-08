@@ -52,76 +52,57 @@
         {/if}
       {/for}
     {/if}
-
-    <Bonfire.UI.Common.LoadMoreLive
-      :if={@page_info}
-      page_info={@page_info}
-      live_handler="Bonfire.Search.LiveHandler"
-      context="search"
-      hide_guest_fallback={false}
-      hide_if_no_more
-    >
-      <:if_no_more>
-        <p class="text-center text-muted py-4">{l("That's all the search results!")}</p>
-      </:if_no_more>
-    </Bonfire.UI.Common.LoadMoreLive>
   {#else}
-    {!-- "All" tab: grouped sections with headers and "See all" links --}
+    {!-- "All" tab: an overview. People first (a few), then posts; each group ends
+         with a quiet "See all" row that opens the corresponding tab. No icons. --}
 
-    {#if e(@user_hits, []) == [] && e(@hits, []) == [] && !@searching}
+    {#if e(@user_hits, []) == [] && e(@hits, []) == [] && !@searching &&
+        !e(@page_info, :has_next_page, false)}
       <Bonfire.UI.Common.EmptyFeed
         feedback_title={l("Nothing relevant was found")}
         feedback_message=""
       />
     {#else}
-      {!-- Profiles section --}
       {#if e(@user_hits, []) != []}
-        <div class="flex items-center justify-between px-4 pb-2 border-b-hair border-secondary mb-2">
-          <div class="flex items-center gap-2">
-            <#Icon iconify="ph:users-fill" class="w-5 h-5 text-primary" />
-            <h3 class="text-sm font-medium text-muted">{l("Profiles")}</h3>
-          </div>
-          {#if length(e(@user_hits, [])) > 5}
+        {!-- people as a compact strip above the posts: visually distinct, so neither
+             group needs a heading; the strip scrolls sideways and ends in "See all" --}
+        <div
+          class="flex items-center gap-2 overflow-x-auto px-4 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          data-role="search_people_strip"
+        >
+          {#for user <- Enum.take(e(@user_hits, []), Bonfire.Search.LiveHandler.overview_people_limit())}
             <LinkLive
-              to={"/search?facet[index_type]=Bonfire.Data.Identity.User&index=#{@index}&s=#{@search || ""}"}
-              class="text-sm font-medium text-primary hover:underline"
+              to={path(user)}
+              opts={["data-role": "character"]}
+              class="flex items-center gap-2 shrink-0 max-w-[240px] min-h-11 pl-1.5 pr-3 rounded-full bg-base-content/5 hover:bg-base-content/10 transition-colors duration-150"
             >
-              {l("See all")}
-            </LinkLive>
-          {/if}
-        </div>
-        <div class="divide-hair divide-secondary">
-          {#for user <- Enum.take(e(@user_hits, []), 5)}
-            <div>
-              <StatelessComponent
-                module={maybe_component(Bonfire.UI.Me.Preview.CharacterLive, @__context__)}
-                activity_component_id={"search-user-#{id(user)}"}
-                showing_within={:search}
-                wrapper_class="p-card"
-                object={user}
+              <Bonfire.UI.Common.AvatarLive
+                src={Bonfire.Common.Media.avatar_url(user)}
+                user_id={id(user)}
+                parent_id="search_people_strip"
+                wrapper_class="avatar !flex shrink-0"
+                class="w-8 h-8 rounded-full bg-base-100"
               />
-            </div>
+              <span class="min-w-0 leading-tight">
+                <span data-id="profile_name" class="block text-sm font-medium text-base-content truncate">{e(user, :profile, :name, nil) || e(user, :character, :username, nil)}</span>
+                <span class="block text-xs text-muted truncate">@{e(user, :character, :username, nil)}</span>
+              </span>
+            </LinkLive>
           {/for}
+          {!-- the strip holds at most overview_people_limit people; a full strip means there may be more --}
+          <LinkPatchLive
+            :if={length(e(@user_hits, [])) >= Bonfire.Search.LiveHandler.overview_people_limit()}
+            to={Bonfire.Search.UI.FiltersSearchLive.tab_url(@search, @index, @filters, "Bonfire.Data.Identity.User")}
+            class="flex items-center gap-1 shrink-0 min-h-11 px-3 rounded-full text-sm text-primary hover:bg-base-content/5"
+          >
+            <span>{l("See all people")}</span>
+            <span aria-hidden="true">›</span>
+          </LinkPatchLive>
         </div>
       {/if}
 
-      {!-- Posts section --}
       {#if e(@hits, []) != []}
-        <div class="flex items-center justify-between px-4 p-2 border-b-hair border-secondary">
-          <div class="flex items-center gap-2">
-            <#Icon iconify="ph:note-blank-fill" class="w-5 h-5 text-primary" />
-            <h3 class="text-sm font-medium text-muted">{l("Posts")}</h3>
-          </div>
-          {#if length(e(@hits, [])) > 5}
-            <LinkLive
-              to={"/search?facet[index_type]=Bonfire.Data.Social.Post&index=#{@index}&s=#{@search || ""}"}
-              class="text-sm font-medium text-primary hover:underline"
-            >
-              {l("See all")}
-            </LinkLive>
-          {/if}
-        </div>
-        <div class="divide-hair divide-secondary">
+        <div class="divide-hair divide-secondary border-t-hair border-secondary">
           {#for hit <- Enum.take(e(@hits, []), 5)}
             <div class="p-card">
               <StatefulComponent
@@ -134,6 +115,29 @@
           {/for}
         </div>
       {/if}
+      {#if length(e(@hits, [])) > 5 or e(@page_info, :has_next_page, false)}
+        <LinkPatchLive
+          to={Bonfire.Search.UI.FiltersSearchLive.tab_url(@search, @index, @filters, "Bonfire.Data.Social.Post")}
+          class="flex items-center justify-between min-h-11 px-4 text-sm text-primary hover:bg-base-content/5"
+        >
+          <span>{l("See all posts")}</span>
+          <span aria-hidden="true">›</span>
+        </LinkPatchLive>
+      {/if}
     {/if}
   {/if}
+
+  {!-- type-specific tabs paginate here; the All tab hands off to "See all" rows instead --}
+  <Bonfire.UI.Common.LoadMoreLive
+    :if={@page_info && @selected_tab in ["Bonfire.Data.Identity.User", "Bonfire.Data.Social.Post", "hashtag"]}
+    page_info={@page_info}
+    live_handler="Bonfire.Search.LiveHandler"
+    context="search"
+    hide_guest_fallback={false}
+    hide_if_no_more
+  >
+    <:if_no_more>
+      <p class="text-center text-muted py-4">{l("That's all the search results!")}</p>
+    </:if_no_more>
+  </Bonfire.UI.Common.LoadMoreLive>
 </div>

@@ -1,101 +1,19 @@
 <nav>
-  <div role="tablist" class="tabs bg-base-200 justify-evenly border-y-hair border-secondary">
-    {#case @search}
-      {#match _}
-        {!-- ALL TYPES --}
-        <LinkLive
-          class={
-            "tab !h-[35px] flex-1",
-            "tab-active font-medium":
-              @selected_tab not in [
-                "Bonfire.Data.Identity.User",
-                "Bonfire.Data.Social.Post",
-                "hashtag"
-              ]
-          }
-          to={"/search?index=#{@index}&s=#{@search || ""}"}
-        >
-          {l("All")}
-        </LinkLive>
-        {!-- USERS --}
-        <LinkLive
-          class={"tab !h-[35px] flex-1", "tab-active font-medium": @selected_tab == "Bonfire.Data.Identity.User"}
-          to={"/search?facet[index_type]=Bonfire.Data.Identity.User&index=#{@index}&s=#{@search || ""}"}
-        >
-          {l("Users")}
-        </LinkLive>
-        {!-- POSTS --}
-        <LinkLive
-          class={"tab !h-[35px] flex-1", "tab-active font-medium": @selected_tab == "Bonfire.Data.Social.Post"}
-          to={"/search?facet[index_type]=Bonfire.Data.Social.Post&index=#{@index}&s=#{@search || ""}"}
-        >
-          {l("Posts")}
-        </LinkLive>
-        <!-- HASHTAGS -->
-        {#if String.starts_with?(@search || "", "#")}
-          <LinkLive
-            class={"tab !h-[35px] flex-1", "tab-active font-medium": @selected_tab == "hashtag"}
-            to={"/search/tag/#{String.trim_leading(@search, "#")}"}
-          >
-            {l("Hashtags")}
-          </LinkLive>
-        {#else}
-          <LinkLive
-            class={"tab !h-[35px] flex-1", "tab-active font-medium": @selected_tab == "hashtag"}
-            to={"/search/tag/#{@search || ""}"}
-          >
-            {l("Hashtags")}
-          </LinkLive>
-        {/if}
-    {/case}
+  {#case @search}
+    {#match term when is_binary(term) and term != ""}
+      {!-- the result-type tabs, in the same lined style as profile/group pages; the
+           full-width rule sits on a wrapper so the underlines meet it --}
+      <Bonfire.UI.Common.TabsLive
+        class="px-0 flex justify-between w-full tabs border-b border-secondary"
+        tab_class="flex flex-1 pt-3 text-base hover:bg-base-content/5 place-content-center lined_tab [&.active>div]:border-primary [&.active>div]:text-base-content"
+        item_class="text-muted text-sm pb-3 border-b-2 border-transparent font-medium"
+        tabs={Bonfire.Search.UI.FiltersSearchLive.tabs(term, @index, @filters)}
+        selected_tab={Bonfire.Search.UI.FiltersSearchLive.active_tab_url(@selected_tab, term, @index, @filters)}
+      />
+    {#match _}
+      {!-- no query yet: no result-type tabs to show --}
+  {/case}
 
-    <!-- {#match "#" <> hashtag}
-        {!-- HASHTAG TAB --}
-        <LinkLive class={"tab", "tab-active font-medium": @selected_tab == "hashtag"} to={"/search/tag/#{hashtag}"}>
-          {l("With hashtag")}
-        </LinkLive>
-
-        {!-- USERS --}
-        <LinkLive
-          class={"tab", "tab-active font-medium": @selected_tab == "Bonfire.Data.Identity.User"}
-          to={"/search?facet[index_type]=Bonfire.Data.Identity.User&index=#{@index}&s=#{hashtag}"}
-        >
-          {l("Search users")}
-        </LinkLive>
-        {!-- POSTS --}
-        <LinkLive
-          class={"tab", "tab-active font-medium": @selected_tab == "Bonfire.Data.Social.Post"}
-          to={"/search?facet[index_type]=Bonfire.Data.Social.Post&index=#{@index}&s=#{hashtag}"}
-        >
-          {l("Search posts")}
-        </LinkLive> -->
-  </div>
-
-  <!-- {#if maybe_module(Bonfire.Search.adapter(), @__context__) == Bonfire.Search.MeiliLib} -->
-  {!-- public --}
-  <!-- <LinkLive
-    class="flex flex-1 pt-4 text-base capitalize hover:bg-base-content hover:bg-opacity-10 place-content-center"
-    to={"/search?index=public&facet[index_type]=#{@selected_tab}&s=#{@search}"}
-  >
-    <div class={
-      "text-muted text-sm pb-3 border-b-2 border-transparent",
-      "font-medium !border-primary text-primary": @index == "public"
-    }>
-      {l("Public")}
-    </div>
-  </LinkLive>
-  {!-- private --}
-  <LinkLive
-    class="flex flex-1 pt-4 text-base capitalize hover:bg-base-content hover:bg-opacity-10 place-content-center"
-    to={"/search?index=closed&facet[index_type]=#{@selected_tab}&s=#{@search}"}
-  >
-    <div class={
-      "text-muted text-sm pb-3 border-b-2 border-transparent",
-      "font-medium !border-primary text-primary": @index == "closed"
-    }>
-      {l("Private")}
-    </div>
-  </LinkLive> -->
   <div
     :if={@selected_tab == "Bonfire.Data.Social.Post"}
     class="flex p-4 border-b border-secondary py-2 items-center justify-between"
@@ -142,48 +60,6 @@
           </div>
         </button>
       </li>
-      <!-- <Bonfire.UI.Common.UserMenuLinksLive page={@page} /> -->
     </Dropdown>
-
-    {!-- <div
-      :if={@selected_tab != "hashtag"}
-      role="tablist"
-      class="tabs tabs-border border-b border-secondary"
-    >
-      <button
-        role="tab"
-        phx-click="toggle_index"
-        phx-value-index="public"
-        class={
-          "tab flex-1",
-          "tab-active font-medium": @index == "public"
-        }
-      >{l("Public only")}</button>
-      <button
-        role="tab"
-        phx-click="toggle_index"
-        phx-value-index="closed"
-        class={
-          "tab flex-1",
-          "tab-active font-medium": @index !== "public"
-        }
-      >
-        {l("Private (eg. DMs or custom boundaries)")}</button>
-    </div> --}
   </div>
-
-  {!-- <div class="form-control px-3 pb-2 pt-0">
-    <label
-      phx-click="toggle_index"
-      phx-value-index={if @index == "public", do: "closed", else: "public"}
-      class="label gap-2 cursor-pointer"
-    >
-      <input
-        type="checkbox"
-        class="checkbox checkbox-sm checkbox-primary"
-        checked={@index == "closed"}
-      />
-      <span class="label-text text-sm text-muted">{l("Content with boundaries (eg. DMs)")}</span>
-    </label>
-  </div> --}
 </nav>

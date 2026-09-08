@@ -83,23 +83,22 @@ defmodule Bonfire.Search.MeiliLib do
     search(%{q: string}, index)
   end
 
+  # Bonfire-side opts that must not leak into Meilisearch search params
+  # (everything else in opts is passed through). FIXME: use an allow-list instead
+  @non_search_params [:current_user, :context, :index, :skip_boundary_check, :raw, :feed_filters]
+
   def search(string, %{index: index} = opts)
       when is_binary(string) and (is_binary(index) or is_atom(index)) do
-    # FIXME: use an allow-list instead
-    search_params =
-      Map.drop(opts, [:current_user, :context, :index, :skip_boundary_check, :raw])
-      |> Enum.into(%{q: string})
-
-    search(search_params, index, opts)
+    search(search_params(string, opts), index, opts)
   end
 
   def search(string, opts) when is_binary(string) and (is_map(opts) or is_list(opts)) do
-    # FIXME: use an allow-list instead
-    search_params =
-      Enums.fun(opts, :drop, [[:current_user, :context, :index, :skip_boundary_check, :raw]])
-      |> Enum.into(%{q: string})
+    search(search_params(string, opts), opts[:index], opts)
+  end
 
-    search(search_params, opts[:index], opts)
+  defp search_params(string, opts) do
+    Enums.fun(opts, :drop, [@non_search_params])
+    |> Enum.into(%{q: string})
   end
 
   def search(object, index) when is_map(object) and (is_binary(index) or is_atom(index)) do

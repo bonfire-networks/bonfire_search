@@ -15,4 +15,6 @@ defmodule Bonfire.Search.Web.ResultsLive do
   prop searching_direct, :boolean, default: false
   prop selected_tab, :any, default: nil
   prop index, :string, default: "public"
+  # active search filters, carried along by the "See all" links
+  prop filters, :any, default: %{}
 end
