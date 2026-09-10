@@ -33,9 +33,7 @@ defmodule Bonfire.Search.Sonic do
 
   ## Connections
 
-  Each Sonic TCP connection is locked to one mode after `START`. The adapter
-  maintains two supervised connections: one for INGEST, one for SEARCH.
-  See `Bonfire.Search.Sonic.ConnectionPool`.
+  Each Sonic TCP connection is locked to one mode after `START`. The adapter maintains two supervised connections, one for INGEST and one for SEARCH, each owned by a `Sonix.Connection` that runs commands on it one at a time. Reach them via `with_ingest/1` and `with_search/1`.
 
   ## PUSH semantics
 
@@ -66,11 +64,44 @@ defmodule Bonfire.Search.Sonic do
   defp lang_opts(_bucket), do: []
 
   # ---------------------------------------------------------------------------
-  # Connection helpers
+  # Connections
   # ---------------------------------------------------------------------------
 
-  defp ingest_conn, do: Bonfire.Search.Sonic.Connection.ingest()
-  defp search_conn, do: Bonfire.Search.Sonic.Connection.search()
+  @ingest __MODULE__.Ingest
+  @search __MODULE__.Search
+
+  @doc """
+  Runs `fun` with the INGEST (or SEARCH) connection, exclusively.
+
+  Commands go through `Sonix.Connection` one at a time, because a Sonic command spans a write and a separate read, so concurrent callers sharing a socket would otherwise read each other's responses.
+  """
+  def with_ingest(fun), do: Sonix.Connection.command(@ingest, fun, command_timeout())
+  def with_search(fun), do: Sonix.Connection.command(@search, fun, command_timeout())
+
+  @doc "Options for a `Sonix.Connection` in the given mode, read from app config."
+  def connection_opts(mode, extra \\ []) do
+    Keyword.merge(
+      [
+        mode: mode,
+        host: Config.get_ext(:bonfire_search, [__MODULE__, :host], "localhost"),
+        port: Config.get_ext(:bonfire_search, [__MODULE__, :port], 1491),
+        password: Config.get_ext(:bonfire_search, [__MODULE__, :password], "SecretPassword"),
+        # must stay under `channel.tcp_timeout` in sonic.cfg, which is 300s
+        keepalive_interval:
+          Config.get_ext(
+            :bonfire_search,
+            [__MODULE__, :keepalive_interval],
+            to_timeout(second: 120)
+          )
+      ],
+      extra
+    )
+  end
+
+  # generous by default because the batch ingest path pipelines a whole window of commands
+  defp command_timeout do
+    Config.get_ext(:bonfire_search, [__MODULE__, :command_timeout], to_timeout(second: 30))
+  end
 
   # ---------------------------------------------------------------------------
   # Adapter callbacks — supervision
@@ -78,18 +109,9 @@ defmodule Bonfire.Search.Sonic do
 
   @impl true
   def child_specs do
-    [
-      Supervisor.child_spec(
-        {Bonfire.Search.Sonic.Connection,
-         name: Bonfire.Search.Sonic.Connection.Ingest, mode: "ingest"},
-        id: Bonfire.Search.Sonic.Connection.Ingest
-      ),
-      Supervisor.child_spec(
-        {Bonfire.Search.Sonic.Connection,
-         name: Bonfire.Search.Sonic.Connection.Search, mode: "search"},
-        id: Bonfire.Search.Sonic.Connection.Search
-      )
-    ]
+    for {id, mode} <- [{@ingest, "ingest"}, {@search, "search"}] do
+      Supervisor.child_spec({Sonix.Connection, connection_opts(mode, name: id)}, id: id)
+    end
   end
 
   # ---------------------------------------------------------------------------
@@ -98,10 +120,7 @@ defmodule Bonfire.Search.Sonic do
 
   @impl true
   def healthy? do
-    case ingest_conn() do
-      {:ok, conn} -> Sonix.ping(conn) == :ok
-      _ -> false
-    end
+    with_ingest(&Sonix.ping/1) == :ok
   rescue
     _ -> false
   end
@@ -156,14 +175,15 @@ defmodule Bonfire.Search.Sonic do
 
     info("Sonic: searching for #{inspect(string)} in collection=#{collection} bucket=#{bucket}")
 
-    with {:ok, conn} <- search_conn(),
-         {:ok, ids} <-
-           Sonix.query(
-             conn,
-             collection,
-             bucket,
-             string,
-             [limit: limit, offset: offset] ++ lang_opts(bucket)
+    with {:ok, ids} <-
+           with_search(
+             &Sonix.query(
+               &1,
+               collection,
+               bucket,
+               string,
+               [limit: limit, offset: offset] ++ lang_opts(bucket)
+             )
            ) do
       info("Sonic: query returned ids: #{inspect(ids)}")
       # NOTE: Sonic only returns object IDs, so raw hits only contain %{"id" => id}.
@@ -215,13 +235,12 @@ defmodule Bonfire.Search.Sonic do
           )
 
           for bucket <- buckets do
-            with {:ok, conn} <- ingest_conn() do
+            # both run in one checkout so no other writer can land between them
+            with_ingest(fn conn ->
               # Always flush first — PUSH appends, so we must clear stale text
               Sonix.flush(conn, collection, bucket, object_id)
               Sonix.push(conn, collection, bucket, object_id, text, lang_opts(bucket))
-            else
-              err -> error(err, "Sonic ingest connection failed for bucket #{bucket}")
-            end
+            end)
           end
         end
 
@@ -239,8 +258,7 @@ defmodule Bonfire.Search.Sonic do
       commands ->
         debug(commands, "Sonic: batch indexing #{length(commands)} commands into #{collection}")
 
-        with {:ok, conn} <- ingest_conn(),
-             {:ok, results} <- Sonix.Tcp.pipeline(conn, commands) do
+        with {:ok, results} <- with_ingest(&Sonix.Tcp.pipeline(&1, commands)) do
           for {:error, reason} <- results,
               do: error(reason, "Sonic: a pipelined ingest command failed")
 
@@ -282,8 +300,7 @@ defmodule Bonfire.Search.Sonic do
   @impl true
   def delete(:all, collection) do
     # Flush entire collection — used to clear indexes in tests
-    with {:ok, conn} <- ingest_conn() do
-      Sonix.flush(conn, collection)
+    with {:ok, _count} <- with_ingest(&Sonix.flush(&1, collection)) do
       {:ok, :deleted}
     end
   end
@@ -293,11 +310,7 @@ defmodule Bonfire.Search.Sonic do
     buckets = [@all_bucket | known_type_buckets()]
 
     for bucket <- buckets do
-      with {:ok, conn} <- ingest_conn() do
-        Sonix.flush(conn, collection, bucket, object_id)
-      else
-        err -> error(err, "Sonic delete failed for bucket #{bucket}")
-      end
+      with_ingest(&Sonix.flush(&1, collection, bucket, object_id))
     end
 
     {:ok, :deleted}

@@ -46,7 +46,7 @@ defmodule Bonfire.Search.RuntimeConfig do
       modularity: if(adapter != Bonfire.Search.MeiliLib, do: :disabled)
 
     if adapter == Bonfire.Search.Sonic do
-      config :bonfire_search, Bonfire.Search.Sonic.Connection,
+      config :bonfire_search, Bonfire.Search.Sonic,
         host: System.get_env("SONIC_HOST", "localhost"),
         port: System.get_env("SONIC_PORT", "1491") |> String.to_integer(),
         password: Bonfire.Common.EnvSecrets.env_or_file("SONIC_PASSWORD")
