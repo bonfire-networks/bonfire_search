@@ -20,7 +20,11 @@ if Application.get_env(:bonfire_search, :adapter) == Bonfire.Search.Sonic do
     @moduletag timeout: :infinity
 
     # terms planted at controlled selectivity; distinct from the lorem filler vocabulary
-    @terms %{"rare" => "benchrareword", "medium" => "benchmediumword", "common" => "benchcommonword"}
+    @terms %{
+      "rare" => "benchrareword",
+      "medium" => "benchmediumword",
+      "common" => "benchcommonword"
+    }
 
     # 8 type buckets with a realistic skew (posts dominate), thresholds over a 0..99 draw
     @typed_skew [
@@ -49,6 +53,7 @@ if Application.get_env(:bonfire_search, :adapter) == Bonfire.Search.Sonic do
 
     defp run_for_corpus(size) do
       run_id = System.unique_integer([:positive])
+
       collections = %{
         monolith: "bench_#{size}_monolith_#{run_id}",
         typed: "bench_#{size}_typed_#{run_id}",
@@ -197,7 +202,9 @@ if Application.get_env(:bonfire_search, :adapter) == Bonfire.Search.Sonic do
            partial = String.slice(term, 0, byte_size(term) - 3)
 
            {:ok, _thin} =
-             Sonic.with_search(&Sonix.query(&1, collections.monolith, "all", partial, limit: @limit))
+             Sonic.with_search(
+               &Sonix.query(&1, collections.monolith, "all", partial, limit: @limit)
+             )
 
            {:ok, words} =
              Sonic.with_search(&Sonix.suggest(&1, collections.monolith, "all", partial, limit: 5))
@@ -205,7 +212,9 @@ if Application.get_env(:bonfire_search, :adapter) == Bonfire.Search.Sonic do
            case words do
              [best | _] ->
                {:ok, ids} =
-                 Sonic.with_search(&Sonix.query(&1, collections.monolith, "all", best, limit: @limit))
+                 Sonic.with_search(
+                   &Sonix.query(&1, collections.monolith, "all", best, limit: @limit)
+                 )
 
                ids
 
