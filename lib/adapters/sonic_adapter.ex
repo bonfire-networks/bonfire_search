@@ -12,8 +12,7 @@ defmodule Bonfire.Search.Sonic do
   - **collection** — top-level namespace. Maps to Bonfire's `index_name`
     (e.g. `"test_public"`, `"prod_closed"`). Separates public from private search.
   - **bucket** — sub-namespace within a collection. Used for type-based filtering.
-    An object is always pushed to `"all"` (for unfiltered search) AND to one bucket
-    per `index_type` value (for tab-filtered search like "Posts" or "Users").
+    An object is always pushed to `"all"` (for unfiltered search) AND to one bucket per `index_type` value (for tab-filtered search like "Posts" or "Users").
   - **object** — a single entry: an ID string + a text blob. No structured fields.
 
   ## Bucket strategy
@@ -42,8 +41,7 @@ defmodule Bonfire.Search.Sonic do
 
   ## Writes are immediately queryable
 
-  Sonic's in-memory index is updated synchronously on PUSH; TRIGGER consolidate
-  only flushes to disk. No `wait_for_task` or `wait_for_indexing` flag needed.
+  Sonic's in-memory index is updated synchronously on PUSH; TRIGGER consolidate only flushes to disk. No `wait_for_task` or `wait_for_indexing` flag needed.
   """
 
   use Bonfire.Search.Adapter
@@ -75,8 +73,11 @@ defmodule Bonfire.Search.Sonic do
 
   Commands go through `Sonix.Connection` one at a time, because a Sonic command spans a write and a separate read, so concurrent callers sharing a socket would otherwise read each other's responses.
   """
-  def with_ingest(fun), do: Sonix.Connection.command(@ingest, fun, command_timeout())
-  def with_search(fun), do: Sonix.Connection.command(@search, fun, command_timeout())
+  def with_ingest(fun, timeout \\ nil),
+    do: Sonix.Connection.command(@ingest, fun, timeout || command_timeout())
+
+  def with_search(fun, timeout \\ nil),
+    do: Sonix.Connection.command(@search, fun, timeout || command_timeout())
 
   @doc "Options for a `Sonix.Connection` in the given mode, read from app config."
   def connection_opts(mode, extra \\ []) do
@@ -249,8 +250,7 @@ defmodule Bonfire.Search.Sonic do
   end
 
   def put_documents(docs, collection) when is_list(docs) do
-    # Batch: build every FLUSHO+PUSH up front, then pipeline them over a single
-    # connection checkout (Sonic has no bulk command, but allows pipelining).
+    # Batch: build every FLUSHO+PUSH up front, then pipeline them over a single connection checkout (Sonic has no bulk command, but allows pipelining).
     case ingest_commands(docs, collection) do
       [] ->
         {:ok, :indexed}
