@@ -41,7 +41,7 @@
             name="s"
             autocomplete="off"
             value={@search || e(@__context__, :current_params, "s", nil)}
-            placeholder={e(@search_placeholder, l("Search posts, people and tags…"))}
+            placeholder={e(@search_placeholder, l("Search..."))}
             phx-debounce="300"
             class="grow"
             x-on:focus="menuOpen = true"
