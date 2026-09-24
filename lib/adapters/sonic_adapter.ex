@@ -184,7 +184,8 @@ defmodule Bonfire.Search.Sonic do
                bucket,
                string,
                [limit: limit, offset: offset] ++ lang_opts(bucket)
-             )
+             ),
+             e(opts, :timeout, nil)
            ) do
       info("Sonic: query returned ids: #{inspect(ids)}")
       # NOTE: Sonic only returns object IDs, so raw hits only contain %{"id" => id}.
