@@ -5,7 +5,7 @@
       module={maybe_component(Bonfire.UI.Social.FeedFiltersModalContentLive, @__context__)}
       id="search_filters_widget_content"
       title={l("Refine")}
-      {...Bonfire.Search.Web.WidgetSearchFiltersLive.editor_assigns(@filters, @tab)}
+      {...Bonfire.Search.Web.WidgetSearchFiltersLive.editor_assigns(@filters)}
     />
   </div>
 </Bonfire.UI.Common.WidgetBlockLive>

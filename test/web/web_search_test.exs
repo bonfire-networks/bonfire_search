@@ -28,29 +28,33 @@ defmodule Bonfire.Search.Web.SearchTest do
   describe "Bonfire.Search.Filters casting" do
     alias Bonfire.Search.Filters, as: SearchFilters
 
-    test "cast_filters keeps only known keys and valid values" do
+    test "cast_filters keeps only the search filter keys" do
       uid = Needle.UID.generate()
 
       assert %{
                subjects: [^uid],
                media_types: [:image],
                object_types: [:post],
-               origin: :local
+               origin: [:local]
              } =
+               cast =
                SearchFilters.cast_filters(%{
-                 "subjects" => [uid, "not-a-uid"],
-                 "media_types" => ["image", "bogus"],
+                 "subjects" => [uid],
+                 "media_types" => ["image"],
                  "object_types" => ["post"],
                  "origin" => "local",
                  "sort_order" => "asc",
+                 "feed_ids" => ["x"],
                  "evil" => "1"
                })
+
+      assert map_size(cast) == 4
     end
 
-    test "cast_filters of empty or invalid input is empty" do
+    test "cast_filters of empty input, or the editor's 'Anywhere' origin, is empty" do
       assert SearchFilters.cast_filters(%{}) == %{}
       assert SearchFilters.cast_filters(nil) == %{}
-      assert SearchFilters.cast_filters(%{"origin" => "bogus"}) == %{}
+      assert SearchFilters.cast_filters(%{"origin" => "all"}) == %{}
     end
 
     test "extract_selected_authors reads only the named picker field" do
@@ -80,54 +84,22 @@ defmodule Bonfire.Search.Web.SearchTest do
              }, "search_filters_include_people") == []
     end
 
-    test "filters round-trip through URL params" do
-      uid = Needle.UID.generate()
-      filters = %{subjects: [uid], media_types: [:image, :video], origin: :remote}
-
-      assert SearchFilters.cast_filters(
-               SearchFilters.filters_to_params(filters)
-             ) == filters
-
-      assert length(Bonfire.UI.Social.FeedControlsLive.active_filters(filters)) == 4
-    end
-
-    test "casts hashtags, excluded authors, and instance-domain origins" do
+    test "filters round-trip through the Posts tab URL" do
       uid = Needle.UID.generate()
 
-      assert %{
-               exclude_subjects: [^uid],
-               tags: ["bonfire", "fedi"],
-               origin: ["mastodon.social", "gancio.org"]
-             } =
-               SearchFilters.cast_filters(%{
-                 "exclude_subjects" => [uid],
-                 "tags" => ["#bonfire", "fedi", "", "bad tag"],
-                 "origin" => [
-                   "https://mastodon.social/about",
-                   "@Gancio.ORG",
-                   "not-a-domain"
-                 ]
-               })
+      filters = %{
+        subjects: [uid],
+        media_types: [:image, :video],
+        origin: ["mastodon.social"],
+        tags: ["bonfire"]
+      }
 
-      # domain-list origin round-trips through URL params
-      filters = %{origin: ["mastodon.social"], tags: ["bonfire"]}
+      url = SearchFilters.tab_url("cats", "public", filters, SearchFilters.posts_tab())
+      params = url |> URI.parse() |> Map.fetch!(:query) |> Plug.Conn.Query.decode()
 
-      assert SearchFilters.cast_filters(
-               SearchFilters.filters_to_params(filters)
-             ) == filters
+      assert SearchFilters.cast_filters(params["filters"]) == filters
+      assert length(Bonfire.UI.Social.FeedControlsLive.active_filters(filters)) == 5
     end
-  end
-
-  test "global search preserves reserved characters and the selected facet in its URL" do
-    params = %{"s" => "cats & dogs", "facet" => %{"index_type" => "Bonfire.Data.Identity.User"}}
-
-    {:noreply, socket} =
-      Bonfire.Search.LiveHandler.handle_event("go_search", params, %Phoenix.LiveView.Socket{})
-
-    assert {:redirect, %{to: url}} = socket.redirected
-    query = url |> URI.parse() |> Map.fetch!(:query) |> Plug.Conn.Query.decode()
-    assert query["s"] == "cats & dogs"
-    assert query["facet"] == params["facet"]
   end
 
   test "All still offers a hand-off when filtering removes every hit on a candidate page" do
@@ -136,13 +108,11 @@ defmodule Bonfire.Search.Web.SearchTest do
       search: "quartz",
       hits: [],
       user_hits: [],
-      filters: %{origin: :remote},
       page_info: %{has_next_page: true, end_cursor: "20"}
     })
 
     links = html |> Floki.parse_document!() |> Floki.find("a")
     assert Floki.text(links) =~ "See all posts"
-    assert Enum.any?(Floki.attribute(links, "href"), &String.contains?(&1, "filters[origin]=remote"))
     refute html =~ "Nothing relevant was found"
   end
 
@@ -237,8 +207,8 @@ defmodule Bonfire.Search.Web.SearchTest do
       conn
       |> visit("/search?s=visibility")
       |> assert_has(".tabs a", text: "Hashtags")
-      # the shared filters editor is also mounted in the right sidebar widget
-      |> assert_has("[data-role=search_filters_widget] h4", text: "From people")
+      # filters apply to posts only, so All has no filters widget
+      |> refute_has("[data-role=search_filters_widget]")
       # regression: the Hashtags tab used to link to /search/tag/ (no segment) when built without a query
       |> click_link(".tabs a", "Hashtags")
       |> assert_path("/search/tag/visibility")
@@ -337,7 +307,7 @@ defmodule Bonfire.Search.Web.SearchTest do
       |> assert_has(".activity", count: 4)
     end
 
-    test "search results display post with title, content warning, and author's avatar, along with the post being replied to",
+    test "search results display post with title, content warning, and author's avatar, without the post being replied to",
          %{
            me: me,
            conn: conn,
@@ -373,7 +343,8 @@ defmodule Bonfire.Search.Web.SearchTest do
       |> visit("/search?s=fulgurescent")
       |> wait_async()
       |> assert_has_or_open_browser(".activity", text: html_body)
-      |> assert_has_or_open_browser(".activity", text: reply_to_message)
+      # a matching reply stands alone in search (its parent isn't a hit)
+      |> refute_has(".activity", text: reply_to_message)
       |> assert_has_or_open_browser(".activity [data-role=name]", text: title)
       |> assert_has_or_open_browser(".activity [data-role=cw]", text: cw)
       |> assert_has_or_open_browser(".activity [data-id=subject_name]",
@@ -510,7 +481,7 @@ defmodule Bonfire.Search.Web.SearchTest do
       |> assert_has(".activity", text: "brontosaurus dispatch from bob")
 
       conn
-      |> visit("/search?s=brontosaurus&filters[subjects][]=#{alice.id}")
+      |> visit("/search?s=brontosaurus&facet[index_type]=Bonfire.Data.Social.Post&filters[subjects][]=#{alice.id}")
       |> wait_async()
       |> assert_has(".activity", text: "brontosaurus dispatch from alice")
       |> refute_has(".activity", text: "brontosaurus dispatch from bob")
@@ -528,7 +499,7 @@ defmodule Bonfire.Search.Web.SearchTest do
 
       for tags <- ["#missingfilterone", "#missingfilterone #missingfiltertwo"] do
         conn
-        |> visit("/search?s=quicksilver")
+        |> visit("/search?s=quicksilver&facet[index_type]=Bonfire.Data.Social.Post")
         |> wait_async()
         |> assert_has(".activity", text: "quicksilver post without hashtags")
         |> within("[data-role=search_filters_widget]", fn session ->
@@ -573,7 +544,7 @@ defmodule Bonfire.Search.Web.SearchTest do
       end)
 
       browser = browser
-      |> Browser.visit(@endpoint.url() <> "/search?s=quicksilver")
+      |> Browser.visit(@endpoint.url() <> "/search?s=quicksilver&facet[index_type]=Bonfire.Data.Social.Post")
       |> Browser.assert_has(Query.css(".activity", text: "quicksilver browser filter post"))
       |> Browser.click(Query.css("[data-role=search_filters_widget] [data-row=hashtags] summary"))
       |> Browser.click(Query.css("[data-role=search_filters_widget] input[name=tags_text]"))
@@ -604,7 +575,7 @@ defmodule Bonfire.Search.Web.SearchTest do
       end
 
       conn
-      |> visit("/search?s=quicksilver")
+      |> visit("/search?s=quicksilver&facet[index_type]=Bonfire.Data.Social.Post")
       |> wait_async()
       |> assert_has(".activity", text: "quicksilver untagged")
       |> within("[data-role=search_filters_widget]", fn session ->
@@ -627,7 +598,7 @@ defmodule Bonfire.Search.Web.SearchTest do
         )
 
       conn
-      |> visit("/search?s=quicksilver")
+      |> visit("/search?s=quicksilver&facet[index_type]=Bonfire.Data.Social.Post")
       |> wait_async()
       |> within("[data-role=search_filters_widget]", fn session ->
         session
@@ -696,7 +667,7 @@ defmodule Bonfire.Search.Web.SearchTest do
       |> assert_has(".activity", text: "glimmering long-form article")
     end
 
-    test "active filters survive re-searching from the main box and switching tabs", %{
+    test "active filters survive re-searching from the main box", %{
       alice: alice,
       me: me,
       conn: conn
@@ -716,7 +687,7 @@ defmodule Bonfire.Search.Web.SearchTest do
         )
 
       conn
-      |> visit("/search?s=wisteria&filters[subjects][]=#{alice.id}")
+      |> visit("/search?s=wisteria&facet[index_type]=Bonfire.Data.Social.Post&filters[subjects][]=#{alice.id}")
       |> wait_async()
       |> assert_has(".activity", text: "wisteria blossom from alice")
       |> refute_has(".activity", text: "wisteria blossom from bob")
@@ -729,73 +700,39 @@ defmodule Bonfire.Search.Web.SearchTest do
       |> wait_async()
       |> assert_has(".activity", text: "wisteria blossom from alice")
       |> refute_has(".activity", text: "wisteria blossom from bob")
-      |> assert_has("[data-role=open_search_filters] .badge", text: "1")
-      # switching tabs keeps the filter too
-      |> click_link(".tabs a", "Posts")
-      |> wait_async()
-      |> assert_has(".activity", text: "wisteria blossom from alice")
-      |> refute_has(".activity", text: "wisteria blossom from bob")
+      |> assert_has(".tabs a.active", text: "Posts")
       |> assert_has("[data-role=open_search_filters] .badge", text: "1")
     end
 
-    test "filters are scoped by tab: post-only filters jump to Posts, People keeps only origin", %{
-      me: me,
-      conn: conn
-    } do
-      {:ok, _} =
-        Posts.publish(
-          current_user: me,
-          post_attrs: %{post_content: %{html_body: "quokka scoped post"}},
-          boundary: "public"
-        )
-
+    test "only the Posts tab has filters", %{conn: conn} do
       conn
-      |> visit("/search?s=quokka")
+      |> visit("/search?s=quokka&facet[index_type]=Bonfire.Data.Social.Post&filters[origin]=local")
       |> wait_async()
-      |> assert_has(".tabs a.active", text: "All")
-      # a post-only filter set from the mixed All tab lands on the Posts tab (Bluesky rule)
-      |> within("[data-role=search_filters_widget]", fn session ->
-        session |> click_button("[data-toggle='article'] button", "Only")
-      end)
+      |> assert_has("[data-role=open_search_filters] .badge", text: "1")
+      |> assert_has("[data-role=search_filters_widget] h4", text: "Content types")
+      |> click_link(".tabs a", "All")
       |> wait_async()
-      |> assert_has(".tabs a.active", text: "All")
-      |> assert_has(".activity", text: "quokka scoped post")
-      |> within("[data-role=search_filters_widget]", fn session ->
-        click_button(session, "Apply filters")
-      end)
-      |> wait_async()
-      |> assert_has(".tabs a.active", text: "Posts")
-      |> refute_has(".activity", text: "quokka scoped post")
-      # switching to People keeps only the shared dimension: the post filter is dropped
-      # and the People rows offer just "Where it was posted"
+      |> refute_has("[data-role=search_filters_widget]")
+      |> refute_has("[data-role=open_search_filters]")
       |> click_link(".tabs a", "Users")
       |> wait_async()
-      |> within("[data-role=search_filters_widget]", fn session ->
-        session
-        |> assert_has("h4", text: "Origin")
-        |> refute_has("h4", text: "From people")
-        |> refute_has("h4", text: "Content types")
-      end)
-      |> refute_has("[data-role=open_search_filters] .badge")
+      |> refute_has("[data-role=search_filters_widget]")
+      # filters in an All URL are ignored
+      |> visit("/search?s=quokka&filters[origin]=local")
+      |> wait_async()
+      |> refute_has("[data-role=open_search_filters]")
     end
 
     test "switching tabs discards unapplied filters from the previous tab", %{conn: conn} do
       conn
-      |> visit("/search?s=quartz")
+      |> visit("/search?s=quartz&facet[index_type]=Bonfire.Data.Social.Post")
       |> wait_async()
       |> within("[data-role=search_filters_widget]", fn session ->
         click_button(session, "[data-toggle='article'] button", "Only")
       end)
-      |> click_link(".tabs a", "Users")
-      |> wait_async()
-      |> within("[data-role=search_filters_widget]", fn session ->
-        session
-        |> refute_has("[data-role=reset_filters]")
-        |> click_button("Apply filters")
-      end)
-      |> wait_async()
-      |> assert_has(".tabs a.active", text: "Users")
       |> click_link(".tabs a", "All")
+      |> wait_async()
+      |> click_link(".tabs a", "Posts")
       |> wait_async()
       |> assert_has("[data-role=search_filters_widget] [data-toggle=article][data-state=default]")
     end
@@ -812,7 +749,7 @@ defmodule Bonfire.Search.Web.SearchTest do
         )
 
       conn
-      |> visit("/search?s=peregrine")
+      |> visit("/search?s=peregrine&facet[index_type]=Bonfire.Data.Social.Post")
       |> wait_async()
       |> assert_has(".activity", text: "peregrine modal-typed post")
       # small screens: the same editor expands inline under the tabs (the sidebar
@@ -831,7 +768,6 @@ defmodule Bonfire.Search.Web.SearchTest do
       end)
       |> wait_async()
       |> assert_has(".activity", text: "peregrine modal-typed post")
-      |> assert_has(".tabs a.active", text: "All")
       |> within("[data-role=search_filters_inline]", fn session ->
         click_button(session, "Apply filters")
       end)

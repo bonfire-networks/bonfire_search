@@ -1,142 +1,103 @@
 defmodule Bonfire.Search.Filters do
   @moduledoc """
-  Search tab policy and casting between URL parameters and the `Bonfire.Social.FeedFilters` map.
+  Search tab rules and `/search` URL building. Filters apply to posts only, so only the Posts tab offers (and keeps) them.
 
-  The fixed whitelist is separate from `FeedFilters.validate/1`: URL input must be limited to search's supported values, and feed struct defaults would introduce ordering and deduplication options into search queries.
+  URL params are cast by the feeds' own `Bonfire.Social.FeedFilters.changeset/2`, keeping only the keys search offers.
   """
-  use Bonfire.Common.Utils
   alias Bonfire.Social.FeedFilters
 
-  # NOTE: authors filter via :subjects (plain activity.subject_id match, so replies
-  # count and exclusion fails closed) — :creators carries top-level-posts-only
-  # feed semantics that would silently drop replies from search results
-  @uid_lists [:subjects, :exclude_subjects]
-  @enum_lists %{
-    object_types: [:post, :article],
-    exclude_object_types: [:post, :article],
-    media_types: [:link, :image, :video, :audio],
-    exclude_media_types: [:link, :image, :video, :audio]
-  }
-  @origins [:local, :remote]
-
-  @dimensions [
-    from_people: [:subjects],
-    not_people: [:exclude_subjects],
-    hashtags: [:tags],
-    origin: [:origin],
-    object_types: [:object_types, :exclude_object_types],
-    media_types: [:media_types, :exclude_media_types]
-  ]
-  @shared_sections [:origin]
-  @post_only @dimensions |> Keyword.delete(:origin) |> Keyword.values() |> List.flatten()
   @people_tab "Bonfire.Data.Identity.User"
   @posts_tab "Bonfire.Data.Social.Post"
+  @hashtag_tab "hashtag"
+
+  @object_types [:post, :article]
+  @media_types [:link, :image, :video, :audio]
+
+  # the filters editor's rows, and the filter keys they set
+  # (authors use :subjects, not :creators, so replies match too)
+  @sections [:from_people, :not_people, :hashtags, :origin, :object_types, :media_types]
+  @filter_keys [
+    :subjects,
+    :exclude_subjects,
+    :tags,
+    :origin,
+    :object_types,
+    :exclude_object_types,
+    :media_types,
+    :exclude_media_types
+  ]
+
+  def people_tab, do: @people_tab
+  def posts_tab, do: @posts_tab
+  def hashtag_tab, do: @hashtag_tab
+  def object_types, do: @object_types
+  def media_types, do: @media_types
+  def sections, do: @sections
 
   @doc """
-  Filter rows available on a search tab. All offers content filters too; selecting one switches to Posts.
+  The selected tab when it is a result-type facet (People / Posts), else nil (All).
 
-      iex> Bonfire.Search.Filters.sections("Bonfire.Data.Identity.User")
-      [:origin]
-      iex> Bonfire.Search.Filters.sections("hashtag")
-      []
+      iex> Bonfire.Search.Filters.type_facet("Bonfire.Data.Social.Post")
+      "Bonfire.Data.Social.Post"
+      iex> Bonfire.Search.Filters.type_facet("hashtag")
+      nil
   """
-  def sections(@people_tab), do: @shared_sections
-  def sections("hashtag"), do: []
-  def sections(_), do: Keyword.keys(@dimensions)
+  def type_facet(tab) when tab in [@people_tab, @posts_tab], do: tab
+  def type_facet(_), do: nil
 
-  @doc "True when the filters include at least one that only applies to posts."
-  def post_only?(filters) when is_map(filters), do: Enum.any?(@post_only, &Map.has_key?(filters, &1))
-  def post_only?(_), do: false
+  @doc "True for tabs that list one result type in full (and paginate), as opposed to the All overview."
+  def typed_tab?(tab), do: tab in [@people_tab, @posts_tab, @hashtag_tab]
 
-  @doc """
-  Keeps filters for the tab's rows. All keeps shared dimensions only; content-only selections first switch to Posts through `tab_for/2`.
-
-      iex> Bonfire.Search.Filters.for_tab(%{origin: :local, media_types: [:image]}, "Bonfire.Data.Identity.User")
-      %{origin: :local}
-      iex> Bonfire.Search.Filters.for_tab(%{origin: :local}, "hashtag")
-      %{}
-  """
-  def for_tab(filters, tab) when is_map(filters) do
-    rows =
-      if tab in [@posts_tab, @people_tab, "hashtag"],
-        do: sections(tab),
-        else: @shared_sections
-
-    keys = Enum.flat_map(rows, &Keyword.fetch!(@dimensions, &1))
-    Map.take(filters, keys)
-  end
-
-  def for_tab(_, _), do: %{}
-
-  @doc "The tab a filter set should land on: Posts when it holds post-only filters, else the current one."
-  def tab_for(filters, current_tab) do
-    if post_only?(filters), do: @posts_tab, else: current_tab
-  end
+  @doc "True for the one tab that has filters (Posts)."
+  def filtered_tab?(tab), do: tab == @posts_tab
 
   @doc """
-  Casts untrusted URL params (string or atom keyed) into supported search filters. Unknown keys and invalid values are dropped; empty filters yield `%{}`.
+  Casts untrusted URL params with `FeedFilters.changeset/2` (its `changes`, so no struct defaults), keeping only the search filter keys.
+
+      iex> Bonfire.Search.Filters.cast_filters(%{"object_types" => "article", "sort_by" => "like_count"})
+      %{object_types: [:article]}
   """
   def cast_filters(params) when is_map(params) do
-    %{}
-    |> put_lists(@uid_lists, params, &uid_or_nil/1)
-    |> put_enum_lists(params)
-    |> put_list(:tags, normalise_list(get_field(params, :tags), &FeedFilters.normalise_tag/1))
-    |> put_origin(get_field(params, :origin))
+    params
+    |> FeedFilters.changeset()
+    |> Map.get(:changes)
+    |> compact()
   end
 
   def cast_filters(_), do: %{}
 
-  @doc "Converts a cast filters map back into string-keyed/valued params for URL encoding."
-  def filters_to_params(filters) when is_map(filters) do
+  @doc """
+  Builds a `/search` URL preserving the query, index, optional type facet, and the filters (on the Posts tab).
+
+      iex> Bonfire.Search.Filters.tab_url("cats", "public", %{origin: :local, sort_by: false}, "Bonfire.Data.Social.Post")
+      "/search?facet[index_type]=Bonfire.Data.Social.Post&filters[origin]=local&index=public&s=cats"
+      iex> Bonfire.Search.Filters.tab_url("cats", "public", %{origin: :local})
+      "/search?index=public&s=cats"
+  """
+  def tab_url(term, index, filters, facet \\ nil) do
+    facet = type_facet(facet)
+
+    %{"s" => term, "index" => index}
+    |> put_present("facet", facet && %{"index_type" => facet})
+    |> put_present("filters", if(facet == @posts_tab, do: compact(filters)))
+    |> then(&("/search?" <> Plug.Conn.Query.encode(&1)))
+  end
+
+  @doc """
+  Builds a `/search/tag/` URL (the hashtag tab has no filters of its own).
+
+      iex> Bonfire.Search.Filters.hashtag_url("#cats")
+      "/search/tag/cats"
+  """
+  def hashtag_url(tag), do: "/search/tag/#{String.trim_leading(tag || "", "#")}"
+
+  # keeps only the search filter keys, without unset values (the editor's "Anywhere" origin is :all)
+  defp compact(filters) do
     filters
-    |> Enum.flat_map(fn
-      {_k, nil} -> []
-      {_k, []} -> []
-      {k, v} when is_list(v) -> [{to_string(k), Enum.map(v, &to_string/1)}]
-      {k, v} -> [{to_string(k), to_string(v)}]
-    end)
-    |> Map.new()
+    |> Map.take(@filter_keys)
+    |> Map.reject(fn {_, value} -> value in [nil, [], :all, [:all]] end)
   end
 
-  def filters_to_params(_), do: %{}
-
-  defp get_field(params, key), do: e(params, key, nil) || e(params, to_string(key), nil)
-
-  defp put_lists(acc, keys, params, fun) do
-    Enum.reduce(keys, acc, fn key, acc ->
-      put_list(acc, key, normalise_list(get_field(params, key), fun))
-    end)
-  end
-
-  defp put_enum_lists(acc, params) do
-    Enum.reduce(@enum_lists, acc, fn {key, allowed}, acc ->
-      put_list(acc, key, normalise_list(get_field(params, key), &cast_enum(&1, allowed)))
-    end)
-  end
-
-  # a list filter is either present and non-empty, or absent
-  defp put_list(acc, _key, []), do: acc
-  defp put_list(acc, key, list), do: Map.put(acc, key, list)
-
-  # wrap, normalise each entry with `fun` (nil = invalid), dedupe
-  defp normalise_list(values, fun),
-    do: values |> List.wrap() |> Enum.map(fun) |> Enum.reject(&is_nil/1) |> Enum.uniq()
-
-  defp uid_or_nil(value), do: if(Types.is_uid?(value), do: value)
-
-  defp cast_enum(value, allowed),
-    do: Enum.find(allowed, fn a -> a == value or to_string(a) == value end)
-
-  # origin is either :local / :remote, or a list of remote instance domains
-  # (both shapes are supported by the FeedFilters :origin query filter)
-  defp put_origin(acc, values) when is_list(values) do
-    put_list(acc, :origin, normalise_list(values, &FeedFilters.normalise_instance_domain/1))
-  end
-
-  defp put_origin(acc, value) do
-    case cast_enum(value, @origins) do
-      nil -> acc
-      origin -> Map.put(acc, :origin, origin)
-    end
-  end
+  defp put_present(query, _key, empty) when empty in [nil, %{}], do: query
+  defp put_present(query, key, value), do: Map.put(query, key, value)
 end

@@ -15,7 +15,7 @@
   {/case}
 
   <div
-    :if={@selected_tab == "Bonfire.Data.Social.Post"}
+    :if={@selected_tab == Bonfire.Search.Filters.posts_tab()}
     class="flex p-4 border-b border-secondary py-2 items-center justify-between"
   >
     <div class="text-sm font-medium">{l("Results")}</div>

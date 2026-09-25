@@ -2,7 +2,6 @@
   id="the_search_results"
   phx-update="replace"
   data-page={e(@page, [])}
-  class="divide-hair divide-secondary"
 >
   {#if @searching && e(@hits, []) == [] && e(@user_hits, []) == []}
     <div class="flex items-center justify-center py-8">
@@ -17,28 +16,31 @@
     </div>
   {/if}
 
-  {#if @selected_tab in ["Bonfire.Data.Identity.User", "Bonfire.Data.Social.Post", "hashtag"]}
+  {#if Bonfire.Search.Filters.typed_tab?(@selected_tab)}
     {!-- Type-specific tab: show full list with pagination --}
 
-    {#if @selected_tab == "Bonfire.Data.Identity.User"}
-      {#for user <- e(@user_hits, [])}
-        <div>
-          <StatelessComponent
-            module={maybe_component(Bonfire.UI.Me.Preview.CharacterLive, @__context__)}
-            activity_component_id={"search-user-#{id(user)}"}
-            showing_within={:search}
-            wrapper_class="p-card"
-            object={user}
-          />
-        </div>
-      {#else}
-        {#if !@searching}
-          <Bonfire.UI.Common.EmptyFeed feedback_title={l("No users found")} feedback_message="" />
-        {/if}
-      {/for}
+    {#if @selected_tab == Bonfire.Search.Filters.people_tab()}
+      <div class="divide-hair divide-secondary">
+        {#for user <- e(@user_hits, [])}
+          <div>
+            <StatelessComponent
+              module={maybe_component(Bonfire.UI.Me.Preview.CharacterLive, @__context__)}
+              activity_component_id={"search-user-#{id(user)}"}
+              showing_within={:search}
+              wrapper_class="p-card"
+              object={user}
+            />
+          </div>
+        {#else}
+          {#if !@searching}
+            <Bonfire.UI.Common.EmptyFeed feedback_title={l("No users found")} feedback_message="" />
+          {/if}
+        {/for}
+      </div>
     {#else}
+      {!-- same wrapper as feed entries, so padding and dividers follow the UI preset --}
       {#for hit <- e(@hits, [])}
-        <div>
+        <div class="activity_wrapper">
           <StatefulComponent
             module={maybe_component(Bonfire.UI.Social.ActivityLive, @__context__)}
             id={deterministic_dom_id(__MODULE__, e(hit, :activity, :id, nil) || id(hit), "search_activity", nil)}
@@ -47,7 +49,8 @@
           />
         </div>
       {#else}
-        {#if !@searching}
+        {!-- a filtered page can come back empty while later candidates still match: leave that to "Load more" --}
+        {#if !@searching && !e(@page_info, :has_next_page, false)}
           <Bonfire.UI.Common.EmptyFeed feedback_title={l("No posts found")} feedback_message="" />
         {/if}
       {/for}
@@ -92,7 +95,7 @@
           {!-- the strip holds at most overview_people_limit people; a full strip means there may be more --}
           <LinkPatchLive
             :if={length(e(@user_hits, [])) >= Bonfire.Search.LiveHandler.overview_people_limit()}
-            to={Bonfire.Search.UI.FiltersSearchLive.tab_url(@search, @index, @filters, "Bonfire.Data.Identity.User")}
+            to={Bonfire.Search.Filters.tab_url(@search, @index, %{}, Bonfire.Search.Filters.people_tab())}
             class="flex items-center gap-1 shrink-0 min-h-11 px-3 rounded-full text-sm text-primary hover:bg-base-content/5"
           >
             <span>{l("See all people")}</span>
@@ -102,9 +105,9 @@
       {/if}
 
       {#if e(@hits, []) != []}
-        <div class="divide-hair divide-secondary border-t-hair border-secondary">
+        <div class="border-t-hair border-secondary">
           {#for hit <- Enum.take(e(@hits, []), 5)}
-            <div class="p-card">
+            <div class="activity_wrapper">
               <StatefulComponent
                 module={maybe_component(Bonfire.UI.Social.ActivityLive, @__context__)}
                 id={deterministic_dom_id(__MODULE__, e(hit, :activity, :id, nil) || id(hit), "search_activity", nil)}
@@ -117,7 +120,7 @@
       {/if}
       {#if length(e(@hits, [])) > 5 or e(@page_info, :has_next_page, false)}
         <LinkPatchLive
-          to={Bonfire.Search.UI.FiltersSearchLive.tab_url(@search, @index, @filters, "Bonfire.Data.Social.Post")}
+          to={Bonfire.Search.Filters.tab_url(@search, @index, %{}, Bonfire.Search.Filters.posts_tab())}
           class="flex items-center justify-between min-h-11 px-4 text-sm text-primary hover:bg-base-content/5"
         >
           <span>{l("See all posts")}</span>
@@ -129,7 +132,7 @@
 
   {!-- type-specific tabs paginate here; the All tab hands off to "See all" rows instead --}
   <Bonfire.UI.Common.LoadMoreLive
-    :if={@page_info && @selected_tab in ["Bonfire.Data.Identity.User", "Bonfire.Data.Social.Post", "hashtag"]}
+    :if={@page_info && Bonfire.Search.Filters.typed_tab?(@selected_tab)}
     page_info={@page_info}
     live_handler="Bonfire.Search.LiveHandler"
     context="search"
