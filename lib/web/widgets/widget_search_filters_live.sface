@@ -1,0 +1,11 @@
+{!-- the editor renders its own "Refine · Reset N" header, so no widget title here --}
+<Bonfire.UI.Common.WidgetBlockLive class="w-full flex-auto mx-auto p-card border-y-hair border-secondary">
+  <div data-role="search_filters_widget">
+    <StatefulComponent
+      module={maybe_component(Bonfire.UI.Social.FeedFiltersModalContentLive, @__context__)}
+      id="search_filters_widget_content"
+      title={l("Refine")}
+      {...Bonfire.Search.Web.WidgetSearchFiltersLive.editor_assigns(@filters)}
+    />
+  </div>
+</Bonfire.UI.Common.WidgetBlockLive>

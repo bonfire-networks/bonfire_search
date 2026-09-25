@@ -183,14 +183,20 @@ defmodule Bonfire.Search do
     search_result = search_categorised(string, calculate_facets, filter_facets, not sonic?, opts)
 
     if sonic? do
-      # Hits are typed structs — apply appropriate preloads per category
+      # Hits are typed structs — apply appropriate preloads per category.
+      # With extra feed_filters, re-load by ID through the filtered feed query instead
+      # (same path as the Meili branch below)
       activities =
-        search_result.activity_hits
-        |> Bonfire.Social.Activities.activity_preloads(@search_preloads,
-          current_user: current_user(opts)
-        )
-        |> Enum.map(&backfill_subject_id/1)
-        |> Bonfire.Social.Activities.prepare_subject_and_creator(opts)
+        if feed_filters(opts) != %{} do
+          load_activities_for_search(Enums.ids(search_result.activity_hits), opts)
+        else
+          search_result.activity_hits
+          |> Bonfire.Social.Activities.activity_preloads(@search_preloads,
+            current_user: current_user(opts)
+          )
+          |> Enum.map(&backfill_subject_id/1)
+          |> Bonfire.Social.Activities.prepare_subject_and_creator(opts)
+        end
 
       debug(search_result.user_hits, "search_and_load: user_hits before preload")
 
@@ -319,9 +325,13 @@ defmodule Bonfire.Search do
       when is_list(object_ids) and object_ids != [] do
     opts = Keyword.put(opts, :preload, @search_preloads)
 
+    # optional extra `FeedFilters` (eg. from the search filters modal) are applied
+    # here on top of the ID set, since query_object_extras_boundarised runs the
+    # same filter pipeline as feeds. NOTE: DB-side filters can prune a page of
+    # adapter hits, so filtered pages may come back sparse.
     Bonfire.Social.FeedLoader.query_object_extras_boundarised(
       nil,
-      %{objects: object_ids},
+      Map.put(feed_filters(opts), :objects, object_ids),
       opts
     )
     |> repo().many()
@@ -330,6 +340,14 @@ defmodule Bonfire.Search do
   end
 
   def load_activities_for_search(_, _), do: []
+
+  @doc "Extra `Bonfire.Social.FeedFilters` to apply DB-side when loading hits (`%{}` if none)."
+  def feed_filters(opts) do
+    case opts[:feed_filters] do
+      filters when is_map(filters) -> filters
+      _ -> %{}
+    end
+  end
 
   defp reorder_by_ids(loaded_items, ordered_ids) do
     id_map =

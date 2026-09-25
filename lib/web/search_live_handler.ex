@@ -1,6 +1,8 @@
 defmodule Bonfire.Search.LiveHandler do
   use Bonfire.UI.Common.Web, :live_handler
 
+  alias Bonfire.Search.Filters
+
   def default_limit,
     do: Bonfire.Common.Config.get(:default_pagination_limit, 20)
 
@@ -24,8 +26,7 @@ defmodule Bonfire.Search.LiveHandler do
     {:noreply, socket |> patch_to("/search/tag/#{hashtag}")}
   end
 
-  def handle_event("patch_search", %{"s" => s, "facet" => facet} = _params, socket)
-      when facet != %{} do
+  def handle_event("patch_search", %{"s" => s} = params, socket) do
     # Use existing search term if the provided one is empty
     search_term =
       if s == "" or is_nil(s) do
@@ -36,38 +37,27 @@ defmodule Bonfire.Search.LiveHandler do
 
     # Only patch if we have a valid search term
     if search_term != "" and not is_nil(search_term) do
-      # If facet index_type is empty, search everything (no facet filter)
-      encoded_search_term = URI.encode(search_term)
+      # A form that names no facet keeps the tab the user is on (so tab-scoped filters
+      # survive a re-search); an explicit facet switches to it
+      facet =
+        case e(params, "facet", "index_type", nil) do
+          empty when empty in ["", nil] ->
+            e(assigns(socket), :selected_tab, nil)
 
-      url =
-        if facet["index_type"] == "" or is_nil(facet["index_type"]) do
-          "/search/?s=#{encoded_search_term}"
-        else
-          "/search/?s=#{encoded_search_term}&facet[index_type]=#{facet["index_type"]}"
+          index_type ->
+            index_type
         end
 
-      {:noreply, socket |> assign(selected_tab: nil) |> patch_to(url)}
-    else
-      # If no search term available, just stay on the page
-      {:noreply, socket}
-    end
-  end
+      # keep the current index and any active search filters in the URL
+      url =
+        Filters.tab_url(
+          search_term,
+          e(assigns(socket), :index, "public"),
+          e(assigns(socket), :search_filters, %{}),
+          facet
+        )
 
-  def handle_event("patch_search", %{"s" => s} = _params, socket) do
-    # Use existing search term if the provided one is empty
-    search_term =
-      if s == "" or is_nil(s) do
-        e(assigns(socket), :search_term, nil) || e(assigns(socket), :search, "")
-      else
-        s
-      end
-
-    # Only patch if we have a valid search term
-    if search_term != "" and not is_nil(search_term) do
-      encoded_search_term = URI.encode(search_term)
-
-      {:noreply,
-       socket |> assign(selected_tab: nil) |> patch_to("/search/?s=" <> encoded_search_term)}
+      {:noreply, patch_to(socket, url)}
     else
       # If no search term available, just stay on the page
       {:noreply, socket}
@@ -156,7 +146,7 @@ defmodule Bonfire.Search.LiveHandler do
     # let the Hashtag view handle it by default
     {:noreply,
      socket
-     |> assign(selected_tab: "hashtag", search: hashtag, search_term: s)}
+     |> assign(selected_tab: Filters.hashtag_tab(), search: hashtag, search_term: s)}
   end
 
   def live_search(q, search_limit, facet_filters, index, socket, opts)
@@ -200,7 +190,10 @@ defmodule Bonfire.Search.LiveHandler do
       limit: search_limit,
       offset: offset,
       current_user: current_user,
-      index: index
+      index: index,
+      # applied DB-side when loading hits (see Bonfire.Search.load_activities_for_search/2);
+      # the Meili adapter must drop this key from its passthrough search params
+      feed_filters: e(assigns(socket), :search_filters, %{})
     }
 
     # Start the async direct lookup only for URLs and @mentions (not plain text searches)
@@ -236,7 +229,7 @@ defmodule Bonfire.Search.LiveHandler do
     current_hits = e(assigns(socket), :hits, [])
     current_user_hits = e(assigns(socket), :user_hits, [])
 
-    if String.starts_with?(q, "http") and current_hits == [] and current_user_hits == [] do
+    if String.starts_with?(q || "", "http") and current_hits == [] and current_user_hits == [] do
       # Handle URL case when there are no other hits - redirect to the federated object's page
       {:noreply,
        socket
@@ -342,6 +335,60 @@ defmodule Bonfire.Search.LiveHandler do
     {:noreply, assign(socket, searching_direct: false)}
   end
 
+  @overview_people_limit 6
+
+  @doc "How many people the All tab's strip shows (a dedicated typed query, see below)."
+  def overview_people_limit, do: @overview_people_limit
+
+  # People need a typed query: mixed search ranks them against posts and can fill a page with posts alone.
+  defp maybe_overview_people(search_result, q, nil = _facet_filters, opts) do
+    if e(opts, :offset, 0) in [0, nil] do
+      people =
+        Bonfire.Search.search_and_load(
+          q,
+          ["index_type"],
+          %{"index_type" => Filters.people_tab()},
+          Map.merge(opts, %{limit: @overview_people_limit, offset: 0})
+        )
+
+      Map.put(search_result, :users, e(people, :users, []))
+    else
+      search_result
+    end
+  end
+
+  defp maybe_overview_people(search_result, _q, _facet_filters, _opts), do: search_result
+
+  # Posts includes articles, which have their own index type. Use the mixed index and
+  # the existing DB content-type filter so Sonic and Meili share this query path.
+  defp search_query(facets, opts) do
+    if facets == %{"index_type" => Filters.posts_tab()} do
+      filters = Map.put_new(opts.feed_filters, :object_types, Filters.object_types())
+      {nil, Map.put(opts, :feed_filters, filters)}
+    else
+      {facets, opts}
+    end
+  end
+
+  # max further candidate pages to try when DB-side filters prune a page to nothing
+  @max_empty_pages 3
+
+  # DB-side filters run after the index has picked a page of candidates, so a filtered
+  # page can come back empty while later ones still match: skip ahead a few pages
+  # rather than showing "nothing found" above a "Load more" button.
+  defp search_skipping_empty_pages(q, facets, opts, tries_left \\ @max_empty_pages) do
+    result = Bonfire.Search.search_and_load(q, Map.keys(facets || %{}), facets, opts)
+
+    with [] when tries_left > 0 <- e(result, :activities, []),
+         true <- Bonfire.Search.feed_filters(opts) != %{},
+         cursor when is_binary(cursor) <- e(result, :page_info, :end_cursor, nil),
+         {offset, ""} <- Integer.parse(cursor) do
+      search_skipping_empty_pages(q, facets, Map.put(opts, :offset, offset), tries_left - 1)
+    else
+      _ -> result
+    end
+  end
+
   defp content_live_search(
          q,
          search_limit,
@@ -352,16 +399,12 @@ defmodule Bonfire.Search.LiveHandler do
        )
        when is_binary(q) and q != "" and is_integer(search_limit) do
     try do
-      current_user = current_user(socket)
+      {query_facets, query_opts} = search_query(facet_filters, search_opts)
 
       search_result =
-        Bonfire.Search.search_and_load(
-          q,
-          Map.keys(facet_filters || %{}),
-          facet_filters,
-          Map.put(search_opts, :current_user, current_user)
-        )
+        search_skipping_empty_pages(q, query_facets, query_opts)
         |> debug("search_and_load result")
+        |> maybe_overview_people(q, facet_filters, search_opts)
 
       activities = e(search_result, :activities, [])
       users = e(search_result, :users, [])
@@ -398,7 +441,8 @@ defmodule Bonfire.Search.LiveHandler do
     rescue
       error ->
         error(error, "Search failed")
-        {:noreply, assign(socket, searching: false)}
+        # keep the term so the input and result-type tabs stay consistent with what was searched
+        {:noreply, assign(socket, searching: false, search: q, search_term: q)}
     end
   end
 end

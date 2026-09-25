@@ -1,27 +1,71 @@
 {!-- <Bonfire.UI.Common.PageTitleLive page_title={@page_title} /> --}
 <div class="">
-  <div class="flex-1 p-3">
-    <Bonfire.Search.Web.FormLive
-      id="main-search"
-      search={@search}
-      search_limit={@search_limit}
-      searching={@searching}
-      searching_direct={@searching_direct}
+  <div class="flex items-center gap-2 p-3">
+    <div class="flex-1">
+      <Bonfire.Search.Web.FormLive
+        id="main-search"
+        search={@search}
+        search_limit={@search_limit}
+        searching={@searching}
+        searching_direct={@searching_direct}
+      />
+    </div>
+    {!-- when the widgets sidebar is open (xl) the filters live there; below that the
+         same editor expands inline under the tabs (see toggle_mobile_filters) --}
+    <button
+      :if={Bonfire.Search.Filters.filtered_tab?(@selected_tab)}
+      type="button"
+      class="btn btn-sm btn-outline gap-1 xl:hidden"
+      aria-expanded={if @mobile_filters_open, do: "true", else: "false"}
+      aria-controls="search_filters_inline_wrapper"
+      phx-click="toggle_mobile_filters"
+      data-role="open_search_filters"
+    >
+      <#Icon iconify="ph:funnel-fill" class="w-4 h-4" />
+      <span>{l("Filters")}</span>
+      {#case Bonfire.Search.Web.WidgetSearchFiltersLive.active_count(@search_filters)}
+        {#match 0}
+        {#match count}
+          <span class="badge badge-primary badge-xs w-4 h-4">{count}</span>
+      {/case}
+    </button>
+  </div>
+
+  <div
+    :if={@mobile_filters_open and Bonfire.Search.Filters.filtered_tab?(@selected_tab)}
+    id="search_filters_inline_wrapper"
+    class="xl:hidden border-y-hair border-secondary bg-base-200 px-4 py-2"
+    data-role="search_filters_inline"
+  >
+    <StatefulComponent
+      module={maybe_component(Bonfire.UI.Social.FeedFiltersModalContentLive, @__context__)}
+      id="search_filters_inline"
+      {...Bonfire.Search.Web.WidgetSearchFiltersLive.editor_assigns(@search_filters)}
     />
   </div>
 
   <Bonfire.Search.UI.FiltersSearchLive
+    :if={@search not in [nil, ""]}
     search={@search}
     index={@index}
     selected_tab={@selected_tab}
+    filters={@search_filters}
   />
-  <div class={"bonfire-wrapper -m-px", "!px-0": @selected_tab != "Bonfire.Data.Social.Post"}>
+  <div data-role="search-results" class="bonfire-wrapper page-panel !px-0">
     {!-- <div class="flex items-center justify-between w-full p-4 mb-2 border-b bg-base-content/10 border-secondary">
       <div class="text-base font-normal text-muted">{l("Results for")} <b class="font-bold underline">{@search}</b>
       </div>
     </div> --}
-
-    {#case @selected_tab == "hashtag" && Bonfire.Tag.get_hashtag(@search)}
+    {#if @search in [nil, ""] and !@searching and !@searching_direct}
+      <Bonfire.UI.Common.EmptyFeed>
+        <:empty_feed>
+          <div class="text-lg font-medium">{l("Search for people, posts and hashtags")}</div>
+          <div class="mt-1 text-sm font-medium text-muted">{l("Enter some keywords, a @username, a #hashtag, or paste a fediverse URL")}</div>
+        </:empty_feed>
+      </Bonfire.UI.Common.EmptyFeed>
+    {#else}
+      {#case @selected_tab == Bonfire.Search.Filters.hashtag_tab() && @search not in [nil, ""] &&
+          Bonfire.Tag.get_hashtag(@search)}
       {#match {:ok, tag}}
         <StatefulComponent
           module={maybe_component(Bonfire.UI.Social.FeedLive, @__context__)}
@@ -44,6 +88,7 @@
           selected_tab={@selected_tab}
           index={@index}
         />
-    {/case}
+      {/case}
+    {/if}
   </div>
 </div>
