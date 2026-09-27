@@ -75,13 +75,19 @@ defmodule Bonfire.Search.Web.SearchTest do
       }
 
       assert [%{id: ^uid1, name: "Alice"}, %{id: ^uid2, name: "Bob"}] =
-               Bonfire.UI.Social.FeedFiltersModalContentLive.extract_selected_authors(params, "search_filters_include_people")
+               Bonfire.UI.Social.FeedFiltersModalContentLive.extract_selected_authors(
+                 params,
+                 "search_filters_include_people"
+               )
 
       # nothing selected (no list present at all)
-      assert Bonfire.UI.Social.FeedFiltersModalContentLive.extract_selected_authors(%{
-               "_target" => ["x"],
-               "multi_select" => %{"another_picker" => [uid1], "whatever_text_input" => "ali"}
-             }, "search_filters_include_people") == []
+      assert Bonfire.UI.Social.FeedFiltersModalContentLive.extract_selected_authors(
+               %{
+                 "_target" => ["x"],
+                 "multi_select" => %{"another_picker" => [uid1], "whatever_text_input" => "ali"}
+               },
+               "search_filters_include_people"
+             ) == []
     end
 
     test "filters round-trip through the Posts tab URL" do
@@ -103,13 +109,14 @@ defmodule Bonfire.Search.Web.SearchTest do
   end
 
   test "All still offers a hand-off when filtering removes every hit on a candidate page" do
-    html = Phoenix.LiveViewTest.render_component(&Bonfire.Search.Web.ResultsLive.render/1, %{
-      __context__: %{},
-      search: "quartz",
-      hits: [],
-      user_hits: [],
-      page_info: %{has_next_page: true, end_cursor: "20"}
-    })
+    html =
+      Phoenix.LiveViewTest.render_component(&Bonfire.Search.Web.ResultsLive.render/1, %{
+        __context__: %{},
+        search: "quartz",
+        hits: [],
+        user_hits: [],
+        page_info: %{has_next_page: true, end_cursor: "20"}
+      })
 
     links = html |> Floki.parse_document!() |> Floki.find("a")
     assert Floki.text(links) =~ "See all posts"
@@ -481,7 +488,9 @@ defmodule Bonfire.Search.Web.SearchTest do
       |> assert_has(".activity", text: "brontosaurus dispatch from bob")
 
       conn
-      |> visit("/search?s=brontosaurus&facet[index_type]=Bonfire.Data.Social.Post&filters[subjects][]=#{alice.id}")
+      |> visit(
+        "/search?s=brontosaurus&facet[index_type]=Bonfire.Data.Social.Post&filters[subjects][]=#{alice.id}"
+      )
       |> wait_async()
       |> assert_has(".activity", text: "brontosaurus dispatch from alice")
       |> refute_has(".activity", text: "brontosaurus dispatch from bob")
@@ -489,7 +498,10 @@ defmodule Bonfire.Search.Web.SearchTest do
       |> assert_has("[data-role=open_search_filters] .badge", text: "1")
     end
 
-    test "newly typed hashtags update the draft and filter results with one Apply", %{me: me, conn: conn} do
+    test "newly typed hashtags update the draft and filter results with one Apply", %{
+      me: me,
+      conn: conn
+    } do
       {:ok, _} =
         Posts.publish(
           current_user: me,
@@ -520,13 +532,15 @@ defmodule Bonfire.Search.Web.SearchTest do
     if System.get_env("PHX_SERVER") != "yes" do
       @tag :skip
     end
+
     @tag :browser
     test "typing keeps the hashtag row open and focused until one Apply", %{me: me, conn: conn} do
-      assert {:ok, _} = Posts.publish(
-        current_user: me,
-        post_attrs: %{post_content: %{html_body: "quicksilver browser filter post"}},
-        boundary: "public"
-      )
+      assert {:ok, _} =
+               Posts.publish(
+                 current_user: me,
+                 post_attrs: %{post_content: %{html_body: "quicksilver browser filter post"}},
+                 boundary: "public"
+               )
 
       # PhoenixTest's server driver cannot exercise native details state or focus.
       {:ok, _} = Application.ensure_all_started(:wallaby)
@@ -539,21 +553,35 @@ defmodule Bonfire.Search.Web.SearchTest do
       authenticated = get(conn, "/search?s=quicksilver")
       assert map_size(authenticated.resp_cookies) > 0
       browser = browser |> Browser.resize_window(1440, 1000) |> Browser.visit(@endpoint.url())
-      browser = Enum.reduce(authenticated.resp_cookies, browser, fn {key, cookie}, browser ->
-        Browser.set_cookie(browser, key, cookie.value)
-      end)
 
-      browser = browser
-      |> Browser.visit(@endpoint.url() <> "/search?s=quicksilver&facet[index_type]=Bonfire.Data.Social.Post")
-      |> Browser.assert_has(Query.css(".activity", text: "quicksilver browser filter post"))
-      |> Browser.click(Query.css("[data-role=search_filters_widget] [data-row=hashtags] summary"))
-      |> Browser.click(Query.css("[data-role=search_filters_widget] input[name=tags_text]"))
+      browser =
+        Enum.reduce(authenticated.resp_cookies, browser, fn {key, cookie}, browser ->
+          Browser.set_cookie(browser, key, cookie.value)
+        end)
+
+      browser =
+        browser
+        |> Browser.visit(
+          @endpoint.url() <> "/search?s=quicksilver&facet[index_type]=Bonfire.Data.Social.Post"
+        )
+        |> Browser.assert_has(Query.css(".activity", text: "quicksilver browser filter post"))
+        |> Browser.click(
+          Query.css("[data-role=search_filters_widget] [data-row=hashtags] summary")
+        )
+        |> Browser.click(Query.css("[data-role=search_filters_widget] input[name=tags_text]"))
 
       for {keys, summary} <- [{"b", "#b"}, {"o", "#bo"}, {"nfiremissing", "#bonfiremissing"}] do
         browser
         |> Browser.send_keys(keys)
-        |> Browser.assert_has(Query.css("[data-role=search_filters_widget] [data-row=hashtags][open] [data-role=row_value]", text: summary))
-        |> Browser.assert_has(Query.css("[data-role=search_filters_widget] input[name=tags_text]:focus"))
+        |> Browser.assert_has(
+          Query.css(
+            "[data-role=search_filters_widget] [data-row=hashtags][open] [data-role=row_value]",
+            text: summary
+          )
+        )
+        |> Browser.assert_has(
+          Query.css("[data-role=search_filters_widget] input[name=tags_text]:focus")
+        )
         |> Browser.assert_has(Query.css(".activity", text: "quicksilver browser filter post"))
       end
 
@@ -567,11 +595,12 @@ defmodule Bonfire.Search.Web.SearchTest do
       Process.put([:bonfire, :default_pagination_limit], 3)
 
       for body <- ["quicksilver #filteralpha", "quicksilver #filterbeta", "quicksilver untagged"] do
-        assert {:ok, _} = Posts.publish(
-          current_user: me,
-          post_attrs: %{post_content: %{html_body: body}},
-          boundary: "public"
-        )
+        assert {:ok, _} =
+                 Posts.publish(
+                   current_user: me,
+                   post_attrs: %{post_content: %{html_body: body}},
+                   boundary: "public"
+                 )
       end
 
       conn
@@ -589,7 +618,10 @@ defmodule Bonfire.Search.Web.SearchTest do
       |> refute_has(".activity", text: "quicksilver untagged")
     end
 
-    test "newly typed instances update the draft and filter results with one Apply", %{me: me, conn: conn} do
+    test "newly typed instances update the draft and filter results with one Apply", %{
+      me: me,
+      conn: conn
+    } do
       {:ok, _} =
         Posts.publish(
           current_user: me,
@@ -628,7 +660,9 @@ defmodule Bonfire.Search.Web.SearchTest do
       {:ok, _article} =
         Bonfire.Articles.publish(
           current_user: me,
-          post_attrs: %{post_content: %{name: "Glimmering article", html_body: "glimmering long-form article"}},
+          post_attrs: %{
+            post_content: %{name: "Glimmering article", html_body: "glimmering long-form article"}
+          },
           boundary: "public"
         )
 
@@ -687,7 +721,9 @@ defmodule Bonfire.Search.Web.SearchTest do
         )
 
       conn
-      |> visit("/search?s=wisteria&facet[index_type]=Bonfire.Data.Social.Post&filters[subjects][]=#{alice.id}")
+      |> visit(
+        "/search?s=wisteria&facet[index_type]=Bonfire.Data.Social.Post&filters[subjects][]=#{alice.id}"
+      )
       |> wait_async()
       |> assert_has(".activity", text: "wisteria blossom from alice")
       |> refute_has(".activity", text: "wisteria blossom from bob")
@@ -706,7 +742,9 @@ defmodule Bonfire.Search.Web.SearchTest do
 
     test "only the Posts tab has filters", %{conn: conn} do
       conn
-      |> visit("/search?s=quokka&facet[index_type]=Bonfire.Data.Social.Post&filters[origin]=local")
+      |> visit(
+        "/search?s=quokka&facet[index_type]=Bonfire.Data.Social.Post&filters[origin]=local"
+      )
       |> wait_async()
       |> assert_has("[data-role=open_search_filters] .badge", text: "1")
       |> assert_has("[data-role=search_filters_widget] h4", text: "Content types")

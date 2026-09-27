@@ -96,7 +96,9 @@ defmodule Bonfire.Search.MeiliLib do
   def search(string, opts) when is_binary(string) and (is_map(opts) or is_list(opts)) do
     # FIXME: use an allow-list instead
     search_params =
-      Enums.fun(opts, :drop, [[:current_user, :context, :index, :skip_boundary_check, :raw, :feed_filters]])
+      Enums.fun(opts, :drop, [
+        [:current_user, :context, :index, :skip_boundary_check, :raw, :feed_filters]
+      ])
       |> Enum.into(%{q: string})
 
     search(search_params, opts[:index], opts)

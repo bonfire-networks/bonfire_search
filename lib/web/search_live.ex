@@ -70,7 +70,8 @@ defmodule Bonfire.Search.Web.SearchLive do
     term = search_term(params, socket)
     index = params["index"] || socket.assigns.index
     # only the Posts tab has filters, so only it reads (and casts) them from the URL
-    filters = if Filters.filtered_tab?(tab), do: Filters.cast_filters(params["filters"]), else: %{}
+    filters =
+      if Filters.filtered_tab?(tab), do: Filters.cast_filters(params["filters"]), else: %{}
 
     changed? =
       term != socket.assigns.search_term or tab != socket.assigns.selected_tab or
@@ -85,9 +86,14 @@ defmodule Bonfire.Search.Web.SearchLive do
 
     cond do
       # the search runs once connected: show it as in progress rather than the empty-page prompt
-      not socket_connected?(socket) -> {:noreply, assign(socket, searching: term not in [nil, ""])}
-      changed? -> run_search(socket, term, tab, index)
-      true -> {:noreply, socket}
+      not socket_connected?(socket) ->
+        {:noreply, assign(socket, searching: term not in [nil, ""])}
+
+      changed? ->
+        run_search(socket, term, tab, index)
+
+      true ->
+        {:noreply, socket}
     end
   end
 

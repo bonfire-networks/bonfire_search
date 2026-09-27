@@ -1,8 +1,4 @@
-<div
-  id="the_search_results"
-  phx-update="replace"
-  data-page={e(@page, [])}
->
+<div id="the_search_results" phx-update="replace" data-page={e(@page, [])}>
   {#if @searching && e(@hits, []) == [] && e(@user_hits, []) == []}
     <div class="flex items-center justify-center py-8">
       <span class="loading loading-spinner loading-md" />
