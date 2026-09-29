@@ -32,6 +32,8 @@ defmodule Bonfire.Search.Web.SearchLive do
        page_info: nil,
        searching: false,
        searching_direct: false,
+       # without an index only the federated lookup (URLs and @handles) can find anything
+       full_text_search: not is_nil(Bonfire.Search.adapter()),
        sidebar_widgets: widgets(%{})
      )}
   end

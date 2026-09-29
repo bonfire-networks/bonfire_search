@@ -60,7 +60,9 @@
       <Bonfire.UI.Common.EmptyFeed>
         <:empty_feed>
           <div class="text-lg font-medium">{l("Search for people, posts and hashtags")}</div>
-          <div class="mt-1 text-sm font-medium text-muted">{l("Enter some keywords, a @username, a #hashtag, or paste a fediverse URL")}</div>
+          <div class="mt-1 text-sm font-medium text-muted">{if @full_text_search,
+              do: l("Enter some keywords, a @username, a #hashtag, or paste a fediverse URL"),
+              else: l("Enter a @username@instance, a #hashtag, or paste a fediverse URL")}</div>
         </:empty_feed>
       </Bonfire.UI.Common.EmptyFeed>
     {#else}
@@ -87,6 +89,7 @@
             searching_direct={@searching_direct}
             selected_tab={@selected_tab}
             index={@index}
+            full_text_search={@full_text_search}
           />
       {/case}
     {/if}

@@ -29,7 +29,10 @@
           </div>
         {#else}
           {#if !@searching}
-            <Bonfire.UI.Common.EmptyFeed feedback_title={l("No users found")} feedback_message="" />
+            <Bonfire.UI.Common.EmptyFeed
+              feedback_title={l("No users found")}
+              feedback_message={no_results_message(@full_text_search)}
+            />
           {/if}
         {/for}
       </div>
@@ -47,7 +50,10 @@
       {#else}
         {!-- a filtered page can come back empty while later candidates still match: leave that to "Load more" --}
         {#if !@searching && !e(@page_info, :has_next_page, false)}
-          <Bonfire.UI.Common.EmptyFeed feedback_title={l("No posts found")} feedback_message="" />
+          <Bonfire.UI.Common.EmptyFeed
+            feedback_title={l("No posts found")}
+            feedback_message={no_results_message(@full_text_search)}
+          />
         {/if}
       {/for}
     {/if}
@@ -59,7 +65,7 @@
         !e(@page_info, :has_next_page, false)}
       <Bonfire.UI.Common.EmptyFeed
         feedback_title={l("Nothing relevant was found")}
-        feedback_message=""
+        feedback_message={no_results_message(@full_text_search)}
       />
     {#else}
       {#if e(@user_hits, []) != []}

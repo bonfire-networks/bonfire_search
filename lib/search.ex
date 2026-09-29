@@ -629,34 +629,41 @@ defmodule Bonfire.Search do
 
   def public_boundary_name?(_), do: false
 
-  def maybe_index(object, true, opts), do: maybe_index(object, :public, opts)
-  def maybe_index(object, false, opts), do: maybe_index(object, :closed, opts)
+  # checked before the boundary and caretaker lookups below, which would otherwise run on every write with no index to write to
+  def maybe_index(object, index_or_boundary, opts) do
+    if adapter(),
+      do: do_maybe_index(object, index_or_boundary, opts),
+      else: {:error, :search_index_disabled}
+  end
 
-  def maybe_index(object, nil, opts) do
+  defp do_maybe_index(object, true, opts), do: do_maybe_index(object, :public, opts)
+  defp do_maybe_index(object, false, opts), do: do_maybe_index(object, :closed, opts)
+
+  defp do_maybe_index(object, nil, opts) do
     if maybe_apply(Bonfire.Boundaries, :object_public?, [object], fallback_return: false) do
-      maybe_index(object, :public, opts)
+      do_maybe_index(object, :public, opts)
     else
       debug("object_public? didn't return true, so indexing as closed")
-      maybe_index(object, :closed, opts)
+      do_maybe_index(object, :closed, opts)
     end
   end
 
-  def maybe_index(object, boundary, opts) when is_binary(boundary) do
+  defp do_maybe_index(object, boundary, opts) when is_binary(boundary) do
     if public_boundary_name?(boundary),
-      do: maybe_index(object, :public, opts),
-      else: maybe_index(object, :closed, opts)
+      do: do_maybe_index(object, :public, opts),
+      else: do_maybe_index(object, :closed, opts)
   end
 
-  def maybe_index(object, boundaries, opts) when is_list(boundaries) do
+  defp do_maybe_index(object, boundaries, opts) when is_list(boundaries) do
     if public_boundary_name?(boundaries) do
-      maybe_index(object, :public, opts)
+      do_maybe_index(object, :public, opts)
     else
       debug(boundaries, "no `public`/`public_remote` boundary in list, so indexing as closed")
-      maybe_index(object, :closed, opts)
+      do_maybe_index(object, :closed, opts)
     end
   end
 
-  def maybe_index(object, index, opts) when is_atom(index) do
+  defp do_maybe_index(object, index, opts) when is_atom(index) do
     assumed_caretaker =
       repo().maybe_preload(
         e(object, :created, :creator, nil) || e(object, :activity, :created, :creator, nil) ||
@@ -685,6 +692,10 @@ defmodule Bonfire.Search do
   end
 
   def maybe_unindex(object) do
+    if adapter(), do: do_maybe_unindex(object), else: :ok
+  end
+
+  defp do_maybe_unindex(object) do
     creator =
       repo().maybe_preload(
         e(object, :created, :creator, nil) || e(object, :activity, :created, :creator, nil) ||

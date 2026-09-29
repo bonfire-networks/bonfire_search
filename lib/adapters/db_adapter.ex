@@ -57,11 +57,20 @@ defmodule Bonfire.Search.DB do
   end
 
   @doc """
-  Type-specific search implementation
+  Type-specific search implementation.
+
+  Returns nil unless every requested type has a `search_query/2`, so callers run their own lookup rather than get partial or unfiltered results.
   """
   @impl true
   def search_by_type(tag_search, facets, opts \\ []) do
-    run_search_db(tag_search, facets, opts)
+    types = List.wrap(facets)
+
+    if types != [] and Enum.all?(types, &search_query_module/1) do
+      run_search_db(tag_search, types, opts)
+    else
+      warn(facets, "not all types can be searched in the DB")
+      nil
+    end
   end
 
   # Private functions moved from Bonfire.Search
@@ -146,42 +155,30 @@ defmodule Bonfire.Search.DB do
     end)
   end
 
-  defp do_search_db(query, search, type, opts) when is_binary(type) do
-    case Types.maybe_to_module(type) do
+  defp do_search_db(query, search, type, opts) do
+    case search_query_module(type) do
       nil ->
-        debug(type, "not a module")
+        debug(type, "no search_query/2 for this type, so skip searching")
         query
 
       mod ->
-        do_search_db(query, search, mod, opts)
+        mod.search_query(search, Keyword.put(opts, :query, query)) || query
     end
   end
 
-  defp do_search_db(query, search, type, opts) do
-    if is_atom(type) do
-      debug(type, "try searching in DB ")
+  # Only `search_query/2` qualifies: a context's `search/2` may itself call `Bonfire.Search.search_by_type`, which would loop back here.
+  defp search_query_module(type) when is_binary(type),
+    do: search_query_module(Types.maybe_to_module(type))
 
-      # Bonfire.Common.QueryModule.maybe_query_module(type) ||
-      (Bonfire.Common.ContextModule.maybe_context_module(type) ||
-         type)
-      |> maybe_apply(
-        [:search_query, :search],
-        [search, Keyword.put(opts, :query, query)],
-        &none/2
-      ) || query
-    else
-      debug("no module, so skip searching ")
-      query
-    end
+  defp search_query_module(type) when is_atom(type) and not is_nil(type) do
+    mod = Bonfire.Common.ContextModule.maybe_context_module(type) || type
+    if Code.ensure_loaded?(mod) and function_exported?(mod, :search_query, 2), do: mod
   end
+
+  defp search_query_module(_), do: nil
 
   def default_types(opts \\ []) do
     # TODO: make default types generated/configurable
     [Bonfire.Data.Identity.User, Bonfire.Data.Social.Post, Bonfire.Tag.Tagged]
-  end
-
-  defp none(e, _) do
-    debug(e)
-    nil
   end
 end

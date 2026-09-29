@@ -17,7 +17,7 @@ defmodule Bonfire.Search.Adapter do
   @callback search(binary(), search_opts(), boolean(), facets()) :: search_result()
   @callback search(binary(), search_opts()) :: search_result()
   @callback search(binary(), index()) :: search_result()
-  @callback search_by_type(binary(), facets()) :: list()
+  @callback search_by_type(binary(), facets()) :: list() | nil
 
   # Optional — index-management (no-ops for DB adapter)
   @callback healthy?() :: boolean()

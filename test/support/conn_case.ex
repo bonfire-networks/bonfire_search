@@ -17,9 +17,11 @@ defmodule Bonfire.Search.ConnCase do
 
   use ExUnit.CaseTemplate
 
-  using do
+  using opts do
     quote do
-      if is_nil(Application.get_env(:bonfire_search, :adapter)) do
+      # `needs_adapter: false` is for tests of the no-index behaviour, which switch the adapter off themselves
+      if unquote(Keyword.get(opts, :needs_adapter, true)) and
+           is_nil(Application.get_env(:bonfire_search, :adapter)) do
         @moduletag :skip
       end
 

@@ -31,9 +31,7 @@ defmodule Bonfire.Search.RuntimeConfig do
       instance: System.get_env("SEARCH_MEILI_INSTANCE", "http://search:7700"),
       api_key: meili_key
 
-    config :bonfire_search,
-      modularity: if(!adapter, do: :disabled)
-
+    # the extension stays enabled without an index: the search box still looks up remote actors/posts by URL or @handle, and `search_by_type` falls back to DB queries
     config :bonfire_search, Bonfire.Search.Indexer,
       modularity:
         if(
@@ -44,6 +42,9 @@ defmodule Bonfire.Search.RuntimeConfig do
 
     config :bonfire_search, Bonfire.Search.MeiliLib,
       modularity: if(adapter != Bonfire.Search.MeiliLib, do: :disabled)
+
+    config :bonfire_search, Bonfire.Search.Sonic,
+      modularity: if(adapter != Bonfire.Search.Sonic, do: :disabled)
 
     if adapter == Bonfire.Search.Sonic do
       config :bonfire_search, Bonfire.Search.Sonic,
