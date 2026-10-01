@@ -51,7 +51,7 @@
           />
           <button
             type="submit"
-            class="grid min-h-11 min-w-11 shrink-0 place-items-center rounded-selector transition-colors hover:bg-base-content/5 active:bg-base-content/10"
+            class="grid  shrink-0 place-items-center rounded-selector transition-colors hover:bg-base-content/5 active:bg-base-content/10"
             aria-label={l("Search")}
           >
             <span :if={@searching || @searching_direct} class="loading loading-spinner loading-sm" />
