@@ -1,5 +1,5 @@
 {!-- the editor renders its own "Refine · Reset N" header, so no widget title here --}
-<Bonfire.UI.Common.WidgetBlockLive class="w-full flex-auto mx-auto p-card border-y-hair border-secondary">
+<Bonfire.UI.Common.WidgetBlockLive>
   <div data-role="search_filters_widget">
     <StatefulComponent
       module={maybe_component(Bonfire.UI.Social.FeedFiltersModalContentLive, @__context__)}
