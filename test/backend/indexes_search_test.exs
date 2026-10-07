@@ -147,6 +147,21 @@ defmodule Bonfire.Search.IndexesSearchTest do
              Types.object_type(object) == Post
   end
 
+  # CJK text has no spaces between words, so finding "你好" in "你好世界" depends on how the adapter tokenises it
+  for {name, query} <- [{"José Núñez", "josé"}, {"José Núñez", "núñez"}, {"你好世界", "你好"}] do
+    test "an indexed user named #{name} is found by searching #{query}" do
+      account = fake_account!()
+      user = fake_user!(account)
+      {:ok, user} = Bonfire.Me.Users.update(user, %{profile: %{name: unquote(name)}})
+      {:ok, _} = Bonfire.Search.Indexer.maybe_index_object(user) ~> @adapter.wait_for_task()
+
+      %{users: users} = Search.search_and_load(unquote(query), [], %{}, current_user: user)
+
+      assert Enums.id(user) in Enum.map(users, &Enums.id/1),
+             "expected #{unquote(name)} in the results for #{unquote(query)}, got: #{inspect(Enum.map(users, &e(&1, :profile, :name, nil)))}"
+    end
+  end
+
   test "search_and_load returns users separately from activities" do
     account = fake_account!()
     user = fake_user!(account)
