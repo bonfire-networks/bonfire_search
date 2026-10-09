@@ -59,7 +59,7 @@
     {#if @search in [nil, ""] and !@searching and !@searching_direct}
       <Bonfire.UI.Common.EmptyFeed>
         <:empty_feed>
-          <div class="text-lg font-medium">{l("Search for people, posts and hashtags")}</div>
+          <div class="type-heading">{l("Search for people, posts and hashtags")}</div>
           <div class="mt-1 text-sm font-medium text-muted">{if @full_text_search,
               do: l("Enter some keywords, a @username, a #hashtag, or paste a fediverse URL"),
               else: l("Enter a @username@instance, a #hashtag, or paste a fediverse URL")}</div>

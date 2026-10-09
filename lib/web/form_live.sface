@@ -76,7 +76,7 @@
       x-transition:leave-start="transform opacity-100 scale-100"
       x-transition:leave-end="transform opacity-0 scale-95"
       tabindex="0"
-      class="tooltip  menu shadow-sm bg-base-200 border border-divider w-full top-[50px] absolute rounded-xl top-0 left-0"
+      class="tooltip menu shadow-sm bg-base-200 border border-divider w-full top-[50px] absolute rounded-box top-0 left-0"
       role="menu"
       aria-orientation="vertical"
     >
@@ -85,7 +85,7 @@
         type="submit"
         data-facet-type=""
         onclick="document.getElementById('facet_index_type').value = this.dataset.facetType"
-        class="w-full flex gap-3 px-2 py-2 text-base-content items-center hover:bg-base-300 rounded-md"
+        class="w-full flex gap-3 px-2 py-2 text-base-content items-center hover:bg-base-300 rounded-selector"
         x-on:click="menuOpen = false"
       >
         <#Icon iconify="ph:magnifying-glass-duotone" class="w-4 h-4 text-primary" />
@@ -97,7 +97,7 @@
         type="submit"
         data-facet-type="Bonfire.Data.Identity.User"
         onclick="document.getElementById('facet_index_type').value = this.dataset.facetType"
-        class="w-full flex gap-3 px-2 py-2 text-base-content items-center hover:bg-base-300 rounded-md"
+        class="w-full flex gap-3 px-2 py-2 text-base-content items-center hover:bg-base-300 rounded-selector"
         x-on:click="menuOpen = false"
       >
         <#Icon iconify="ph:user-duotone" class="w-4 h-4 text-primary" />
@@ -109,7 +109,7 @@
         type="submit"
         data-facet-type="Bonfire.Data.Social.Post"
         onclick="document.getElementById('facet_index_type').value = this.dataset.facetType"
-        class="w-full flex gap-3 px-2 py-2 text-base-content items-center hover:bg-base-300 rounded-md"
+        class="w-full flex gap-3 px-2 py-2 text-base-content items-center hover:bg-base-300 rounded-selector"
         x-on:click="menuOpen = false"
       >
         <#Icon iconify="ph:note-pencil-duotone" class="w-4 h-4 text-primary" />
@@ -121,7 +121,7 @@
         type="submit"
         data-facet-type="hashtag"
         onclick="document.getElementById('facet_index_type').value = this.dataset.facetType"
-        class="w-full flex gap-3 px-2 py-2 text-base-content items-center hover:bg-base-300 rounded-md"
+        class="w-full flex gap-3 px-2 py-2 text-base-content items-center hover:bg-base-300 rounded-selector"
         x-on:click="menuOpen = false"
       >
         <#Icon iconify="ph:hash-duotone" class="w-4 h-4 text-primary" />
@@ -134,7 +134,7 @@
 
   <div
     :if={!@search_more && @num_hits}
-    class="absolute left-0 right-0 z-50 w-full rounded-lg top-[3.75rem] search_results menu bg-base-100"
+    class="absolute left-0 right-0 z-50 w-full rounded-box top-[3.75rem] search_results menu bg-base-100"
   >
     <div class="p-3 text-sm border-b border-divider text-base-content">{e(@num_hits, "no")} {l("total results")}</div>
     {#if e(@num_hits, 0) > 0}
