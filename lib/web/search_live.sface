@@ -34,7 +34,7 @@
   <div
     :if={@mobile_filters_open and Bonfire.Search.Filters.filtered_tab?(@selected_tab)}
     id="search_filters_inline_wrapper"
-    class="xl:hidden border-y-hair border-secondary bg-base-200 px-4 py-2"
+    class="xl:hidden border-y-hair border-divider bg-base-200 px-4 py-2"
     data-role="search_filters_inline"
   >
     <StatefulComponent
@@ -52,7 +52,7 @@
     filters={@search_filters}
   />
   <div data-role="search-results" class="bonfire-wrapper page-panel !px-0">
-    {!-- <div class="flex items-center justify-between w-full p-4 mb-2 border-b bg-base-content/10 border-secondary">
+    {!-- <div class="flex items-center justify-between w-full p-4 mb-2 border-b bg-fill-strong border-divider">
       <div class="text-base font-normal text-muted">{l("Results for")} <b class="font-bold underline">{@search}</b>
       </div>
     </div> --}

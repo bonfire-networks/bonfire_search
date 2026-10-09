@@ -31,7 +31,7 @@
 
       <span class="sr-only">{e(@search_placeholder, l("Search"))}</span>
       <div class="relative w-full rounded">
-        <div class="input input-sm border-hair border-secondary bg-base-100 flex items-center gap-2 w-full text-base">
+        <div class="input input-sm border-hair border-divider bg-base-100 flex items-center gap-2 w-full text-base">
           <label for={@id <> "-input"} class="sr-only">{l("Search content")}</label>
           <input type="hidden" name="search_limit" value={e(@search_limit, "")}>
           <input type="hidden" name="facet[index_type]" value="" id={@id <> "-facet_index_type"}>
@@ -51,7 +51,7 @@
           />
           <button
             type="submit"
-            class="grid  shrink-0 place-items-center rounded-selector transition-colors hover:bg-base-content/5 active:bg-base-content/10"
+            class="grid  shrink-0 place-items-center rounded-selector transition-colors hover:bg-fill active:bg-fill-strong"
             aria-label={l("Search")}
           >
             <span :if={@searching || @searching_direct} class="loading loading-spinner loading-sm" />
@@ -76,7 +76,7 @@
       x-transition:leave-start="transform opacity-100 scale-100"
       x-transition:leave-end="transform opacity-0 scale-95"
       tabindex="0"
-      class="tooltip  menu shadow-sm bg-base-200 border border-secondary w-full top-[50px] absolute rounded-xl top-0 left-0"
+      class="tooltip  menu shadow-sm bg-base-200 border border-divider w-full top-[50px] absolute rounded-xl top-0 left-0"
       role="menu"
       aria-orientation="vertical"
     >
@@ -136,13 +136,13 @@
     :if={!@search_more && @num_hits}
     class="absolute left-0 right-0 z-50 w-full rounded-lg top-[3.75rem] search_results menu bg-base-100"
   >
-    <div class="p-3 text-sm border-b border-secondary text-base-content">{e(@num_hits, "no")} {l("total results")}</div>
+    <div class="p-3 text-sm border-b border-divider text-base-content">{e(@num_hits, "no")} {l("total results")}</div>
     {#if e(@num_hits, 0) > 0}
       <ResultsLive search_more={@search_more} hits={e(@hits, [])} />
     {/if}
 
     <LinkLive
-      class="w-full p-3 mx-auto text-center border-t link link-hover border-secondary"
+      class="w-full p-3 mx-auto text-center border-t link link-hover border-divider"
       to={~p"/search?s=" <> e(@search, "")}
       :if={@show_more_link && @num_hits > e(@search_limit, 5)}
     >
