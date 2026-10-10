@@ -28,10 +28,10 @@
     >
       <:trigger>
         {#if @index == "public"}
-          <#Icon iconify="ph:lock-simple-open-duotone" class="w-4 h-4 opacity/70" />
+          <#Icon iconify="ph:lock-simple-open-duotone" class="size-4 opacity/70" />
           {l("Public only")}
         {#else}
-          <#Icon iconify="ph:detective-duotone" class="w-4 h-4 opacity/70" />
+          <#Icon iconify="ph:detective-duotone" class="size-4 opacity/70" />
           {l("Private included")}
         {/if}
       </:trigger>
@@ -42,8 +42,8 @@
           phx-click="toggle_index"
           phx-value-index="public"
         >{l("Public only")}
-          <div class="w-5 h-5 flex items-center justify-center border border-divider rounded-full">
-            <span :if={@index == "public"} class="w-[14px] h-[14px] bg-primary rounded-full" />
+          <div class="size-5 flex items-center justify-center border border-divider rounded-full">
+            <span :if={@index == "public"} class="size-3.5 bg-primary rounded-full" />
           </div>
         </button>
       </li>
@@ -55,8 +55,8 @@
           phx-value-index="closed"
         >
           {l("Private (eg. DMs or custom boundaries)")}
-          <div class="w-5 h-5 min-w-5 flex items-center justify-center border border-divider rounded-full">
-            <span :if={@index != "public"} class="w-[14px] h-[14px] bg-primary rounded-full" />
+          <div class="size-5 min-w-5 flex items-center justify-center border border-divider rounded-full">
+            <span :if={@index != "public"} class="size-3.5 bg-primary rounded-full" />
           </div>
         </button>
       </li>

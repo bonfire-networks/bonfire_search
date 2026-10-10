@@ -21,12 +21,12 @@
       phx-click="toggle_mobile_filters"
       data-role="open_search_filters"
     >
-      <#Icon iconify="ph:funnel-fill" class="w-4 h-4" />
+      <#Icon iconify="ph:funnel-fill" class="size-4" />
       <span>{l("Filters")}</span>
       {#case Bonfire.Search.Web.WidgetSearchFiltersLive.active_count(@search_filters)}
         {#match 0}
         {#match count}
-          <span class="badge badge-primary badge-xs w-4 h-4">{count}</span>
+          <span class="badge badge-primary badge-xs size-4">{count}</span>
       {/case}
     </button>
   </div>

@@ -86,7 +86,7 @@
                 user_id={id(user)}
                 parent_id="search_people_strip"
                 wrapper_class="avatar !flex shrink-0"
-                class="w-8 h-8 rounded-full bg-base-100"
+                class="size-8 rounded-full bg-base-100"
               />
               <span class="min-w-0 leading-tight">
                 <span data-id="profile_name" class="block text-sm font-medium text-base-content truncate">{e(user, :profile, :name, nil) || e(user, :character, :username, nil)}</span>

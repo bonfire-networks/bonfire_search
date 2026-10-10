@@ -58,7 +58,7 @@
             <#Icon
               :if={!@searching && !@searching_direct}
               iconify="ph:magnifying-glass"
-              class="w-5 h-5 text-primary"
+              class="size-5 text-primary"
             />
           </button>
         </div>
@@ -76,7 +76,7 @@
       x-transition:leave-start="transform opacity-100 scale-100"
       x-transition:leave-end="transform opacity-0 scale-95"
       tabindex="0"
-      class="tooltip menu shadow-sm bg-base-200 border border-divider w-full top-[50px] absolute rounded-box top-0 left-0"
+      class="tooltip menu shadow-sm bg-base-200 border border-divider w-full top-12.5 absolute rounded-box top-0 left-0"
       role="menu"
       aria-orientation="vertical"
     >
@@ -88,7 +88,7 @@
         class="w-full flex gap-3 px-2 py-2 text-base-content items-center hover:bg-base-300 rounded-selector"
         x-on:click="menuOpen = false"
       >
-        <#Icon iconify="ph:magnifying-glass-duotone" class="w-4 h-4 text-primary" />
+        <#Icon iconify="ph:magnifying-glass-duotone" class="size-4 text-primary" />
         <span x-text="searchValue || 'Search for everything'"></span>
       </button>
     </li>
@@ -100,7 +100,7 @@
         class="w-full flex gap-3 px-2 py-2 text-base-content items-center hover:bg-base-300 rounded-selector"
         x-on:click="menuOpen = false"
       >
-        <#Icon iconify="ph:user-duotone" class="w-4 h-4 text-primary" />
+        <#Icon iconify="ph:user-duotone" class="size-4 text-primary" />
         <span x-text="searchValue || 'Search for users'"></span>
       </button>
     </li>
@@ -112,7 +112,7 @@
         class="w-full flex gap-3 px-2 py-2 text-base-content items-center hover:bg-base-300 rounded-selector"
         x-on:click="menuOpen = false"
       >
-        <#Icon iconify="ph:note-pencil-duotone" class="w-4 h-4 text-primary" />
+        <#Icon iconify="ph:note-pencil-duotone" class="size-4 text-primary" />
         <span x-text="searchValue || 'Search for activities'"></span>
       </button>
     </li>
@@ -124,7 +124,7 @@
         class="w-full flex gap-3 px-2 py-2 text-base-content items-center hover:bg-base-300 rounded-selector"
         x-on:click="menuOpen = false"
       >
-        <#Icon iconify="ph:hash-duotone" class="w-4 h-4 text-primary" />
+        <#Icon iconify="ph:hash-duotone" class="size-4 text-primary" />
         <span x-text="searchValue || 'Search for hashtags'"></span>
       </button>
     </li>
