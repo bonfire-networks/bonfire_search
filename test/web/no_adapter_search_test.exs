@@ -51,6 +51,24 @@ defmodule Bonfire.Search.Web.NoAdapterSearchTest do
     |> assert_has("[data-role=search_people_strip]", text: "karen")
   end
 
+  # a group is typed with whichever prefix someone is used to (`!group@host` from the threadiverse, `&` and `+` from Bonfire), and every place that reads a handle takes them all, so the lookup starts for each, as it does for `@` (the test above)
+  for prefix <- ["!", "&", "+"] do
+    test "a #{prefix}handle finds the remote actor too", %{conn: conn} do
+      conn
+      |> visit("/search?s=" <> URI.encode_www_form(unquote(prefix) <> "karen@mocked.local"))
+      |> wait_async()
+      |> assert_has("[data-role=search_people_strip]", text: "karen")
+    end
+  end
+
+  # or none: anything shaped like `name@host.tld` is a handle someone pasted
+  test "a handle with no prefix finds the remote actor too", %{conn: conn} do
+    conn
+    |> visit("/search?s=" <> URI.encode_www_form("karen@mocked.local"))
+    |> wait_async()
+    |> assert_has("[data-role=search_people_strip]", text: "karen")
+  end
+
   test "a URL opens the remote actor's page", %{conn: conn} do
     # the redirect comes from the async lookup, which PhoenixTest's `wait_async` doesn't follow
     {:ok, view, _html} =

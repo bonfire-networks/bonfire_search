@@ -196,10 +196,11 @@ defmodule Bonfire.Search.LiveHandler do
       feed_filters: e(assigns(socket), :search_filters, %{})
     }
 
-    # Start the async direct lookup only for URLs and @mentions (not plain text searches)
+    # Start the async direct lookup only for URLs and handles (not plain text searches): with any of the prefixes a handle is typed with (`@` for people, `!`, `&` or `+` for groups, as everywhere that reads one), or none, when it is shaped like `name@host.tld`
     if socket_connected?(socket) do
       socket =
-        if String.starts_with?(q, ["http://", "https://", "@"]) do
+        if String.starts_with?(q, ["http://", "https://", "@", "!", "&", "+"]) or
+             bare_handle?(q) do
           socket
           |> assign(searching_direct: true)
           |> start_async(:direct_lookup, fn ->
@@ -221,6 +222,17 @@ defmodule Bonfire.Search.LiveHandler do
   def live_search(q, _search_limit, _facet_filters, _index, socket, _opts) do
     debug(q, "invalid search")
     {:noreply, socket}
+  end
+
+  # `name@host.tld`: one `@`, something before it, a dotted host after it, and no spaces or slashes
+  defp bare_handle?(q) do
+    case String.split(q, "@") do
+      [name, host] when name != "" and host != "" ->
+        String.contains?(host, ".") and not String.contains?(q, [" ", "/"])
+
+      _ ->
+        false
+    end
   end
 
   # Handle the federated lookup result
