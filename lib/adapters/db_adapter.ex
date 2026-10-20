@@ -172,7 +172,10 @@ defmodule Bonfire.Search.DB do
 
   defp search_query_module(type) when is_atom(type) and not is_nil(type) do
     mod = Bonfire.Common.ContextModule.maybe_context_module(type) || type
-    if Code.ensure_loaded?(mod) and function_exported?(mod, :search_query, 2), do: mod
+    # the context lookup finds declared modules whether or not their extension is enabled
+    if Code.ensure_loaded?(mod) and function_exported?(mod, :search_query, 2) and
+         Bonfire.Common.Extend.module_enabled?(mod),
+       do: mod
   end
 
   defp search_query_module(_), do: nil

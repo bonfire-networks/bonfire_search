@@ -44,6 +44,30 @@ defmodule Bonfire.Search.NoAdapterSearchTest do
       assert Enums.id(post) in ids
     end
 
+    # the context lookup finds the declared module whether or not its extension is enabled, and extensions are toggled at runtime
+    test "does not search through a context whose extension is disabled, and does again once it is enabled" do
+      user = fake_user!()
+
+      {:ok, post} =
+        Posts.publish(
+          current_user: user,
+          post_attrs: %{post_content: %{name: "Wombat ledger", html_body: "some body"}},
+          boundary: "public"
+        )
+
+      ids = fn results -> results |> List.wrap() |> Enum.map(&Enums.id/1) end
+      search = fn -> Bonfire.Search.search_by_type("wombat", Post, skip_boundary_check: true) end
+
+      # the positive first: found while enabled
+      assert Enums.id(post) in ids.(search.())
+
+      refute Enums.id(post) in ids.(
+               Bonfire.Common.Testing.with_extension_disabled(:bonfire_posts, search)
+             )
+
+      assert Enums.id(post) in ids.(search.())
+    end
+
     test "returns nil when a type has no search_query/2, so callers run their own lookup" do
       _user = fake_user!("Pangolin Mixed")
 
