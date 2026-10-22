@@ -35,6 +35,18 @@
           <label for={@id <> "-input"} class="sr-only">{l("Search content")}</label>
           <input type="hidden" name="search_limit" value={e(@search_limit, "")}>
           <input type="hidden" name="facet[index_type]" value="" id={@id <> "-facet_index_type"}>
+          <button
+            type="submit"
+            class="grid shrink-0 place-items-center rounded-selector transition-colors hover:bg-fill active:bg-fill-strong"
+            aria-label={l("Search")}
+          >
+            <span :if={@searching || @searching_direct} class="loading loading-spinner loading-sm" />
+            <#Icon
+              :if={!@searching && !@searching_direct}
+              iconify="ph:magnifying-glass"
+              class="size-5 text-muted"
+            />
+          </button>
           <input
             type="search"
             id={@id <> "-input"}
@@ -49,18 +61,6 @@
             x-on:keydown.enter="menuOpen = false"
             x-ref="searchInput"
           />
-          <button
-            type="submit"
-            class="grid  shrink-0 place-items-center rounded-selector transition-colors hover:bg-fill active:bg-fill-strong"
-            aria-label={l("Search")}
-          >
-            <span :if={@searching || @searching_direct} class="loading loading-spinner loading-sm" />
-            <#Icon
-              :if={!@searching && !@searching_direct}
-              iconify="ph:magnifying-glass"
-              class="size-5 text-primary"
-            />
-          </button>
         </div>
         <label for={@id <> "-input"} class="sr-only">{e(@search_placeholder, l("Search"))}</label>
       </div>
