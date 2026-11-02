@@ -113,9 +113,12 @@ defmodule Bonfire.Search do
         debug("Search disabled for autocompletes, using DB adapter")
         Bonfire.Search.DB.search_by_type(tag_search, facets, opts)
 
-      adapter == Bonfire.Search.DB || !merge_db_results? || opts[:raw] ||
-          not identity_facet?(facets) ->
+      adapter == Bonfire.Search.DB || opts[:raw] || not identity_facet?(facets) ->
         adapter.search_by_type(tag_search, facets, opts)
+
+      !merge_db_results? ->
+        adapter.search_by_type(tag_search, facets, opts)
+        |> load_index_hits()
 
       true ->
         adapter.search_by_type(tag_search, facets, opts)
@@ -130,6 +133,21 @@ defmodule Bonfire.Search do
       mod = if is_atom(facet), do: facet, else: Types.maybe_to_module(facet)
       mod in @identity_search_types
     end)
+  end
+
+  # index adapters like Meilisearch return the indexed documents (bare maps): load them as structs so callers can preload, keeping the index's ranking order (stale IDs drop out)
+  defp load_index_hits(hits) do
+    hits = List.wrap(hits)
+
+    if Enum.all?(hits, &is_struct/1) do
+      hits
+    else
+      ids = Enums.ids(hits)
+
+      ids
+      |> Bonfire.Boundaries.load_pointers(skip_boundary_check: true)
+      |> reorder_by_ids(ids)
+    end
   end
 
   @doc """
@@ -400,7 +418,7 @@ defmodule Bonfire.Search do
         case {hit, Types.object_type(hit)} do
           {user, type}
           when type in [Bonfire.Data.Identity.User, Bonfire.Data.Identity.Character] ->
-            # Users are categorized separately and loaded via Users.by_ids — no activity wrapping needed
+            # Users are not wrapped in an activity: `search_by_type` loads them as structs for autocompletes, and `search_and_load` loads them via Users.by_ids
             user
 
           {%{__struct__: Bonfire.Data.Social.Activity} = activity, _} ->
