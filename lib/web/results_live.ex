@@ -10,6 +10,7 @@ defmodule Bonfire.Search.Web.ResultsLive do
   prop num_hits, :integer, default: nil
   prop hits, :list, default: []
   prop user_hits, :list, default: []
+  prop group_hits, :list, default: []
   prop page_info, :any, default: nil
   prop searching, :boolean, default: false
   prop searching_direct, :boolean, default: false

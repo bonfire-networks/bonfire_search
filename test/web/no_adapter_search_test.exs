@@ -80,4 +80,66 @@ defmodule Bonfire.Search.Web.NoAdapterSearchTest do
 
     assert path == Bonfire.Common.URIs.path(karen)
   end
+
+  # a group is not a person: the lookup's result goes into its own list, which the Groups tab can reuse, and not into the people strip or the Users tab
+  test "a remote group's handle shows the group among the groups, and not as a person", %{
+    conn: conn
+  } do
+    remote_group = "https://mocked.local/c/cooks"
+
+    group_json =
+      Bonfire.Federate.ActivityPub.Simulate.actor_json(remote_group, "cooks", %{
+        "type" => "Group",
+        "name" => "Remote cooks"
+      })
+
+    Tesla.Mock.mock_global(fn
+      %{method: :get, url: "https://mocked.local/.well-known/webfinger" <> _ = url} ->
+        case URI.decode_query(URI.parse(url).query || "")["resource"] do
+          "acct:cooks@mocked.local" ->
+            Tesla.Mock.json(Bonfire.Federate.ActivityPub.Simulate.webfingered("cooks", remote_group))
+
+          _ ->
+            %Tesla.Env{status: 404, body: ""}
+        end
+
+      %{method: :get, url: ^remote_group} ->
+        Tesla.Mock.json(group_json)
+
+      %{method: :post} ->
+        %Tesla.Env{status: 202, body: ""}
+
+      env ->
+        ActivityPub.Test.HttpRequestMock.request(env)
+    end)
+
+    handle = URI.encode_www_form("!cooks@mocked.local")
+
+    conn
+    |> visit("/search?s=" <> handle)
+    |> wait_async()
+    |> assert_has("[data-role=search_group_hit]", text: "Remote cooks")
+    |> refute_has("[data-role=search_people_strip]", text: "Remote cooks")
+
+    conn
+    |> visit("/search?s=" <> handle <> "&facet[index_type]=Bonfire.Data.Identity.User")
+    |> wait_async()
+    |> refute_has("#the_search_results", text: "Remote cooks")
+
+    # with no index, the Groups tab shows only what the lookup found
+    conn
+    |> visit("/search?s=" <> handle <> "&facet[index_type]=Bonfire.Classify.Category")
+    |> wait_async()
+    |> assert_has("[data-role=search_group_hit]", text: "Remote cooks")
+  end
+
+  test "plain text on the Groups tab finds nothing, and the page says why", %{conn: conn, me: me} do
+    Bonfire.Classify.Simulate.fake_group!(me, %{name: "Lemming herders"})
+
+    conn
+    |> visit("/search?s=lemming&facet[index_type]=Bonfire.Classify.Category")
+    |> wait_async()
+    |> refute_has("[data-role=search_group_hit]")
+    |> assert_has("#the_search_results", text: @no_index_hint)
+  end
 end

@@ -8,6 +8,8 @@ defmodule Bonfire.Search.Filters do
 
   @people_tab "Bonfire.Data.Identity.User"
   @posts_tab "Bonfire.Data.Social.Post"
+  # groups and topics, which share the Category index type
+  @groups_tab "Bonfire.Classify.Category"
   @hashtag_tab "hashtag"
 
   @object_types [:post, :article]
@@ -29,24 +31,34 @@ defmodule Bonfire.Search.Filters do
 
   def people_tab, do: @people_tab
   def posts_tab, do: @posts_tab
+  def groups_tab, do: @groups_tab
   def hashtag_tab, do: @hashtag_tab
   def object_types, do: @object_types
   def media_types, do: @media_types
   def sections, do: @sections
 
   @doc """
-  The selected tab when it is a result-type facet (People / Posts), else nil (All).
+  The selected tab when it is a result-type facet (People / Groups / Posts), else nil (All).
 
       iex> Bonfire.Search.Filters.type_facet("Bonfire.Data.Social.Post")
       "Bonfire.Data.Social.Post"
+      iex> Bonfire.Search.Filters.type_facet("Bonfire.Classify.Category")
+      "Bonfire.Classify.Category"
       iex> Bonfire.Search.Filters.type_facet("hashtag")
       nil
   """
-  def type_facet(tab) when tab in [@people_tab, @posts_tab], do: tab
+  def type_facet(tab) when tab in [@people_tab, @groups_tab, @posts_tab], do: tab
   def type_facet(_), do: nil
 
-  @doc "True for tabs that list one result type in full (and paginate), as opposed to the All overview."
-  def typed_tab?(tab), do: tab in [@people_tab, @posts_tab, @hashtag_tab]
+  @doc """
+  True for tabs that list one result type in full (and paginate), as opposed to the All overview.
+
+      iex> Bonfire.Search.Filters.typed_tab?("Bonfire.Classify.Category")
+      true
+      iex> Bonfire.Search.Filters.typed_tab?(nil)
+      false
+  """
+  def typed_tab?(tab), do: tab in [@people_tab, @groups_tab, @posts_tab, @hashtag_tab]
 
   @doc "True for the one tab that has filters (Posts)."
   def filtered_tab?(tab), do: tab == @posts_tab

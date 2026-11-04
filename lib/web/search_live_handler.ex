@@ -239,8 +239,10 @@ defmodule Bonfire.Search.LiveHandler do
     q = e(assigns(socket), :search, nil)
     current_hits = e(assigns(socket), :hits, [])
     current_user_hits = e(assigns(socket), :user_hits, [])
+    current_group_hits = e(assigns(socket), :group_hits, [])
 
-    if String.starts_with?(q || "", "http") and current_hits == [] and current_user_hits == [] do
+    if String.starts_with?(q || "", "http") and current_hits == [] and current_user_hits == [] and
+         current_group_hits == [] do
       # Handle URL case when there are no other hits - redirect to the federated object's page
       {:noreply,
        socket
@@ -254,56 +256,99 @@ defmodule Bonfire.Search.LiveHandler do
         # Check if the result is a user/character type
         result_type = Types.object_type(federated_object_or_character)
 
-        if result_type in [Bonfire.Data.Identity.User, Bonfire.Data.Identity.Character] do
-          # It's a user — add to user_hits directly
-          updated_user_hits =
-            [federated_object_or_character | current_user_hits]
-            |> Enum.uniq_by(&Enums.id/1)
+        cond do
+          group_type?(federated_object_or_character) ->
+            # a group or topic is not a person: it joins the group hits, shaped as the index's hits are, so it renders the same way and shows once when the index found it too
+            updated_group_hits =
+              (Bonfire.Search.prepare_hits([federated_object_or_character], :public,
+                 current_user: current_user(socket)
+               ) ++ current_group_hits)
+              |> Enum.uniq_by(&Enums.id/1)
 
-          {:noreply,
-           assign(socket,
-             user_hits: updated_user_hits,
-             num_hits: length(current_hits) + length(updated_user_hits),
-             searching_direct: false
-           )}
-        else
-          # It's a post/content — load via standard feed pipeline
-          loaded =
-            Bonfire.Search.load_activities_for_search(
-              [result_id],
-              current_user: current_user(socket)
+            {:noreply,
+             assign(socket,
+               group_hits: updated_group_hits,
+               num_hits:
+                 length(current_hits) + length(current_user_hits) + length(updated_group_hits),
+               searching_direct: false
+             )}
+
+          true ->
+            handle_direct_lookup_result(
+              socket,
+              federated_object_or_character,
+              result_id,
+              result_type,
+              current_hits,
+              current_user_hits
             )
-
-          if loaded != [] do
-            updated_hits =
-              (loaded ++ current_hits)
-              |> Enum.uniq_by(&Enums.id/1)
-
-            {:noreply,
-             assign(socket,
-               hits: updated_hits,
-               num_hits: length(updated_hits) + length(current_user_hits),
-               searching_direct: false
-             )}
-          else
-            # Couldn't load as activity, add as-is to user_hits as fallback
-            updated_user_hits =
-              [federated_object_or_character | current_user_hits]
-              |> Enum.uniq_by(&Enums.id/1)
-
-            {:noreply,
-             assign(socket,
-               user_hits: updated_user_hits,
-               num_hits: length(current_hits) + length(updated_user_hits),
-               searching_direct: false
-             )}
-          end
         end
       else
         {:noreply, assign(socket, searching_direct: false)}
       end
     end
   end
+
+  defp handle_direct_lookup_result(
+         socket,
+         federated_object_or_character,
+         result_id,
+         result_type,
+         current_hits,
+         current_user_hits
+       ) do
+    if result_type in [Bonfire.Data.Identity.User, Bonfire.Data.Identity.Character] do
+      # It's a user — add to user_hits directly
+      updated_user_hits =
+        [federated_object_or_character | current_user_hits]
+        |> Enum.uniq_by(&Enums.id/1)
+
+      {:noreply,
+       assign(socket,
+         user_hits: updated_user_hits,
+         num_hits: length(current_hits) + length(updated_user_hits),
+         searching_direct: false
+       )}
+    else
+      # It's a post/content — load via standard feed pipeline
+      loaded =
+        Bonfire.Search.load_activities_for_search(
+          [result_id],
+          current_user: current_user(socket)
+        )
+
+      if loaded != [] do
+        updated_hits =
+          (loaded ++ current_hits)
+          |> Enum.uniq_by(&Enums.id/1)
+
+        {:noreply,
+         assign(socket,
+           hits: updated_hits,
+           num_hits: length(updated_hits) + length(current_user_hits),
+           searching_direct: false
+         )}
+      else
+        # Couldn't load as activity, add as-is to user_hits as fallback
+        updated_user_hits =
+          [federated_object_or_character | current_user_hits]
+          |> Enum.uniq_by(&Enums.id/1)
+
+        {:noreply,
+         assign(socket,
+           user_hits: updated_user_hits,
+           num_hits: length(current_hits) + length(updated_user_hits),
+           searching_direct: false
+         )}
+      end
+    end
+  end
+
+  # groups and topics (Category rows), named as a type only, since `bonfire_classify` is optional here. By schema, since `Types.object_type/1` gives `:group` for a group
+  defp group_type?(object),
+    do: Types.object_type_schema(object) == Bonfire.Classify.Category
+
+  defp group_hit?(hit), do: group_type?(e(hit, :activity, :object, nil) || hit)
 
   # Handle case where no federated result is found
 
@@ -417,8 +462,18 @@ defmodule Bonfire.Search.LiveHandler do
         |> debug("search_and_load result")
         |> maybe_overview_people(q, facet_filters, search_opts)
 
-      activities = e(search_result, :activities, [])
+      # groups and topics come back among the activities, and get a list of their own, as people do
+      {groups, activities} = Enum.split_with(e(search_result, :activities, []), &group_hit?/1)
+      # labels share the Category type, but aren't groups or topics
+      groups = Enum.reject(groups, &(e(&1, :activity, :object, :type, nil) == :label))
       users = e(search_result, :users, [])
+
+      current_group_hits =
+        if live_opts[:append] && is_list(e(assigns(socket), :group_hits, nil)) do
+          Enum.uniq_by(e(assigns(socket), :group_hits, []) ++ groups, &Enums.id/1)
+        else
+          groups
+        end
 
       # Handle pagination state - append to existing hits on load_more
       current_hits =
@@ -442,6 +497,7 @@ defmodule Bonfire.Search.LiveHandler do
          selected_facets: facet_filters,
          hits: current_hits,
          user_hits: current_user_hits,
+         group_hits: current_group_hits,
          facets: search_result.facets || e(assigns(socket), :facets, nil),
          num_hits: search_result.total_hits,
          search: q,

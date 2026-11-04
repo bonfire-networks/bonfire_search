@@ -1,9 +1,10 @@
 <div id="the_search_results" phx-update="replace" data-page={e(@page, [])}>
-  {#if @searching && e(@hits, []) == [] && e(@user_hits, []) == []}
+  {#if @searching && e(@hits, []) == [] && e(@user_hits, []) == [] && e(@group_hits, []) == []}
     <div class="flex items-center justify-center py-8">
       <span class="loading loading-spinner loading-md" />
     </div>
-  {#elseif @searching_direct && (e(@hits, []) != [] || e(@user_hits, []) != [])}
+  {#elseif @searching_direct &&
+      (e(@hits, []) != [] || e(@user_hits, []) != [] || e(@group_hits, []) != [])}
     <div class="flex items-center justify-center py-2 text-sm text-muted">
       <span class="loading loading-spinner loading-xs mr-2" />
       {if String.starts_with?(@search || "", "http"),
@@ -36,6 +37,29 @@
           {/if}
         {/for}
       </div>
+    {#elseif @selected_tab == Bonfire.Search.Filters.groups_tab()}
+      {!-- groups and topics, through ActivityLive like every hit, which ends at the group card --}
+      <div data-role="search_group_hits">
+        {#for hit <- e(@group_hits, [])}
+          <div class="activity_wrapper" data-role="search_group_hit">
+            <StatefulComponent
+              module={maybe_component(Bonfire.UI.Social.ActivityLive, @__context__)}
+              id={deterministic_dom_id(__MODULE__, e(hit, :activity, :id, nil) || id(hit), "search_group", nil)}
+              showing_within={:search}
+              hide_actions
+              hide_activity="subject"
+              activity={e(hit, :activity, nil) || hit}
+            />
+          </div>
+        {#else}
+          {#if !@searching && !e(@page_info, :has_next_page, false)}
+            <Bonfire.UI.Common.EmptyFeed
+              feedback_title={l("No groups found")}
+              feedback_message={no_results_message(@full_text_search)}
+            />
+          {/if}
+        {/for}
+      </div>
     {#else}
       {!-- same wrapper as feed entries, so padding and dividers follow the UI preset --}
       {#for hit <- e(@hits, [])}
@@ -61,7 +85,7 @@
     {!-- "All" tab: an overview. People first (a few), then posts; each group ends
          with a quiet "See all" row that opens the corresponding tab. No icons. --}
 
-    {#if e(@user_hits, []) == [] && e(@hits, []) == [] && !@searching &&
+    {#if e(@user_hits, []) == [] && e(@hits, []) == [] && e(@group_hits, []) == [] && !@searching &&
         !e(@page_info, :has_next_page, false)}
       <Bonfire.UI.Common.EmptyFeed
         feedback_title={l("Nothing relevant was found")}
@@ -103,6 +127,24 @@
             <span>{l("See all people")}</span>
             <span aria-hidden="true">›</span>
           </LinkPatchLive>
+        </div>
+      {/if}
+
+      {#if e(@group_hits, []) != []}
+        {!-- groups and topics, apart from people and posts; rendered through ActivityLive like every hit, which ends at the group card, without a post's header and actions (the card has its own name and join button) --}
+        <div class="border-t-hair border-divider" data-role="search_group_hits">
+          {#for hit <- e(@group_hits, [])}
+            <div class="activity_wrapper" data-role="search_group_hit">
+              <StatefulComponent
+                module={maybe_component(Bonfire.UI.Social.ActivityLive, @__context__)}
+                id={deterministic_dom_id(__MODULE__, e(hit, :activity, :id, nil) || id(hit), "search_group", nil)}
+                showing_within={:search}
+                hide_actions
+                hide_activity="subject"
+                activity={e(hit, :activity, nil) || hit}
+              />
+            </div>
+          {/for}
         </div>
       {/if}
 

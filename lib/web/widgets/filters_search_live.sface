@@ -14,11 +14,19 @@
       {!-- no query yet: no result-type tabs to show --}
   {/case}
 
+  {!-- on All and Groups too, where groups show: a members-only group is in the closed index only --}
   <div
-    :if={@selected_tab == Bonfire.Search.Filters.posts_tab()}
-    class="flex p-4 border-b border-divider py-2 items-center justify-between"
+    :if={@selected_tab in [nil, Bonfire.Search.Filters.groups_tab(), Bonfire.Search.Filters.posts_tab()]}
+    class="flex p-4 border-b border-divider py-2 items-center justify-between gap-3"
   >
-    <div class="text-sm font-medium">{l("Results")}</div>
+    <div class="text-sm font-medium">{l("Results")}
+      {!-- the private side searches the closed index only, so say where the public results are --}
+      <span
+        :if={@index != "public"}
+        data-role="search_boundary_hint"
+        class="block text-xs font-normal text-muted"
+      >{l("Public results are under \"Public only\".")}</span>
+    </div>
 
     <Dropdown
       id="search_boundary"
@@ -32,7 +40,7 @@
           {l("Public only")}
         {#else}
           <#Icon iconify="ph:detective-duotone" class="size-4 opacity/70" />
-          {l("Private included")}
+          {l("Private only")}
         {/if}
       </:trigger>
       <li>
@@ -54,7 +62,7 @@
           phx-click="toggle_index"
           phx-value-index="closed"
         >
-          {l("Private (eg. DMs or custom boundaries)")}
+          {l("Private only (eg. DMs, members-only groups or custom boundaries)")}
           <div class="size-5 min-w-5 flex items-center justify-center border border-divider rounded-full">
             <span :if={@index != "public"} class="size-3.5 bg-primary rounded-full" />
           </div>

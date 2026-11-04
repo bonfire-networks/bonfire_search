@@ -82,6 +82,7 @@
           <Bonfire.Search.Web.ResultsLive
             hits={e(@hits, [])}
             user_hits={e(@user_hits, [])}
+            group_hits={e(@group_hits, [])}
             page_info={@page_info}
             search={@search}
             search_limit={@search_limit}

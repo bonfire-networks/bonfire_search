@@ -12,10 +12,16 @@ defmodule Bonfire.Search.UI.FiltersSearchLive do
   def tabs(term, index, filters) do
     [
       {Filters.tab_url(term, index, filters), l("All")},
-      {Filters.tab_url(term, index, filters, Filters.people_tab()), l("Users")},
-      {Filters.tab_url(term, index, filters, Filters.posts_tab()), l("Posts")},
-      {Filters.hashtag_url(term), l("Hashtags")}
-    ]
+      {Filters.tab_url(term, index, filters, Filters.people_tab()), l("Users")}
+    ] ++
+      if(module_enabled?(Bonfire.UI.Groups.Preview.GroupLive),
+        do: [{Filters.tab_url(term, index, filters, Filters.groups_tab()), l("Groups")}],
+        else: []
+      ) ++
+      [
+        {Filters.tab_url(term, index, filters, Filters.posts_tab()), l("Posts")},
+        {Filters.hashtag_url(term), l("Hashtags")}
+      ]
   end
 
   @doc "The URL of the active tab (TabsLive marks the tab whose key equals `selected_tab`)."

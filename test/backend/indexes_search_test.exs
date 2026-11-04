@@ -432,4 +432,261 @@ defmodule Bonfire.Search.IndexesSearchTest do
       assert %{hits: []} = results
     end
   end
+
+  describe "groups and topics in the public index" do
+    # the public index is what the main search uses unless private contents are included, so a group anyone can see must be found there
+    defp in_index?(name, index, category) do
+      %{hits: hits} = Search.search(name, index: index, skip_boundary_check: true)
+      Enum.any?(List.wrap(hits), &(Enums.id(&1) == Enums.id(category)))
+    end
+
+    test "an open group that anyone may post in is found without private contents" do
+      user = fake_user!()
+      name = "zymurgical quokka openhouse"
+
+      group =
+        Bonfire.Classify.Simulate.fake_group!(user, %{
+          name: name,
+          membership: "open",
+          visibility: "global",
+          participation: "anyone"
+        })
+
+      assert in_index?(name, :public, group)
+    end
+
+    test "a public group that only members may post in is found without private contents" do
+      user = fake_user!()
+      name = "zymurgical quokka reviewers"
+
+      group =
+        Bonfire.Classify.Simulate.fake_group!(user, %{
+          name: name,
+          membership: "on_request",
+          visibility: "global",
+          participation: "group_members"
+        })
+
+      assert in_index?(name, :public, group)
+      refute in_index?(name, :closed, group)
+    end
+
+    test "a top-level topic is found without private contents" do
+      user = fake_user!()
+      name = "zymurgical quokka topicality"
+
+      topic = Bonfire.Classify.Simulate.fake_category!(user, nil, %{name: name, type: :topic})
+
+      assert in_index?(name, :public, topic)
+    end
+
+    test "an unlisted group stays out of the public index" do
+      user = fake_user!()
+      name = "zymurgical quokka hideaway"
+
+      group =
+        Bonfire.Classify.Simulate.fake_group!(user, %{
+          name: name,
+          membership: "on_request",
+          visibility: "local:unlisted",
+          participation: "group_members"
+        })
+
+      # prove it was indexed at all before trusting its absence from the public one
+      assert in_index?(name, :closed, group)
+      refute in_index?(name, :public, group)
+    end
+
+    # a preview group may be found by anyone, and what is indexed for a group (its name and summary) is what a guest may see of it
+    test "a preview group is found without private contents" do
+      user = fake_user!()
+      name = "zymurgical quokka peekaboo"
+
+      group =
+        Bonfire.Classify.Simulate.fake_group!(user, %{
+          name: name,
+          membership: "on_request",
+          visibility: "preview",
+          participation: "group_members"
+        })
+
+      assert in_index?(name, :public, group)
+    end
+
+    # a guest may see a post in a preview group but not read it: search follows `:see`, as feeds do, so it is in the public index, also when an edit picks the index from its boundaries, and the results show it without its content (`test/web/see_only_results_test.exs`)
+    test "a post in a preview group is in the public index, also after an edit" do
+      user = fake_user!()
+
+      group =
+        Bonfire.Classify.Simulate.fake_group!(user, %{
+          membership: "on_request",
+          visibility: "preview",
+          participation: "group_members",
+          default_content_visibility: "public:preview"
+        })
+
+      body = "zymurgical quokka previewpost"
+
+      {:ok, post} =
+        Posts.publish(
+          current_user: user,
+          publish_in: group.id,
+          boundary: "public:preview",
+          post_attrs: %{post_content: %{html_body: body}}
+        )
+
+      assert Bonfire.Boundaries.can?(fake_user!(), :see, post),
+             "control: an outsider may see the post"
+
+      refute Bonfire.Boundaries.can?(:guest, :read, post), "control: a guest may not read it"
+
+      assert in_index?(body, :public, post)
+      refute in_index?(body, :closed, post)
+
+      edited = "zymurgical quokka revisedpost"
+
+      assert {:ok, _} =
+               Bonfire.Social.PostContents.edit(user, Enums.id(post), %{html_body: edited})
+
+      assert in_index?(edited, :public, post)
+      refute in_index?(edited, :closed, post)
+    end
+
+    defp found_by?(name, index, user, object) do
+      %{hits: hits} = Search.search(name, index: index, current_user: user)
+      Enum.any?(List.wrap(hits), &(Enums.id(&1) == Enums.id(object)))
+    end
+
+    defp local_preview_group(owner, name) do
+      Bonfire.Classify.Simulate.fake_group!(owner, %{
+        name: name,
+        membership: "on_request",
+        visibility: "local:preview",
+        participation: "group_members",
+        default_content_visibility: "members:private"
+      })
+    end
+
+    # search follows `:see` for groups, and a group only local users may see grants local non-members `:see` but not `:read`
+    test "a group only local users may see is found by a local non-member" do
+      owner = fake_user!()
+      name = "zymurgical quokka localclub"
+      group = local_preview_group(owner, name)
+
+      assert in_index?(name, :closed, group)
+      assert found_by?(name, :closed, fake_user!(), group)
+      # guests search the public index only, as the closed one returns nothing without a user
+      refute in_index?(name, :public, group)
+    end
+
+    test "a members-only group is found by its members only" do
+      owner = fake_user!()
+      member = fake_user!()
+      name = "zymurgical quokka innercircle"
+
+      group =
+        Bonfire.Classify.Simulate.fake_group!(owner, %{
+          name: name,
+          membership: "invite_only",
+          visibility: "members:private",
+          participation: "group_members"
+        })
+
+      {:ok, _} =
+        Bonfire.Classify.Categories.add_member(owner, group, member.id, skip_boundary_check: true)
+
+      assert found_by?(name, :closed, member, group)
+      refute found_by?(name, :closed, fake_user!(), group)
+    end
+
+    # a local non-member may see the post but not read it: search follows `:see` for every object, as feeds do, so it is found, and the results show it without its content (`test/web/see_only_results_test.exs`); guests may not see it, so it stays out of the public index
+    test "a post in a group only local users may see is found by local non-members, and not by guests" do
+      owner = fake_user!()
+      group = local_preview_group(owner, "zymurgical quokka clubhouse")
+      body = "zymurgical quokka clubpost"
+
+      {:ok, post} =
+        Posts.publish(
+          current_user: owner,
+          publish_in: group.id,
+          boundary: "local:preview",
+          post_attrs: %{post_content: %{html_body: body}}
+        )
+
+      assert found_by?(body, :closed, owner, post)
+      assert found_by?(body, :closed, fake_user!(), post)
+      refute in_index?(body, :public, post)
+    end
+
+    # guests find whatever is in the public index, with no boundary check, so a group narrowed to members must leave it
+    test "a group narrowed to members only leaves the public index" do
+      user = fake_user!()
+      name = "zymurgical quokka narrowing"
+
+      group =
+        Bonfire.Classify.Simulate.fake_group!(user, %{
+          name: name,
+          membership: "open",
+          visibility: "global",
+          participation: "anyone"
+        })
+
+      assert in_index?(name, :public, group)
+
+      assert :ok =
+               Bonfire.Classify.Boundaries.replace(group, user, %{
+                 membership: "invite_only",
+                 visibility: "members:private",
+                 participation: "group_members"
+               })
+
+      refute in_index?(name, :public, group)
+      # its members still find it
+      assert in_index?(name, :closed, group)
+    end
+
+    # the index's own ids, before any loading: Sonic's hits are loaded through their pointers, which leaves out an archived or deleted object, but the index still holds its text, and autocomplete or Meili (whose documents hold the name and summary) read it from there
+    defp in_raw_index?(name, index, object) do
+      %{hits: hits} = Search.search(name, index: index, raw: true)
+      Enum.any?(List.wrap(hits), &(Enums.id(&1) == Enums.id(object)))
+    end
+
+    # a narrowing before the fix left a public copy behind; it must go when the group goes, whatever index its boundaries pick now
+    defp narrowed_group_with_public_copy(user, name) do
+      group =
+        Bonfire.Classify.Simulate.fake_group!(user, %{
+          name: name,
+          membership: "invite_only",
+          visibility: "members:private",
+          participation: "group_members"
+        })
+
+      Search.maybe_index(group, :public, user)
+      assert in_raw_index?(name, :public, group)
+      assert in_raw_index?(name, :closed, group)
+      group
+    end
+
+    test "a group archived after it was narrowed leaves both indexes" do
+      user = fake_user!()
+      name = "zymurgical quokka archivist"
+      group = narrowed_group_with_public_copy(user, name)
+
+      assert {:ok, _} = Bonfire.Classify.Categories.soft_delete(group, user)
+
+      refute in_raw_index?(name, :public, group)
+      refute in_raw_index?(name, :closed, group)
+    end
+
+    test "a group deleted after it was narrowed leaves both indexes" do
+      user = fake_user!()
+      name = "zymurgical quokka demolition"
+      group = narrowed_group_with_public_copy(user, name)
+
+      assert {:ok, _} = Bonfire.Classify.Categories.hard_delete(group, current_user: user)
+
+      refute in_raw_index?(name, :public, group)
+      refute in_raw_index?(name, :closed, group)
+    end
+  end
 end

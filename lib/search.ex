@@ -501,9 +501,11 @@ defmodule Bonfire.Search do
 
   defp backfill_subject_id(%{activity: %{subject_id: sid} = activity} = hit)
        when is_nil(sid) or sid == "" do
+    # a mirrored group has neither a creator nor a caretaker here, so it stands as its own subject, as the raw-hit path does (`prepare_hits/3`)
     creator_id =
       e(activity, :object, :created, :creator_id, nil) ||
-        e(activity, :object, :caretaker_id, nil)
+        e(activity, :object, :caretaker_id, nil) ||
+        e(activity, :object_id, nil)
 
     if creator_id,
       do: put_in(hit, [Access.key(:activity), Access.key(:subject_id)], creator_id),
@@ -581,10 +583,11 @@ defmodule Bonfire.Search do
       sonic? = adapter() == Bonfire.Search.Sonic
 
       if current_user = current_user(opts) do
+        # search lists what the viewer may `:see`, as feeds do: `:see` is discoverability, and a hit the viewer may not `:read` is shown without its content by `ActivityLive` (`can_read?/2`, from the boundaries its `update_many` loads for the page)
         visible =
           Bonfire.Boundaries.load_pointers(list_of_ids,
             current_user: current_user,
-            verbs: e(opts, :verbs, [:see, :read]),
+            verbs: e(opts, :verbs, [:see]),
             ids_only: not sonic?
           )
           |> debug("maybe_boundarise: closed load_pointers result")
@@ -598,6 +601,25 @@ defmodule Bonfire.Search do
       end
     end
   end
+
+  # Disabled: search follows `:see` for every object now (see `maybe_boundarise/3` above), not `:see` for categories and `[:see, :read]` for the rest
+  # defp see_only_categories(ids, load_opts) do
+  #   case Types.table_id(Bonfire.Classify.Category) do
+  #     nil ->
+  #       []
+  #
+  #     category_table_id ->
+  #       Bonfire.Boundaries.load_pointers(
+  #         ids,
+  #         [
+  #           verbs: [:see],
+  #           from:
+  #             Bonfire.Common.Needles.query_base(include_scheduled: true)
+  #             |> where([p], p.table_id == ^category_table_id)
+  #         ] ++ load_opts
+  #       )
+  #   end
+  # end
 
   def normalise_index("public"), do: :public
   def normalise_index(["public"]), do: :public
@@ -658,12 +680,20 @@ defmodule Bonfire.Search do
   defp do_maybe_index(object, false, opts), do: do_maybe_index(object, :closed, opts)
 
   defp do_maybe_index(object, nil, opts) do
-    if maybe_apply(Bonfire.Boundaries, :object_public?, [object], fallback_return: false) do
-      do_maybe_index(object, :public, opts)
-    else
-      debug("object_public? didn't return true, so indexing as closed")
-      do_maybe_index(object, :closed, opts)
-    end
+    {index, other_index} =
+      # TODO: an object guests may see but not read is indexed with its text, so a match on a word of its body tells someone who may not read it that the word is in it (accepted for now; the alternative is to index only the name and summary of a see-only object)
+      if maybe_apply(Bonfire.Boundaries, :object_guest_discoverable?, [object],
+           fallback_return: false
+         ) do
+        {:public, :closed}
+      else
+        debug("object_guest_discoverable? didn't return true, so indexing as closed")
+        {:closed, :public}
+      end
+
+    # when search picks the index from the object's boundaries, they may have changed since it was indexed (eg. a group narrowed to members, or a post edited), and indexing into one index leaves the other alone, so its copy there is taken out first
+    do_maybe_unindex(object, other_index)
+    do_maybe_index(object, index, opts)
   end
 
   defp do_maybe_index(object, boundary, opts) when is_binary(boundary) do
@@ -713,7 +743,8 @@ defmodule Bonfire.Search do
     if adapter(), do: do_maybe_unindex(object), else: :ok
   end
 
-  defp do_maybe_unindex(object) do
+  # with no index, from both: the index the object's boundaries pick now may not be the one it was put in, eg. a group archived after it was narrowed still has a public copy
+  defp do_maybe_unindex(object, index \\ nil) do
     creator =
       repo().maybe_preload(
         e(object, :created, :creator, nil) || e(object, :activity, :created, :creator, nil) ||
@@ -725,12 +756,13 @@ defmodule Bonfire.Search do
         prune: true
       )
 
-    index =
-      if maybe_apply(Bonfire.Boundaries, :object_public?, [object], fallback_return: false) do
-        :public
-      else
-        :closed
-      end
+    # Disabled: deleting only from the index the boundaries pick now missed a copy left in the other one (see above)
+    # index =
+    #   if maybe_apply(Bonfire.Boundaries, :object_guest_discoverable?, [object], fallback_return: false) do
+    #     :public
+    #   else
+    #     :closed
+    #   end
 
     if module = Bonfire.Common.Extend.maybe_module(Bonfire.Search.Indexer, creator) do
       module.maybe_delete_object(object, index)

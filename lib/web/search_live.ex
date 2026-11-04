@@ -29,6 +29,7 @@ defmodule Bonfire.Search.Web.SearchLive do
        mobile_filters_open: false,
        hits: [],
        user_hits: [],
+       group_hits: [],
        page_info: nil,
        searching: false,
        searching_direct: false,
@@ -118,6 +119,7 @@ defmodule Bonfire.Search.Web.SearchLive do
        index: index,
        hits: [],
        user_hits: [],
+       group_hits: [],
        page_info: nil,
        searching: false
      )}
