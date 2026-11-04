@@ -196,11 +196,10 @@ defmodule Bonfire.Search.LiveHandler do
       feed_filters: e(assigns(socket), :search_filters, %{})
     }
 
-    # Start the async direct lookup only for URLs and handles (not plain text searches): with any of the prefixes a handle is typed with (`@` for people, `!`, `&` or `+` for groups, as everywhere that reads one), or none, when it is shaped like `name@host.tld`
+    # Start the async direct lookup only for URLs and handles, not plain text searches
     if socket_connected?(socket) do
       socket =
-        if String.starts_with?(q, ["http://", "https://", "@", "!", "&", "+"]) or
-             bare_handle?(q) do
+        if Bonfire.Common.URIs.handle_or_url?(q) do
           socket
           |> assign(searching_direct: true)
           |> start_async(:direct_lookup, fn ->
@@ -224,16 +223,16 @@ defmodule Bonfire.Search.LiveHandler do
     {:noreply, socket}
   end
 
-  # `name@host.tld`: one `@`, something before it, a dotted host after it, and no spaces or slashes
-  defp bare_handle?(q) do
-    case String.split(q, "@") do
-      [name, host] when name != "" and host != "" ->
-        String.contains?(host, ".") and not String.contains?(q, [" ", "/"])
-
-      _ ->
-        false
-    end
-  end
+  # Moved to `Bonfire.Common.URIs.handle_or_url?/1`, so the group discovery page decides what to look up the same way.
+  # defp bare_handle?(q) do
+  #   case String.split(q, "@") do
+  #     [name, host] when name != "" and host != "" ->
+  #       String.contains?(host, ".") and not String.contains?(q, [" ", "/"])
+  #
+  #     _ ->
+  #       false
+  #   end
+  # end
 
   # Handle the federated lookup result
   def handle_async(:direct_lookup, {:ok, {:ok, federated_object_or_character}}, socket) do
