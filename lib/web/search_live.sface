@@ -59,7 +59,8 @@
     {#if @search in [nil, ""] and !@searching and !@searching_direct}
       <Bonfire.UI.Common.EmptyFeed>
         <:empty_feed>
-          <div class="type-heading">{l("Search for people, posts and hashtags")}</div>
+          {!-- was l("Search for people, posts and hashtags"), which left out groups --}
+          <div class="type-heading">{l("Search for people, groups, posts and hashtags")}</div>
           <div class="mt-1 text-sm font-medium text-muted">{if @full_text_search,
               do: l("Enter some keywords, a @username, a #hashtag, or paste a fediverse URL"),
               else: l("Enter a @username@instance, a #hashtag, or paste a fediverse URL")}</div>
@@ -83,6 +84,7 @@
             hits={e(@hits, [])}
             user_hits={e(@user_hits, [])}
             group_hits={e(@group_hits, [])}
+            hashtag_hits={e(@hashtag_hits, [])}
             page_info={@page_info}
             search={@search}
             search_limit={@search_limit}

@@ -68,7 +68,7 @@ defmodule Bonfire.Search.MeiliLib do
       string,
       opts
       |> Enum.into(%{
-        filter: List.flatten(filter_facets)
+        filter: mixed_search_filter(List.flatten(filter_facets))
       })
       |> debug("opts_with_filter"),
       calculate_facets
@@ -76,8 +76,14 @@ defmodule Bonfire.Search.MeiliLib do
   end
 
   def search(string, opts, calculate_facets, _) do
-    search_maybe_with_facets(string, opts, calculate_facets)
+    search(string, opts, calculate_facets, [])
   end
+
+  # a search of no type is the mixed one, which leaves out the types searched only by their own type (as Sonic keeps them out of its `all` bucket)
+  defp mixed_search_filter([]),
+    do: Enum.map(Indexer.own_bucket_only_types(), &"index_type != #{&1}")
+
+  defp mixed_search_filter(filters), do: filters
 
   def search(string, index) when is_binary(string) and (is_binary(index) or is_atom(index)) do
     search(%{q: string}, index)

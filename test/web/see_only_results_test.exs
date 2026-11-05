@@ -4,6 +4,7 @@ defmodule Bonfire.Search.Web.SeeOnlyResultsTest do
   @moduletag :ui
 
   alias Bonfire.Classify.Simulate
+  require Phoenix.LiveViewTest
 
   @adapter Bonfire.Common.Config.get(:adapter, Bonfire.Search.MeiliLib, :bonfire_search)
 
@@ -80,28 +81,70 @@ defmodule Bonfire.Search.Web.SeeOnlyResultsTest do
     |> refute_in_html(@secret)
   end
 
-  # the closed index is checked for the viewer on `:see`, so the same card shows there
-  test "a non-member finds it among private results too, shown without its body", %{post: _post} do
+  # the closed index is checked for the viewer on `:see`, so the same card shows there. A post only local users may see is in the closed index (a `public:preview` one is in the public index from its creation, so "Private only" leaves it out)
+  test "a non-member finds a post only local users may see among private results, shown without its body" do
+    owner = fake_user!(fake_account!())
+
+    group =
+      Simulate.fake_group!(owner, %{
+        membership: "on_request",
+        visibility: "local:preview",
+        participation: "group_members",
+        default_content_visibility: "local:preview"
+      })
+
+    {:ok, post} =
+      Bonfire.Posts.publish(
+        current_user: owner,
+        publish_in: group.id,
+        boundary: "local:preview",
+        post_attrs: %{
+          post_content: %{
+            name: "Coot headline",
+            summary: "What the coot post is about",
+            html_body: "<p>A #{@body_word} of coot notes.</p><p>#{@secret}-coot</p>"
+          }
+        }
+      )
+
     viewer_account = fake_account!()
     viewer = fake_user!(viewer_account)
+
+    assert Bonfire.Boundaries.can?(viewer, :see, post), "control: the viewer may see it"
+    refute Bonfire.Boundaries.can?(viewer, :read, post), "control: but not read it"
 
     conn(user: viewer, account: viewer_account)
     |> search()
     |> click_button("#search_boundary button", "Private only")
     |> wait_async()
-    |> assert_has("#the_search_results article", text: "Moorhen headline")
-    |> refute_has("#the_search_results", text: @secret)
-    |> refute_in_html(@secret)
+    |> assert_has("#the_search_results article", text: "Coot headline")
+    |> refute_has("#the_search_results", text: "#{@secret}-coot")
+    |> refute_in_html("#{@secret}-coot")
   end
 
-  test "a guest finds it the same way, from the public index", %{post: post} do
+  # `/search` is for signed-in accounts, so this searches the public index as the page does, with no viewer, and renders the hits as the page renders them
+  test "a guest's search of the public index finds it, and its hit shows without its body", %{
+    post: post
+  } do
     refute Bonfire.Boundaries.can?(:guest, :read, post), "control: a guest may not read it"
 
-    conn()
-    |> search()
-    |> assert_has("#the_search_results article", text: "Moorhen headline")
-    |> refute_has("#the_search_results", text: @secret)
-    |> refute_in_html(@secret)
+    %{activities: hits} =
+      Bonfire.Search.search_and_load(@body_word, [], %{}, index: "public", current_user: nil)
+
+    assert Enum.any?(hits, &((e(&1, :activity, :object_id, nil) || Enums.id(&1)) == post.id)),
+           "the public index holds it"
+
+    html =
+      Phoenix.LiveViewTest.render_component(&Bonfire.Search.Web.ResultsLive.render/1, %{
+        __context__: %{},
+        search: @body_word,
+        hits: hits,
+        user_hits: [],
+        page_info: nil
+      })
+
+    assert html =~ "Moorhen headline"
+    refute html =~ @secret
   end
 
   test "a member finds it with its body", %{owner: owner, group: group} do

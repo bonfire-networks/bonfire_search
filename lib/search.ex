@@ -198,8 +198,65 @@ defmodule Bonfire.Search do
     opts = to_options(opts)
     sonic? = adapter() == Bonfire.Search.Sonic
 
-    search_result = search_categorised(string, calculate_facets, filter_facets, not sonic?, opts)
+    string
+    |> search_categorised(calculate_facets, filter_facets, not sonic?, opts)
+    |> load_categorised(sonic?, opts)
+  end
 
+  @doc """
+  Runs several searches for one term, eg. a typed bucket and the mixed one, and merges their hits by id before anything is loaded, so an object that more than one of them finds is loaded once. Then loads them as `search_and_load/4` does, in as few queries as their types need, not one load per search.
+
+  `searches` is a list of `{filter_facets, search_opts}`, each `search_opts` merged over `opts` for that search only (eg. its own `limit`). Hits keep the order of the searches, then of each search's hits. Page info and totals are those of the last search, which is the one a caller pages through.
+  """
+  def search_many_and_load(string, searches, opts \\ []) when is_list(searches) do
+    opts = to_options(opts)
+    sonic? = adapter() == Bonfire.Search.Sonic
+
+    results =
+      Enum.map(searches, fn {filter_facets, search_opts} ->
+        search_opts = Keyword.merge(opts, to_options(search_opts))
+
+        {search(string, Enum.into(search_opts, %{raw: true}), [], filter_facets), filter_facets,
+         search_opts}
+      end)
+
+    own_types = Bonfire.Search.Indexer.own_bucket_only_types()
+
+    # the types searched only by their own type (eg. hashtags) are typed in their raw hits (their bucket or facet), and aren't activities, so they are loaded apart
+    {own_type_hits, raw_hits} =
+      results
+      |> Enum.flat_map(fn {result, _, _} -> List.wrap(e(result, :hits, [])) end)
+      |> Enum.uniq_by(&Enums.id/1)
+      |> Enum.split_with(&(hit_index_type(&1) in own_types))
+
+    # Sonic's raw hits are ids only, so they are loaded here, once for all searches, which tells their types apart
+    hits = if sonic?, do: prepare_hits(raw_hits, opts[:index] || :public, opts), else: raw_hits
+
+    {last_result, last_facets, last_opts} = List.last(results) || {nil, nil, opts}
+
+    last_result
+    |> categorise_result(hits, last_facets, last_opts)
+    |> load_categorised(sonic?, opts)
+    |> Map.put(:own_type_hits, load_own_type_hits(own_type_hits))
+    # which search found what, for a caller that shows each search's hits apart
+    |> Map.put(
+      :hit_ids_by_search,
+      Enum.map(results, fn {result, _, _} -> Enums.ids(List.wrap(e(result, :hits, []))) end)
+    )
+  end
+
+  # in one query, in the hits' order. Not boundary-checked: these types are names anyone may see (hashtags), and they are put in the public index only
+  defp load_own_type_hits([]), do: []
+
+  defp load_own_type_hits(hits) do
+    ids = Enums.ids(hits)
+
+    ids
+    |> Bonfire.Boundaries.load_pointers(skip_boundary_check: true)
+    |> reorder_by_ids(ids)
+  end
+
+  defp load_categorised(search_result, sonic?, opts) do
     if sonic? do
       # Hits are typed structs — apply appropriate preloads per category.
       # With extra feed_filters, re-load by ID through the filtered feed query instead
@@ -252,18 +309,26 @@ defmodule Bonfire.Search do
       ) do
     raw_opts = opts |> Enum.into(%{raw: raw})
     result = search(string, raw_opts, calculate_facets, filter_facets)
-    hits = e(result, :hits, [])
+
+    categorise_result(result, e(result, :hits, []), filter_facets, opts)
+  end
+
+  # `hits` can be more than the result's own (eg. merged from several searches), so the paging counts the result's own hits
+  defp categorise_result(result, hits, filter_facets, opts) do
+    opts = to_options(opts)
+    hits = List.wrap(hits)
+    result_hit_count = length(List.wrap(e(result, :hits, [])))
 
     %{activity_hits: activity_hits, user_hits: user_hits, typed: typed} = categorize_hits(hits)
 
     total_hits =
-      e(result, :estimatedTotalHits, nil) || e(result, :totalHits, nil) || length(hits)
+      e(result, :estimatedTotalHits, nil) || e(result, :totalHits, nil) || result_hit_count
 
     limit = e(result, :limit, nil) || e(result, :hitsPerPage, nil) || opts[:limit] || 20
     offset = e(result, :offset, 0) || opts[:offset] || 0
 
     # If the adapter doesn't report a total (e.g. Sonic), assume there's more when we got a full page
-    has_more = total_hits > offset + limit or length(hits) == limit
+    has_more = total_hits > offset + limit or result_hit_count == limit
 
     %{
       activity_hits: activity_hits,
@@ -635,11 +700,11 @@ defmodule Bonfire.Search do
   # `Bonfire.Federate.ActivityPub.AdapterUtils.recipients_boundary_circles/4`),
   # which maps to the same "public" access preset — without this it would wrongly
   # land in the `:closed` index via the generic `is_binary/1` clause below.
-  @public_boundary_names ["public", "public_remote"]
+  # Disabled: a hand-kept list sent a post published `"public:preview"` or `"nonfederated"` to the closed index on create, though guests may find it and its ACLs pick the public index on an edit. The boundary's preset ACLs decide now (`public_boundary_name?/1` below).
+  # @public_boundary_names ["public", "public_remote"]
 
   @doc """
-  Returns true if a boundary (a name, or a list of names) grants public read
-  access, meaning matching objects should go in the `:public` search index.
+  Returns true if a boundary (a name, or a list of names) lets guests find the object (`:see`), meaning matching objects go in the `:public` search index. Read from the boundary presets' ACLs (`Bonfire.Boundaries.boundary_guest_discoverable?/1`), so a name picks the same index as the ACLs it applies.
 
   ## Examples
 
@@ -648,6 +713,15 @@ defmodule Bonfire.Search do
 
       iex> Bonfire.Search.public_boundary_name?("public_remote")
       true
+
+      iex> Bonfire.Search.public_boundary_name?("public:preview")
+      true
+
+      iex> Bonfire.Search.public_boundary_name?("nonfederated")
+      true
+
+      iex> Bonfire.Search.public_boundary_name?("local:preview")
+      false
 
       iex> Bonfire.Search.public_boundary_name?("mentions")
       false
@@ -661,11 +735,11 @@ defmodule Bonfire.Search do
       iex> Bonfire.Search.public_boundary_name?(nil)
       false
   """
-  def public_boundary_name?(boundary) when is_binary(boundary),
-    do: boundary in @public_boundary_names
-
-  def public_boundary_name?(boundaries) when is_list(boundaries),
-    do: Enum.any?(@public_boundary_names, &(&1 in boundaries))
+  def public_boundary_name?(boundaries) when is_binary(boundaries) or is_list(boundaries),
+    do:
+      maybe_apply(Bonfire.Boundaries, :boundary_guest_discoverable?, [boundaries],
+        fallback_return: false
+      )
 
   def public_boundary_name?(_), do: false
 
@@ -706,7 +780,7 @@ defmodule Bonfire.Search do
     if public_boundary_name?(boundaries) do
       do_maybe_index(object, :public, opts)
     else
-      debug(boundaries, "no `public`/`public_remote` boundary in list, so indexing as closed")
+      debug(boundaries, "no boundary in the list lets guests find it, so indexing as closed")
       do_maybe_index(object, :closed, opts)
     end
   end

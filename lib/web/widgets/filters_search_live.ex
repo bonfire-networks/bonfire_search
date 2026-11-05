@@ -19,8 +19,10 @@ defmodule Bonfire.Search.UI.FiltersSearchLive do
         else: []
       ) ++
       [
-        {Filters.tab_url(term, index, filters, Filters.posts_tab()), l("Posts")},
-        {Filters.hashtag_url(term), l("Hashtags")}
+        # was l("Posts"): the tab lists anything that isn't a user or a group
+        {Filters.tab_url(term, index, filters, Filters.posts_tab()), l("Content")}
+        # Disabled: the tab opened the feed of the one hashtag named like the term, which isn't a search. Matching hashtags show as chips on the All tab instead, and `/search/tag/<name>` stays
+        # {Filters.hashtag_url(term), l("Hashtags")}
       ]
   end
 

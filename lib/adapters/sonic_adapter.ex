@@ -308,9 +308,7 @@ defmodule Bonfire.Search.Sonic do
 
   def delete(object_id, collection) do
     # Must flush from every bucket the object was pushed to
-    buckets = [@all_bucket | known_type_buckets()]
-
-    for bucket <- buckets do
+    for bucket <- known_type_buckets() do
       with_ingest(&Sonix.flush(&1, collection, bucket, object_id))
     end
 
@@ -321,18 +319,53 @@ defmodule Bonfire.Search.Sonic do
   # Private helpers
   # ---------------------------------------------------------------------------
 
-  defp buckets_for(%{"index_type" => type}) when is_binary(type), do: [@all_bucket, type]
+  defp buckets_for(%{"index_type" => type}) when is_binary(type) do
+    # some types go in their own bucket only, so they don't rank among posts in `all`
+    if type in Bonfire.Search.Indexer.own_bucket_only_types(),
+      do: [type],
+      else: [@all_bucket, type]
+  end
   defp buckets_for(%{"index_type" => types}) when is_list(types), do: [@all_bucket | types]
   defp buckets_for(_), do: [@all_bucket]
 
+  # Disabled: a hand-kept list missed the types added since (groups, articles, messages, geolocations, hashtags), so a deleted object stayed in their buckets; and nothing indexes `Bonfire.Tag.Tagged`
+  # defp known_type_buckets do
+  #   [
+  #     "Bonfire.Data.Social.Post",
+  #     "Bonfire.Data.Identity.User",
+  #     "Bonfire.Tag.Tagged"
+  #   ]
+  # end
+
+  # The buckets a delete flushes: `all`, the type of every schema a context module declares (the `ContextModule` registry, so a new indexed type can't be missed), and the types indexed in their own bucket only, which may have no context module (hashtags). Most of these buckets are never pushed to, and a FLUSHO there is a no-op. Built once and kept in a persistent term, as the registry is
   defp known_type_buckets do
-    # Best-effort: flush from all known types on delete.
-    # If a type bucket was never pushed to, FLUSHO is a no-op.
-    [
-      "Bonfire.Data.Social.Post",
-      "Bonfire.Data.Identity.User",
-      "Bonfire.Tag.Tagged"
-    ]
+    key = {__MODULE__, :known_type_buckets}
+
+    case :persistent_term.get(key, nil) do
+      nil ->
+        buckets = build_known_type_buckets()
+        :persistent_term.put(key, buckets)
+        buckets
+
+      buckets ->
+        buckets
+    end
+  end
+
+  defp build_known_type_buckets do
+    context_modules = Bonfire.Common.ContextModule.modules()
+
+    # the registry maps context modules to their schemas and back, so only the values of the context modules' entries are schemas
+    schemas =
+      Bonfire.Common.ContextModule.linked_schema_modules()
+      |> Enum.filter(fn {module, _} -> module in context_modules end)
+      |> Enum.flat_map(fn {_, schemas} -> List.wrap(schemas) end)
+      |> Enum.filter(&is_atom/1)
+
+    ([@all_bucket] ++
+       Enum.map(schemas, &Types.module_to_str/1) ++
+       Bonfire.Search.Indexer.own_bucket_only_types())
+    |> Enum.uniq()
   end
 
   defp extract_text(doc) when is_map(doc) do

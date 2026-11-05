@@ -85,7 +85,8 @@
     {!-- "All" tab: an overview. People first (a few), then posts; each group ends
          with a quiet "See all" row that opens the corresponding tab. No icons. --}
 
-    {#if e(@user_hits, []) == [] && e(@hits, []) == [] && e(@group_hits, []) == [] && !@searching &&
+    {#if e(@user_hits, []) == [] && e(@hits, []) == [] && e(@group_hits, []) == [] &&
+        e(@hashtag_hits, []) == [] && !@searching &&
         !e(@page_info, :has_next_page, false)}
       <Bonfire.UI.Common.EmptyFeed
         feedback_title={l("Nothing relevant was found")}
@@ -124,14 +125,29 @@
             to={Bonfire.Search.Filters.tab_url(@search, @index, %{}, Bonfire.Search.Filters.people_tab())}
             class="flex items-center gap-1 shrink-0 min-h-11 px-3 rounded-full text-sm text-primary hover:bg-fill"
           >
-            <span>{l("See all people")}</span>
-            <span aria-hidden="true">›</span>
+            <span>{l("More users")}</span>
           </LinkPatchLive>
         </div>
       {/if}
 
+      {#if e(@hashtag_hits, []) != []}
+        {!-- matching hashtags as one line of chips, each opening its feed --}
+        <div
+          class="flex items-center gap-2 overflow-x-auto px-4 py-3 border-t-hair border-divider [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          data-role="search_hashtag_chips"
+        >
+          {#for hashtag <- e(@hashtag_hits, [])}
+            <LinkLive
+              :if={e(hashtag, :named, :name, nil)}
+              to={Bonfire.Search.Filters.hashtag_url(e(hashtag, :named, :name, nil))}
+              class="flex items-center shrink-0 min-h-11 px-3 rounded-full bg-fill hover:bg-fill-strong text-sm font-medium text-base-content transition-colors duration-150"
+            >{"#" <> e(hashtag, :named, :name, "")}</LinkLive>
+          {/for}
+        </div>
+      {/if}
+
+      {!-- Disabled: All shows its groups as a strip like the people one (below), and the group cards on the Groups tab
       {#if e(@group_hits, []) != []}
-        {!-- groups and topics, apart from people and posts; rendered through ActivityLive like every hit, which ends at the group card, without a post's header and actions (the card has its own name and join button) --}
         <div class="border-t-hair border-divider" data-role="search_group_hits">
           {#for hit <- e(@group_hits, [])}
             <div class="activity_wrapper" data-role="search_group_hit">
@@ -145,6 +161,41 @@
               />
             </div>
           {/for}
+        </div>
+      {/if}
+      --}
+
+      {#if e(@group_hits, []) != []}
+        {!-- groups and topics from the `all` search, as a strip like the people one. They rank among posts there, so the strip may hold only some of them, and always ends in "See all groups", which opens the Groups tab --}
+        <div
+          class="flex items-center gap-2 overflow-x-auto px-4 py-3 border-t-hair border-divider [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          data-role="search_groups_strip"
+        >
+          {#for group <- Enum.map(e(@group_hits, []), &(e(&1, :activity, :object, nil) || &1))}
+            <LinkLive
+              to={path(group)}
+              opts={["data-role": "search_group_hit"]}
+              class="flex items-center gap-2 shrink-0 max-w-[240px] min-h-11 pl-1.5 pr-3 rounded-full bg-fill hover:bg-fill-strong transition-colors duration-150"
+            >
+              <Bonfire.UI.Common.AvatarLive
+                src={Bonfire.Common.Media.avatar_url(group)}
+                user_id={id(group)}
+                parent_id="search_groups_strip"
+                wrapper_class="avatar !flex shrink-0"
+                class="size-8 rounded-box bg-base-100"
+              />
+              <span class="min-w-0 leading-tight">
+                <span class="block text-sm font-medium text-base-content truncate">{e(group, :profile, :name, nil) || e(group, :character, :username, nil)}</span>
+                <span :if={e(group, :character, :username, nil)} class="block text-xs text-muted truncate">&amp;{e(group, :character, :username, nil)}</span>
+              </span>
+            </LinkLive>
+          {/for}
+          <LinkPatchLive
+            to={Bonfire.Search.Filters.tab_url(@search, @index, %{}, Bonfire.Search.Filters.groups_tab())}
+            class="flex items-center gap-1 shrink-0 min-h-11 px-3 rounded-full text-sm text-primary hover:bg-fill"
+          >
+            <span>{l("More groups")}</span>
+          </LinkPatchLive>
         </div>
       {/if}
 
@@ -167,8 +218,7 @@
           to={Bonfire.Search.Filters.tab_url(@search, @index, %{}, Bonfire.Search.Filters.posts_tab())}
           class="flex items-center justify-between min-h-11 px-4 text-sm text-primary hover:bg-fill"
         >
-          <span>{l("See all posts")}</span>
-          <span aria-hidden="true">›</span>
+          <span>{l("More posts")}</span>
         </LinkPatchLive>
       {/if}
     {/if}

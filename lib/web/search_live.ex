@@ -30,6 +30,7 @@ defmodule Bonfire.Search.Web.SearchLive do
        hits: [],
        user_hits: [],
        group_hits: [],
+       hashtag_hits: [],
        page_info: nil,
        searching: false,
        searching_direct: false,
@@ -120,6 +121,7 @@ defmodule Bonfire.Search.Web.SearchLive do
        hits: [],
        user_hits: [],
        group_hits: [],
+       hashtag_hits: [],
        page_info: nil,
        searching: false
      )}

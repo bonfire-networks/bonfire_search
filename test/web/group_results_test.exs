@@ -22,7 +22,7 @@ defmodule Bonfire.Search.Web.GroupResultsTest do
     {:ok, conn: conn(user: me, account: account), me: me}
   end
 
-  # a group is rendered through `ActivityLive` like every hit, whose dispatch ends at the group card, without the header and actions that belong to a post
+  # a group is rendered through `ActivityLive` like every hit, whose dispatch ends at the group card, without the header and actions that belong to a post. The card is on the Groups tab; All shows its groups as a strip (`group_search_tab_test.exs`)
   test "a group hit renders as the group's card, without a post's header or actions", %{
     conn: conn
   } do
@@ -35,7 +35,7 @@ defmodule Bonfire.Search.Web.GroupResultsTest do
     })
 
     conn
-    |> visit("/search?s=bittern")
+    |> visit("/search?s=bittern&facet[index_type]=Bonfire.Classify.Category")
     |> wait_async()
     |> assert_has("[data-role=search_group_hit] [data-role=group_preview]", text: "Bittern listeners")
     # the card's own join button, and not a second one (or a follow button) from the activity's actions
@@ -49,7 +49,7 @@ defmodule Bonfire.Search.Web.GroupResultsTest do
     Simulate.fake_category!(me, nil, %{name: "Shearwater counts", type: :topic})
 
     conn
-    |> visit("/search?s=shearwater")
+    |> visit("/search?s=shearwater&facet[index_type]=Bonfire.Classify.Category")
     |> wait_async()
     |> assert_has("[data-role=search_group_hit] [data-role=group_preview]", text: "Shearwater counts")
     |> refute_has("[data-role=search_group_hit] [data-id=activity_actions]")

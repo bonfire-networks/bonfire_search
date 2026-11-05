@@ -552,6 +552,32 @@ defmodule Bonfire.Search.IndexesSearchTest do
       refute in_index?(edited, :closed, post)
     end
 
+    # guests may see and read a `nonfederated` post, so its boundary name picks the public index on create, as its ACLs do on an edit
+    test "a post published nonfederated is in the public index, also after an edit" do
+      user = fake_user!()
+      body = "zymurgical quokka nonfedpost"
+
+      {:ok, post} =
+        Posts.publish(
+          current_user: user,
+          boundary: "nonfederated",
+          post_attrs: %{post_content: %{html_body: body}}
+        )
+
+      assert Bonfire.Boundaries.can?(:guest, :read, post), "control: a guest may read it"
+
+      assert in_index?(body, :public, post)
+      refute in_index?(body, :closed, post)
+
+      edited = "zymurgical quokka nonfedrevised"
+
+      assert {:ok, _} =
+               Bonfire.Social.PostContents.edit(user, Enums.id(post), %{html_body: edited})
+
+      assert in_index?(edited, :public, post)
+      refute in_index?(edited, :closed, post)
+    end
+
     defp found_by?(name, index, user, object) do
       %{hits: hits} = Search.search(name, index: index, current_user: user)
       Enum.any?(List.wrap(hits), &(Enums.id(&1) == Enums.id(object)))

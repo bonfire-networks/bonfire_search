@@ -86,6 +86,103 @@ defmodule Bonfire.Search.GroupIndexTest do
     refute in_article_index?.()
   end
 
+  describe "Categories.search_groups/2" do
+    test "returns the groups and topics the viewer may see, in the index's order, without labels, archived groups or other people's hidden groups" do
+      me = fake_user!()
+      other = fake_user!()
+
+      mine = public_group!(me, %{name: "Shrike makers"})
+      theirs = public_group!(other, %{name: "Shrike watchers"})
+
+      topic =
+        Bonfire.Classify.Simulate.fake_category!(me, mine, %{name: "Shrike care", type: :topic})
+
+      label =
+        Bonfire.Classify.Simulate.fake_category!(me, nil, %{name: "Shrike label", type: :label})
+
+      hidden =
+        Bonfire.Classify.Simulate.fake_group!(other, %{
+          name: "Shrike secrets",
+          membership: "invite_only",
+          visibility: "members:private",
+          participation: "group_members"
+        })
+
+      archived = public_group!(me, %{name: "Shrike archive"})
+      assert {:ok, _} = Bonfire.Classify.Categories.soft_delete(archived, me)
+
+      # a page that holds every hit, since the test page size is 2 and the label (and on Sonic, the archived group's stale copy in the Category bucket, see the archive test above) take places that are then dropped
+      assert %{edges: found} =
+               Bonfire.Classify.Categories.search_groups("shrike", current_user: me, limit: 10)
+
+      found_ids = Enums.ids(found)
+
+      for expected <- [mine, theirs, topic], do: assert(Enums.id(expected) in found_ids)
+      for unwanted <- [label, hidden, archived], do: refute(Enums.id(unwanted) in found_ids)
+
+      index_order =
+        Search.search("shrike", %{index: "public", raw: true, limit: 10}, [], %{
+          "index_type" => @category_type
+        })
+        |> e(:hits, [])
+        |> Enums.ids()
+        |> Enum.filter(&(&1 in found_ids))
+
+      assert found_ids == index_order
+    end
+
+    test "with joined: true it returns only the groups the viewer is a member of" do
+      me = fake_user!()
+      mine = public_group!(me, %{name: "Bunting makers"})
+      _theirs = public_group!(fake_user!(), %{name: "Bunting watchers"})
+
+      assert %{edges: found} =
+               Bonfire.Classify.Categories.search_groups("bunting", current_user: me, joined: true)
+
+      assert Enums.ids(found) == [Enums.id(mine)]
+    end
+
+    test "with origin: :remote it returns mirrored groups only" do
+      me = fake_user!()
+      _local = public_group!(me, %{name: "Dipper locals"})
+      mirror = public_group!(fake_user!(), %{name: "Dipper mirror"})
+
+      assert {:ok, _} =
+               Bonfire.Federate.ActivityPub.Peered.save_canonical_uri(
+                 mirror,
+                 "https://elsewhere.local/c/dipper_mirror"
+               )
+
+      assert %{edges: found} =
+               Bonfire.Classify.Categories.search_groups("dipper",
+                 current_user: me,
+                 origin: :remote
+               )
+
+      assert Enums.ids(found) == [Enums.id(mirror)]
+    end
+
+    test "pages through the hits with limit and offset" do
+      me = fake_user!()
+      for name <- ["Wren first", "Wren second", "Wren third"], do: public_group!(me, %{name: name})
+
+      assert %{edges: first, page_info: %{has_next_page: true, end_cursor: cursor}} =
+               Bonfire.Classify.Categories.search_groups("wren", current_user: me, limit: 2)
+
+      assert length(first) == 2
+
+      assert %{edges: next} =
+               Bonfire.Classify.Categories.search_groups("wren",
+                 current_user: me,
+                 limit: 2,
+                 offset: String.to_integer(cursor)
+               )
+
+      assert length(next) == 1
+      assert MapSet.disjoint?(MapSet.new(Enums.ids(first)), MapSet.new(Enums.ids(next)))
+    end
+  end
+
   test "a group made before indexing was on is found after a reindex" do
     user = fake_user!()
 

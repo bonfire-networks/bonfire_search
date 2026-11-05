@@ -42,6 +42,9 @@ defmodule Bonfire.Search.Indexer do
 
   def index_name(name), do: "#{Config.env()}_#{name}"
 
+  @doc "Index types that are searched only by their own type, and left out of the mixed search, so they don't rank among posts: hashtags, which the All tab searches apart for its chips."
+  def own_bucket_only_types, do: ["Bonfire.Tag.Hashtag"]
+
   @doc """
   Main entry point for indexing. Either queues the document for batched indexing
   (if the adapter opts in via `batch_indexing?/0`) or indexes synchronously.

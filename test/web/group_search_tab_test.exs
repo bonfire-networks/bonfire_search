@@ -107,6 +107,63 @@ defmodule Bonfire.Search.Web.GroupSearchTabTest do
     |> assert_has("[data-role=search_group_hit]", text: "Dunlin ringers")
   end
 
+  # `traced_calls/2` and `count_index_searches/3` are in `Bonfire.Search.DataHelpers`
+  test "the All tab shows the people strip, a groups strip from the all hits and content, with no user twice and three index searches",
+       %{conn: conn, me: me} do
+    # a page that holds the user, the group and the post of the `all` search (the test page size is 2)
+    Process.put([:bonfire, :default_pagination_limit], 10)
+
+    public_group!(me, "Pipit keepers")
+    _fan = fake_user!("Pipit Fan")
+
+    {:ok, _} =
+      Bonfire.Posts.publish(
+        current_user: me,
+        boundary: "public",
+        post_attrs: %{post_content: %{html_body: "pipit song at dawn"}}
+      )
+
+    searches =
+      count_index_searches(@adapter, "pipit", fn ->
+        conn
+        |> visit("/search?s=pipit")
+        |> wait_async()
+        |> assert_has("[data-role=search_people_strip] [data-role=character]",
+          text: "Pipit Fan",
+          count: 1
+        )
+        |> assert_has("#the_search_results [data-id=profile_name]", text: "Pipit Fan", count: 1)
+        |> assert_has("[data-role=search_groups_strip] [data-role=search_group_hit]",
+          text: "Pipit keepers"
+        )
+        |> assert_has("[data-role=search_groups_strip] a", text: "More groups")
+        |> assert_has("#the_search_results .activity_wrapper", text: "pipit song at dawn")
+      end)
+
+    # the people strip's typed query on the User bucket, one search on `all` for groups and content, and one on the Hashtag bucket for the hashtag chips
+    assert searches == 3
+  end
+
+  # a user is in the User bucket and in `all`, so both of All's searches find them: their hits are merged by id before anything is loaded
+  test "a user found by both of the All tab's searches shows once and is loaded once",
+       %{conn: conn} do
+    Process.put([:bonfire, :default_pagination_limit], 10)
+
+    fan = fake_user!("Wagtail Fan")
+
+    loads =
+      traced_calls({Bonfire.Boundaries, :load_pointers}, fn ->
+        conn
+        |> visit("/search?s=wagtail")
+        |> wait_async()
+        |> assert_has("#the_search_results [data-id=profile_name]", text: "Wagtail Fan", count: 1)
+      end)
+
+    loads_of_fan = Enum.filter(loads, fn [ids | _] -> Enums.id(fan) in List.wrap(ids) end)
+
+    assert length(loads_of_fan) == 1, "loaded in #{length(loads_of_fan)} queries"
+  end
+
   test "the Users tab lists no group", %{conn: conn, me: me} do
     public_group!(me, "Sanderling club")
     _user = fake_user!("Sanderling Watcher")

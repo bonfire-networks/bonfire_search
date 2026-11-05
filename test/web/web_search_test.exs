@@ -119,7 +119,8 @@ defmodule Bonfire.Search.Web.SearchTest do
       })
 
     links = html |> Floki.parse_document!() |> Floki.find("a")
-    assert Floki.text(links) =~ "See all posts"
+    assert Floki.text(links) =~ "More posts"
+    refute Floki.text(links) =~ "See all posts"
     refute html =~ "Nothing relevant was found"
   end
 
@@ -135,7 +136,7 @@ defmodule Bonfire.Search.Web.SearchTest do
     test "shows a prompt instead of tabs or a 'nothing found' message", %{conn: conn} do
       conn
       |> visit("/search")
-      |> assert_has("main", text: "Search for people, posts and hashtags")
+      |> assert_has("main", text: "Search for people, groups, posts and hashtags")
       |> refute_has(".tabs a")
       |> refute_has("main", text: "Nothing relevant was found")
     end
@@ -143,7 +144,7 @@ defmodule Bonfire.Search.Web.SearchTest do
     test "a facet link without a search term does not crash or run a search", %{conn: conn} do
       conn
       |> visit("/search?facet[index_type]=Bonfire.Data.Social.Post")
-      |> assert_has("main", text: "Search for people, posts and hashtags")
+      |> assert_has("main", text: "Search for people, groups, posts and hashtags")
       |> refute_has(".tabs a")
     end
 
@@ -203,7 +204,8 @@ defmodule Bonfire.Search.Web.SearchTest do
       assert remote_only == []
     end
 
-    test "tabs (including Hashtags) appear only once there is a query", %{me: me, conn: conn} do
+    # there is no Hashtags tab any more: matching hashtags are chips on All (`hashtag_chips_test.exs`)
+    test "tabs appear only once there is a query", %{me: me, conn: conn} do
       {:ok, _post} =
         Posts.publish(
           current_user: me,
@@ -213,12 +215,19 @@ defmodule Bonfire.Search.Web.SearchTest do
 
       conn
       |> visit("/search?s=visibility")
-      |> assert_has(".tabs a", text: "Hashtags")
+      |> assert_has(".tabs a", text: "Users")
       # filters apply to posts only, so All has no filters widget
       |> refute_has("[data-role=search_filters_widget]")
-      # regression: the Hashtags tab used to link to /search/tag/ (no segment) when built without a query
-      |> click_link(".tabs a", "Hashtags")
-      |> assert_path("/search/tag/visibility")
+    end
+
+    # anything that isn't a user or a group: posts and articles today, and other types as they become searchable
+    test "the tab for content is labelled Content", %{conn: conn} do
+      conn
+      |> visit("/search?s=visibility")
+      |> assert_has(".tabs a", text: "Content")
+      |> refute_has(".tabs a", text: "Posts")
+      |> click_link(".tabs a", "Content")
+      |> assert_has(".tabs a.active", text: "Content")
     end
   end
 
@@ -455,7 +464,7 @@ defmodule Bonfire.Search.Web.SearchTest do
         text: user_name
       )
       |> refute_has(".activity", text: html_body_post)
-      |> click_link(".tabs a", "Posts")
+      |> click_link(".tabs a", "Content")
       |> wait_async()
       |> assert_has_or_open_browser(".activity", text: html_body_post)
       |> assert_has_or_open_browser(".activity [data-role=cw]")
@@ -524,7 +533,7 @@ defmodule Bonfire.Search.Web.SearchTest do
           click_button(session, "Apply filters")
         end)
         |> wait_async()
-        |> assert_has(".tabs a.active", text: "Posts")
+        |> assert_has(".tabs a.active", text: "Content")
         |> refute_has(".activity", text: "quicksilver post without hashtags")
       end
     end
@@ -587,7 +596,7 @@ defmodule Bonfire.Search.Web.SearchTest do
 
       browser
       |> Browser.click(Query.css("[data-role=search_filters_widget] [data-role=apply_filters]"))
-      |> Browser.assert_has(Query.css(".tabs a.active", text: "Posts"))
+      |> Browser.assert_has(Query.css(".tabs a.active", text: "Content"))
       |> Browser.refute_has(Query.css(".activity", text: "quicksilver browser filter post"))
     end
 
@@ -670,7 +679,7 @@ defmodule Bonfire.Search.Web.SearchTest do
       |> visit("/search?s=glimmering")
       |> wait_async()
       |> assert_has(".activity", text: "glimmering filterable post")
-      |> click_link(".tabs a", "Posts")
+      |> click_link(".tabs a", "Content")
       |> wait_async()
       |> assert_has(".activity", text: "glimmering long-form article")
       |> assert_has(".activity", text: "glimmering filterable post")
@@ -687,7 +696,7 @@ defmodule Bonfire.Search.Web.SearchTest do
       |> wait_async()
       |> refute_has(".activity", text: "glimmering filterable post")
       |> assert_has(".activity", text: "glimmering long-form article")
-      |> assert_has(".tabs a.active", text: "Posts")
+      |> assert_has(".tabs a.active", text: "Content")
       |> within("[data-role=search_filters_widget]", fn session ->
         click_button(session, "[data-role=reset_filters]", "Reset")
       end)
@@ -736,7 +745,7 @@ defmodule Bonfire.Search.Web.SearchTest do
       |> wait_async()
       |> assert_has(".activity", text: "wisteria blossom from alice")
       |> refute_has(".activity", text: "wisteria blossom from bob")
-      |> assert_has(".tabs a.active", text: "Posts")
+      |> assert_has(".tabs a.active", text: "Content")
       |> assert_has("[data-role=open_search_filters] .badge", text: "1")
     end
 
@@ -770,7 +779,7 @@ defmodule Bonfire.Search.Web.SearchTest do
       end)
       |> click_link(".tabs a", "All")
       |> wait_async()
-      |> click_link(".tabs a", "Posts")
+      |> click_link(".tabs a", "Content")
       |> wait_async()
       |> assert_has("[data-role=search_filters_widget] [data-toggle=article][data-state=default]")
     end
@@ -811,7 +820,7 @@ defmodule Bonfire.Search.Web.SearchTest do
       end)
       |> wait_async()
       |> refute_has(".activity", text: "peregrine modal-typed post")
-      |> assert_has(".tabs a.active", text: "Posts")
+      |> assert_has(".tabs a.active", text: "Content")
     end
 
     test "user can switch between public/private search indexes, showing messages I sent in private one",

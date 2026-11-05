@@ -396,24 +396,56 @@ defmodule Bonfire.Search.LiveHandler do
   @doc "How many people the All tab's strip shows (a dedicated typed query, see below)."
   def overview_people_limit, do: @overview_people_limit
 
-  # People need a typed query: mixed search ranks them against posts and can fill a page with posts alone.
-  defp maybe_overview_people(search_result, q, nil = _facet_filters, opts) do
-    if e(opts, :offset, 0) in [0, nil] do
-      people =
-        Bonfire.Search.search_and_load(
-          q,
-          ["index_type"],
-          %{"index_type" => Filters.people_tab()},
-          Map.merge(opts, %{limit: @overview_people_limit, offset: 0})
-        )
+  # Disabled: it loaded its people apart from the `all` search's hits, so a user found by both was loaded twice. The All tab's first page now makes the typed people search beside the `all` one, and loads their merged hits once (`overview_search/3`)
+  # defp maybe_overview_people(search_result, q, nil = _facet_filters, opts) do
+  #   if e(opts, :offset, 0) in [0, nil] do
+  #     people =
+  #       Bonfire.Search.search_and_load(
+  #         q,
+  #         ["index_type"],
+  #         %{"index_type" => Filters.people_tab()},
+  #         Map.merge(opts, %{limit: @overview_people_limit, offset: 0})
+  #       )
+  #
+  #     Map.put(search_result, :users, e(people, :users, []))
+  #   else
+  #     search_result
+  #   end
+  # end
+  #
+  # defp maybe_overview_people(search_result, _q, _facet_filters, _opts), do: search_result
 
-      Map.put(search_result, :users, e(people, :users, []))
-    else
-      search_result
-    end
+  @overview_hashtags_limit 8
+  @hashtag_type "Bonfire.Tag.Hashtag"
+
+  # All's first page: people need a typed query, since the mixed search ranks them against posts and can fill a page with posts alone; hashtags are only in their own bucket, for the chips; the `all` search gives groups and content, and comes last as the one that pages. Their hits are merged by id before loading, so each is loaded once; the people strip then keeps the users of the typed search only
+  defp overview_search(q, opts) do
+    result =
+      Bonfire.Search.search_many_and_load(
+        q,
+        [
+          {%{"index_type" => Filters.people_tab()}, %{limit: @overview_people_limit, offset: 0}},
+          {%{"index_type" => @hashtag_type}, %{limit: @overview_hashtags_limit, offset: 0}},
+          {nil, %{}}
+        ],
+        opts
+      )
+
+    people_ids = result |> e(:hit_ids_by_search, []) |> List.first() |> List.wrap()
+
+    # TODO: should users go into their own bucket only, not `all`, as hashtags do? They take slots on the `all` page; first check what else searches `all` and expects users there (eg. the Mastodon API search, autocomplete without a prefix)
+    result
+    |> Map.put(:users, Enum.filter(e(result, :users, []), &(Enums.id(&1) in people_ids)))
+    |> Map.put(
+      :hashtags,
+      e(result, :own_type_hits, [])
+      |> Enum.filter(&(Types.object_type_schema(&1) == Bonfire.Tag.Hashtag))
+      |> Bonfire.Common.Repo.maybe_preload(:named)
+    )
   end
 
-  defp maybe_overview_people(search_result, _q, _facet_filters, _opts), do: search_result
+  defp overview_first_page?(facet_filters, opts),
+    do: is_nil(facet_filters) and e(opts, :offset, 0) in [0, nil]
 
   # Posts includes articles, which have their own index type. Use the mixed index and
   # the existing DB content-type filter so Sonic and Meili share this query path.
@@ -458,9 +490,12 @@ defmodule Bonfire.Search.LiveHandler do
       {query_facets, query_opts} = search_query(facet_filters, search_opts)
 
       search_result =
-        search_skipping_empty_pages(q, query_facets, query_opts)
+        if overview_first_page?(facet_filters, search_opts) do
+          overview_search(q, query_opts)
+        else
+          search_skipping_empty_pages(q, query_facets, query_opts)
+        end
         |> debug("search_and_load result")
-        |> maybe_overview_people(q, facet_filters, search_opts)
 
       # groups and topics come back among the activities, and get a list of their own, as people do
       {groups, activities} = Enum.split_with(e(search_result, :activities, []), &group_hit?/1)
@@ -498,6 +533,12 @@ defmodule Bonfire.Search.LiveHandler do
          hits: current_hits,
          user_hits: current_user_hits,
          group_hits: current_group_hits,
+         # from All's first page only (a later page keeps them)
+         hashtag_hits:
+           if(live_opts[:append],
+             do: e(assigns(socket), :hashtag_hits, []),
+             else: e(search_result, :hashtags, [])
+           ),
          facets: search_result.facets || e(assigns(socket), :facets, nil),
          num_hits: search_result.total_hits,
          search: q,
