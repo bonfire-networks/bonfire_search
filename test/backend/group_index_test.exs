@@ -137,7 +137,10 @@ defmodule Bonfire.Search.GroupIndexTest do
       _theirs = public_group!(fake_user!(), %{name: "Bunting watchers"})
 
       assert %{edges: found} =
-               Bonfire.Classify.Categories.search_groups("bunting", current_user: me, joined: true)
+               Bonfire.Classify.Categories.search_groups("bunting",
+                 current_user: me,
+                 joined: true
+               )
 
       assert Enums.ids(found) == [Enums.id(mine)]
     end
@@ -164,7 +167,9 @@ defmodule Bonfire.Search.GroupIndexTest do
 
     test "pages through the hits with limit and offset" do
       me = fake_user!()
-      for name <- ["Wren first", "Wren second", "Wren third"], do: public_group!(me, %{name: name})
+
+      for name <- ["Wren first", "Wren second", "Wren third"],
+          do: public_group!(me, %{name: name})
 
       assert %{edges: first, page_info: %{has_next_page: true, end_cursor: cursor}} =
                Bonfire.Classify.Categories.search_groups("wren", current_user: me, limit: 2)

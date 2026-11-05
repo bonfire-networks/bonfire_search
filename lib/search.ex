@@ -754,8 +754,8 @@ defmodule Bonfire.Search do
   defp do_maybe_index(object, false, opts), do: do_maybe_index(object, :closed, opts)
 
   defp do_maybe_index(object, nil, opts) do
+    # TODO: an object guests may see but not read is indexed with its text, so a match on a word of its body tells someone who may not read it that the word is in it (accepted for now; the alternative is to index only the name and summary of a see-only object)
     {index, other_index} =
-      # TODO: an object guests may see but not read is indexed with its text, so a match on a word of its body tells someone who may not read it that the word is in it (accepted for now; the alternative is to index only the name and summary of a see-only object)
       if maybe_apply(Bonfire.Boundaries, :object_guest_discoverable?, [object],
            fallback_return: false
          ) do

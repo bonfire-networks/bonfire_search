@@ -37,7 +37,9 @@ defmodule Bonfire.Search.Web.GroupResultsTest do
     conn
     |> visit("/search?s=bittern&facet[index_type]=Bonfire.Classify.Category")
     |> wait_async()
-    |> assert_has("[data-role=search_group_hit] [data-role=group_preview]", text: "Bittern listeners")
+    |> assert_has("[data-role=search_group_hit] [data-role=group_preview]",
+      text: "Bittern listeners"
+    )
     # the card's own join button, and not a second one (or a follow button) from the activity's actions
     |> assert_has("[data-role=search_group_hit] [id^=join_btn_]", count: 1)
     |> refute_has("[data-role=search_group_hit] button", text: "Follow")
@@ -51,7 +53,9 @@ defmodule Bonfire.Search.Web.GroupResultsTest do
     conn
     |> visit("/search?s=shearwater&facet[index_type]=Bonfire.Classify.Category")
     |> wait_async()
-    |> assert_has("[data-role=search_group_hit] [data-role=group_preview]", text: "Shearwater counts")
+    |> assert_has("[data-role=search_group_hit] [data-role=group_preview]",
+      text: "Shearwater counts"
+    )
     |> refute_has("[data-role=search_group_hit] [data-id=activity_actions]")
   end
 

@@ -51,7 +51,9 @@ defmodule Bonfire.Search.Web.GroupDirectorySearchTest do
 
   test "Load more under a search shows the next page of hits", %{conn: conn} do
     owner = fake_user!()
-    groups = for name <- ["Avocet one", "Avocet two", "Avocet three"], do: public_group!(owner, name)
+
+    groups =
+      for name <- ["Avocet one", "Avocet two", "Avocet three"], do: public_group!(owner, name)
 
     session =
       conn
@@ -149,7 +151,9 @@ defmodule Bonfire.Search.Web.GroupDirectorySearchTest do
       })
 
     {:ok, _} =
-      Bonfire.Classify.Categories.add_member(owner, members_only, me.id, skip_boundary_check: true)
+      Bonfire.Classify.Categories.add_member(owner, members_only, me.id,
+        skip_boundary_check: true
+      )
 
     conn
     |> visit("/groups/joined")

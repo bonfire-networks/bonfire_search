@@ -97,7 +97,9 @@ defmodule Bonfire.Search.Web.NoAdapterSearchTest do
       %{method: :get, url: "https://mocked.local/.well-known/webfinger" <> _ = url} ->
         case URI.decode_query(URI.parse(url).query || "")["resource"] do
           "acct:cooks@mocked.local" ->
-            Tesla.Mock.json(Bonfire.Federate.ActivityPub.Simulate.webfingered("cooks", remote_group))
+            Tesla.Mock.json(
+              Bonfire.Federate.ActivityPub.Simulate.webfingered("cooks", remote_group)
+            )
 
           _ ->
             %Tesla.Env{status: 404, body: ""}

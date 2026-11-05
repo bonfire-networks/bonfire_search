@@ -50,8 +50,12 @@ defmodule Bonfire.Search.Web.GroupSearchTabTest do
     |> wait_async()
     |> click_link(".tabs a", "Groups")
     |> wait_async()
-    |> assert_has("[data-role=search_group_hit] [data-role=group_preview]", text: "Plover keepers")
-    |> assert_has("[data-role=search_group_hit] [data-role=group_preview]", text: "Plover nesting")
+    |> assert_has("[data-role=search_group_hit] [data-role=group_preview]",
+      text: "Plover keepers"
+    )
+    |> assert_has("[data-role=search_group_hit] [data-role=group_preview]",
+      text: "Plover nesting"
+    )
     |> refute_has("#the_search_results", text: "Plover Fan")
     |> refute_has("#the_search_results", text: "plover sighting")
   end

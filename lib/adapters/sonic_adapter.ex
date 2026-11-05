@@ -325,6 +325,7 @@ defmodule Bonfire.Search.Sonic do
       do: [type],
       else: [@all_bucket, type]
   end
+
   defp buckets_for(%{"index_type" => types}) when is_list(types), do: [@all_bucket | types]
   defp buckets_for(_), do: [@all_bucket]
 
