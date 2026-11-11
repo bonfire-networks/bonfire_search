@@ -86,4 +86,35 @@ defmodule Bonfire.Search.Web.HashtagChipsTest do
     # the strips and chips are for the first page only, so a later page is the `all` search alone
     assert later_page == 1
   end
+
+  test "a hashtag page is time-limited and says so like any other feed", %{conn: conn, me: me} do
+    {:ok, _} = Bonfire.Tag.get_or_create_hashtag("zebrafinch")
+
+    {:ok, _} =
+      Bonfire.Posts.publish(
+        current_user: me,
+        boundary: "public",
+        post_id:
+          Bonfire.Common.DatesTimes.past(45, :day) |> Bonfire.Common.DatesTimes.generate_ulid(),
+        post_attrs: %{post_content: %{html_body: "an ancient #zebrafinch sighting"}}
+      )
+
+    {:ok, _} =
+      Bonfire.Posts.publish(
+        current_user: me,
+        boundary: "public",
+        post_attrs: %{post_content: %{html_body: "a fresh #zebrafinch sighting"}}
+      )
+
+    conn
+    |> visit("/search/tag/zebrafinch")
+    |> wait_async()
+    |> assert_has("[data-id=feed]", text: "a fresh")
+    |> refute_has("[data-id=feed]", text: "an ancient")
+    # the last page in the window still comes back with a cursor, so the footer shows after one more (empty) page
+    |> click_button("[data-id=load_more]", "Load more")
+    |> wait_async()
+    |> assert_has("[data-id=feed]", text: "Last 30 days")
+    |> refute_has("[data-id=feed]", text: "an ancient")
+  end
 end
