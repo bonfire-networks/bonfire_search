@@ -4,7 +4,8 @@ defmodule Bonfire.Search.SearchOffsetCapTest do
 
   The index adapter is a stub that tells the test what it was asked for.
   """
-  use Bonfire.Search.DataCase, async: true, needs_adapter: false
+  # not async: the hint is logged at info, so these tests raise the global log level (CI may run at a higher one)
+  use Bonfire.Search.DataCase, async: false, needs_adapter: false
 
   # what Meilisearch serves by default (`maxTotalHits`), which is as far as any offset can be of use
   @window 1_000
@@ -27,6 +28,18 @@ defmodule Bonfire.Search.SearchOffsetCapTest do
     :ok
   end
 
+  # the hint is an info line, emitted only when the log level lets info through
+  defp capture_info_log(fun) do
+    previous = Logger.level()
+    Logger.configure(level: :info)
+
+    try do
+      ExUnit.CaptureLog.capture_log([level: :info], fun)
+    after
+      Logger.configure(level: previous)
+    end
+  end
+
   test "an ordinary offset reaches the index as it is (control)" do
     Bonfire.Search.search("hello", %{offset: 20, limit: 20}, [], %{})
 
@@ -41,7 +54,7 @@ defmodule Bonfire.Search.SearchOffsetCapTest do
 
   test "an offset past the cap gets an empty page, without asking the index, and logs a hint naming the key" do
     log =
-      ExUnit.CaptureLog.capture_log(fn ->
+      capture_info_log(fn ->
         assert %{hits: []} =
                  Bonfire.Search.search("hello", %{offset: @window + 20, limit: 20}, [], %{})
       end)
@@ -53,7 +66,7 @@ defmodule Bonfire.Search.SearchOffsetCapTest do
 
   test "a huge offset in the simplified search also gets an empty page" do
     log =
-      ExUnit.CaptureLog.capture_log(fn ->
+      capture_info_log(fn ->
         assert %{hits: []} = Bonfire.Search.search("hello", offset: 9_999_999_999_999, limit: 20)
       end)
 
