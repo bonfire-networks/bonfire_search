@@ -70,8 +70,51 @@ defmodule Bonfire.Search do
     debug(adapter, "search using")
     # debug(opts, "opts")
 
-    if adapter, do: adapter.search(string, to_options(opts), calculate_facets, filter_facets)
+    if adapter do
+      opts = to_options(opts)
+
+      if past_offset_cap?(opts),
+        do: empty_page(),
+        else: adapter.search(string, clamp_negative_offset(opts), calculate_facets, filter_facets)
+    end
   end
+
+  # An offset comes from the client (a cursor, an API argument), and no index serves a window past its `maxTotalHits`: an offset beyond the configured maximum gets an empty page (so paging stops) without calling the index, where it would cost a scan for nothing.
+  defp past_offset_cap?(opts) when is_list(opts) do
+    case opts[:offset] do
+      offset when is_integer(offset) and offset > 0 ->
+        max_offset = max_offset()
+
+        if offset > max_offset do
+          info(
+            "Search offset #{offset} is past `max_offset` (#{max_offset}), so an empty page is returned: raise `config :bonfire_search, max_offset: #{max_offset}` to allow deeper paging"
+          )
+
+          true
+        else
+          false
+        end
+
+      _ ->
+        false
+    end
+  end
+
+  defp past_offset_cap?(_opts), do: false
+
+  defp clamp_negative_offset(opts) when is_list(opts) do
+    case opts[:offset] do
+      offset when is_integer(offset) and offset < 0 -> Keyword.put(opts, :offset, 0)
+      _ -> opts
+    end
+  end
+
+  defp clamp_negative_offset(opts), do: opts
+
+  # the shape every adapter returns when it finds nothing
+  defp empty_page, do: %{hits: [], total: 0}
+
+  defp max_offset, do: Bonfire.Common.Config.get_ext(:bonfire_search, :max_offset, 1_000)
 
   @doc """
   Search with simplified options
@@ -83,7 +126,11 @@ defmodule Bonfire.Search do
     debug(adapter, "search using")
     debug(index_or_opts, "opts")
 
-    if adapter, do: adapter.search(string, index_or_opts)
+    if adapter do
+      if past_offset_cap?(index_or_opts),
+        do: empty_page(),
+        else: adapter.search(string, clamp_negative_offset(index_or_opts))
+    end
   end
 
   # only identity facets merge index hits with a DB query (see `search_by_type/3`)
