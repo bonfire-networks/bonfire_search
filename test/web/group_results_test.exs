@@ -27,7 +27,7 @@ defmodule Bonfire.Search.Web.GroupResultsTest do
     conn: conn
   } do
     # someone else's, so the card offers to join it
-    Simulate.fake_group!(fake_user!(), %{
+    group = Simulate.fake_group!(fake_user!(), %{
       name: "Bittern listeners",
       membership: "open",
       visibility: "global",
@@ -41,7 +41,10 @@ defmodule Bonfire.Search.Web.GroupResultsTest do
       text: "Bittern listeners"
     )
     # the card's own join button, and not a second one (or a follow button) from the activity's actions
-    |> assert_has("[data-role=search_group_hit] [id^=join_btn_]", count: 1)
+    |> assert_has(
+      "[data-role=search_group_hit] #{component_selector(Bonfire.Classify.Web.JoinButtonLive, group.id)}",
+      count: 1
+    )
     |> refute_has("[data-role=search_group_hit] button", text: "Follow")
     |> refute_has("[data-role=search_group_hit] [data-id=activity_actions]")
     |> refute_has("[data-role=search_group_hit] [data-id=subject_name]")
