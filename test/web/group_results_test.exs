@@ -27,12 +27,13 @@ defmodule Bonfire.Search.Web.GroupResultsTest do
     conn: conn
   } do
     # someone else's, so the card offers to join it
-    group = Simulate.fake_group!(fake_user!(), %{
-      name: "Bittern listeners",
-      membership: "open",
-      visibility: "global",
-      participation: "anyone"
-    })
+    group =
+      Simulate.fake_group!(fake_user!(), %{
+        name: "Bittern listeners",
+        membership: "open",
+        visibility: "global",
+        participation: "anyone"
+      })
 
     conn
     |> visit("/search?s=bittern&facet[index_type]=Bonfire.Classify.Category")
