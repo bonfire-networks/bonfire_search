@@ -75,9 +75,44 @@ defmodule Bonfire.Search do
 
       if past_offset_cap?(opts),
         do: empty_page(),
-        else: adapter.search(string, clamp_negative_offset(opts), calculate_facets, filter_facets)
+        else:
+          adapter.search(
+            string,
+            clamp_negative_offset(opts),
+            calculate_facets,
+            normalize_filter_facets(filter_facets)
+          )
     end
   end
+
+  @doc """
+  Filter facets as the adapters read them: string keys, and a type as its module name. So a caller can pass `index_type: Bonfire.Data.Social.Post` (a keyword list or a map with atom keys) rather than `%{"index_type" => "Bonfire.Data.Social.Post"}`, which still works.
+
+      iex> Bonfire.Search.normalize_filter_facets(index_type: Bonfire.Data.Social.Post)
+      %{"index_type" => "Bonfire.Data.Social.Post"}
+
+      iex> Bonfire.Search.normalize_filter_facets(%{"index_type" => "Bonfire.Data.Social.Post"})
+      %{"index_type" => "Bonfire.Data.Social.Post"}
+  """
+  def normalize_filter_facets(facets) when is_map(facets) or (is_list(facets) and facets != []) do
+    if is_map(facets) or Keyword.keyword?(facets) do
+      Map.new(facets, fn
+        {key, type}
+        when key in [:index_type, "index_type"] and is_atom(type) and not is_nil(type) ->
+          {"index_type", Types.module_to_str(type)}
+
+        {key, value} when is_atom(key) ->
+          {to_string(key), value}
+
+        key_value ->
+          key_value
+      end)
+    else
+      facets
+    end
+  end
+
+  def normalize_filter_facets(facets), do: facets
 
   # An offset comes from the client (a cursor, an API argument), and no index serves a window past its `maxTotalHits`: an offset beyond the configured maximum gets an empty page (so paging stops) without calling the index, where it would cost a scan for nothing.
   defp past_offset_cap?(opts) when is_list(opts) do
