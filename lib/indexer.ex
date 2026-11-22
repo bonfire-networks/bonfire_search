@@ -34,6 +34,9 @@ defmodule Bonfire.Search.Indexer do
           "post_content.name",
           "post_content.summary",
           "post_content.html_body",
+          # where an event (or other object with a place) happens
+          "place.name",
+          "place.mappable_address",
           "tags"
         ],
         name: l("Search indexing"),
@@ -116,6 +119,11 @@ defmodule Bonfire.Search.Indexer do
       when not is_nil(id) do
     # hopefully already formatted indexable object
     object
+  end
+
+  # a bare pointer (eg. an object merged into its activity's `object` by `Activities.activity_under_object/1`) goes to the context of the type it points to, by its `table_id`
+  def prepare_indexable_object(%Needle.Pointer{} = pointer) do
+    Bonfire.Common.ContextModule.maybe_apply(pointer, :indexing_object_format, pointer)
   end
 
   def prepare_indexable_object(%{__struct__: object_type} = object) do
