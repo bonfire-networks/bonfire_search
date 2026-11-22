@@ -115,8 +115,6 @@ if Application.compile_env(:bonfire_api_graphql, :modularity) != :disabled do
 
     # Search for accounts/users using GraphQL
     defp search_accounts(query, opts, conn) do
-      current_user = opts[:current_user]
-
       filter = %{
         "query" => query,
         "limit" => opts[:limit] || 20,
@@ -125,13 +123,9 @@ if Application.compile_env(:bonfire_api_graphql, :modularity) != :disabled do
 
       case graphql(conn, :search_users_gql, %{"filter" => filter}) do
         %{data: %{search_users: users}} when is_list(users) ->
-          # Skip expensive stats for search results (N+1 query prevention)
           users
           |> Enum.flat_map(fn user ->
-            case Mappers.Account.from_user(user,
-                   current_user: current_user,
-                   skip_expensive_stats: true
-                 ) do
+            case Mappers.Account.from_user(user) do
               result when is_map(result) and map_size(result) > 0 ->
                 if Map.get(result, "id"), do: [result], else: []
 
