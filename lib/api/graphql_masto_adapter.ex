@@ -38,7 +38,7 @@ if Application.compile_env(:bonfire_api_graphql, :modularity) != :disabled do
     end
 
     # Use centralized fragments from bonfire_api_graphql
-    @user Fragments.user_profile()
+    @user Fragments.account_fields()
 
     # GraphQL query for searching users/accounts
     @graphql "query ($filter: SearchFilters!) {

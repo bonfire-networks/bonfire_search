@@ -152,6 +152,41 @@ defmodule Bonfire.Search.MastoApi.SearchTest do
     end
   end
 
+  # Ice Cubes showed a found account with "0 seguaci" while its profile showed 1 (live testing, masto-live-fixes step 2)
+  describe "account results of GET /api/v2/search" do
+    @tag skip:
+           "needs a search index in tests: /api/v2/search finds users through Meilisearch (search_api_graphql.ex:53-65), empty in tests; proven by the live check (masto-live-fixes step 2, decision 8)"
+    test "carry real counts", %{conn: conn} do
+      account = fake_account!()
+      viewer = fake_user!(account)
+      found = fake_user!()
+      {:ok, _} = Bonfire.Social.Graph.Follows.follow(fake_user!(), found)
+
+      {:ok, _} =
+        Bonfire.Posts.publish(
+          current_user: found,
+          post_attrs: %{post_content: %{html_body: "a found user's post"}},
+          boundary: "public"
+        )
+
+      result =
+        conn
+        |> masto_api_conn(user: viewer, account: account)
+        |> get("/api/v2/search?q=#{found.character.username}&type=accounts")
+        |> json_response(200)
+        |> Map.fetch!("accounts")
+        |> Enum.find(&(&1["id"] == found.id))
+
+      assert result, "the user is found by username"
+
+      assert Map.take(result, ~w(statuses_count followers_count following_count)) == %{
+               "statuses_count" => 1,
+               "followers_count" => 1,
+               "following_count" => 0
+             }
+    end
+  end
+
   describe "GET /api/v1/search (GoToSocial serves search at both api versions)" do
     setup do
       account = fake_account!()
