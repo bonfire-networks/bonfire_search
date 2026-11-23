@@ -527,6 +527,8 @@ defmodule Bonfire.Search.Web.SearchTest do
           session
           |> fill_in("Hashtags", with: tags)
           |> assert_has("[data-row=hashtags] [data-role=row_value]", text: "#missingfilterone")
+          # search lists its own rows, so a row an extension declares (eg. "Nearby") is not among them
+          |> refute_has("[data-row=nearby]")
         end)
         |> assert_has(".activity", text: "quicksilver post without hashtags")
         |> within("[data-role=search_filters_widget]", fn session ->
@@ -808,7 +810,7 @@ defmodule Bonfire.Search.Web.SearchTest do
         |> assert_has("h4", text: "Hashtags")
         |> assert_has("h4", text: "Content types")
         |> refute_has("h4", text: "Activity types")
-        |> refute_has("h4", text: "Time range")
+        |> refute_has("h4", text: "Posted")
         |> refute_has("*", text: "Save as custom feed")
         |> assert_has("button", text: "Apply filters")
         |> click_button("[data-toggle='article'] button", "Only")
